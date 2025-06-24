@@ -37,20 +37,31 @@
   let authUnsubscribe: (() => void) | null = null;
 
   onMount(() => {
-    authUnsubscribe = authStore.subscribe(async (user) => {
+    // First check if we have an authenticated user
+    const unsubscribeAuth = authStore.subscribe(async (user) => {
       if (!user) {
         goto('/');
         return;
       }
-      currentUser = user;
-      loading = true;
       
-      // Load profile and journal entries with real-time listeners
-      await userStore.loadProfile(user.uid);
-      await journalStore.loadEntries(user.uid);
-      
-      loading = false;
+      if (!currentUser) {
+        // Only load data on initial mount
+        currentUser = user;
+        loading = true;
+        
+        try {
+          // Load profile and journal entries with real-time listeners
+          await userStore.loadProfile(user.uid);
+          await journalStore.loadEntries(user.uid);
+        } catch (error) {
+          console.error('Error loading data:', error);
+        } finally {
+          loading = false;
+        }
+      }
     });
+    
+    authUnsubscribe = unsubscribeAuth;
 
     return () => {
       if (authUnsubscribe) {
@@ -287,8 +298,14 @@
     return entryId ? processingEntries.has(entryId) : false;
   }
 
-  // Reactive statement for filtered entries
-  $: filteredEntries = getFilteredEntries();
+  // Force re-computation of filtered entries when journal store updates
+  let storeVersion = 0;
+  $: if ($journalStore) {
+    storeVersion += 1;
+  }
+  
+  // Reactive statement for filtered entries - will update when store or version changes
+  $: filteredEntries = storeVersion && $journalStore ? getFilteredEntries() : [];
 </script>
 
 <Navbar />
@@ -642,7 +659,7 @@
         </div>
       {:else}
         <div class="space-y-6">
-          {#each filteredEntries as entry, index}
+          {#each filteredEntries as entry, index (entry.id)}
             <article class="card p-6 hover:shadow-xl transition-all duration-300 group {isProcessing(entry.id) ? 'opacity-50' : ''}" style="animation-delay: {index * 100}ms;">
               <!-- Entry Header -->
               <header class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">

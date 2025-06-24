@@ -42,20 +42,31 @@
   let authUnsubscribe: (() => void) | null = null;
 
   onMount(() => {
-    authUnsubscribe = authStore.subscribe(async (user) => {
+    // First check if we have an authenticated user
+    const unsubscribeAuth = authStore.subscribe(async (user) => {
       if (!user) {
         goto('/');
         return;
       }
-      currentUser = user;
-      loading = true;
       
-      // Load profile and bugs with real-time listeners
-      await userStore.loadProfile(user.uid);
-      await bugStore.loadBugs(user.uid);
-      
-      loading = false;
+      if (!currentUser) {
+        // Only load data on initial mount
+        currentUser = user;
+        loading = true;
+        
+        try {
+          // Load profile and bugs with real-time listeners
+          await userStore.loadProfile(user.uid);
+          await bugStore.loadBugs(user.uid);
+        } catch (error) {
+          console.error('Error loading data:', error);
+        } finally {
+          loading = false;
+        }
+      }
     });
+    
+    authUnsubscribe = unsubscribeAuth;
 
     return () => {
       if (authUnsubscribe) {
@@ -285,8 +296,14 @@
     return bugId ? processingBugs.has(bugId) : false;
   }
 
-  // Reactive statement for filtered bugs
-  $: filteredBugs = getFilteredBugs();
+  // Force re-computation of filtered bugs when bug store updates
+  let storeVersion = 0;
+  $: if ($bugStore) {
+    storeVersion += 1;
+  }
+  
+  // Reactive statement for filtered bugs - will update when store or version changes
+  $: filteredBugs = storeVersion && $bugStore ? getFilteredBugs() : [];
 </script>
 
 <Navbar />
@@ -676,7 +693,7 @@
         </div>
       {:else}
         <div class="space-y-4">
-          {#each filteredBugs as bug, index}
+          {#each filteredBugs as bug, index (bug.id)}
             <div 
               class="card p-6 hover:shadow-xl transition-all duration-300 group {isProcessing(bug.id) ? 'opacity-50' : ''}" 
               style="animation-delay: {index * 50}ms;"
