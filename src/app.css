@@ -542,7 +542,7 @@ body {
 
 .dark .toast-success {
   background: var(--gray-800);
-  color: var(--text-primary);
+  color:black;
 }
 
 .toast-error {
@@ -554,7 +554,7 @@ body {
 
 .dark .toast-error {
   background: var(--gray-800);
-  color: var(--text-primary);
+  color: black;
 }
 
 /* Mobile optimizations */
