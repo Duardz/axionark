@@ -7,6 +7,14 @@
   import Navbar from '$lib/components/Navbar.svelte';
   import type { User } from 'firebase/auth';
 
+  interface Achievement {
+    title: string;
+    description: string;
+    icon: string;
+    color: string;
+    earned: boolean;
+  }
+
   let user: User | null = null;
   let loading = false;
   let editingUsername = false;
@@ -20,7 +28,7 @@
   let totalTasks = 0;
   let completedTasks = 0;
   let phaseProgress = { beginner: 0, intermediate: 0, advanced: 0 };
-  let achievements = [];
+  let achievements: Achievement[] = [];
   let memberSince = '';
   let learningStreak = 0;
   let favoriteCategory = '';
@@ -63,7 +71,7 @@
       phase.categories.forEach(category => {
         category.tasks.forEach(task => {
           phaseTotal++;
-          if ($userStore.completedTasks.includes(task.id)) {
+          if ($userStore!.completedTasks.includes(task.id)) {
             phaseCompleted++;
           }
         });
@@ -91,11 +99,11 @@
     favoriteCategory = 'Web Security Fundamentals';
   }
 
-  function getAchievements() {
-    const achievements = [];
+  function getAchievements(): Achievement[] {
+    const achievementsList: Achievement[] = [];
     
     if (completedTasks >= 1) {
-      achievements.push({
+      achievementsList.push({
         title: 'First Steps',
         description: 'Complete your first task',
         icon: '🌱',
@@ -105,7 +113,7 @@
     }
     
     if (completedTasks >= 10) {
-      achievements.push({
+      achievementsList.push({
         title: 'Learning Momentum',
         description: 'Complete 10 tasks',
         icon: '🚀',
@@ -115,7 +123,7 @@
     }
     
     if (completedTasks >= 25) {
-      achievements.push({
+      achievementsList.push({
         title: 'Dedicated Learner',
         description: 'Complete 25 tasks',
         icon: '⭐',
@@ -124,8 +132,8 @@
       });
     }
     
-    if ($userStore?.totalXP >= 1000) {
-      achievements.push({
+    if ($userStore && $userStore.totalXP >= 1000) {
+      achievementsList.push({
         title: 'XP Milestone',
         description: 'Earn 1000 XP',
         icon: '💎',
@@ -134,8 +142,8 @@
       });
     }
     
-    if ($userStore?.bugsFound >= 1) {
-      achievements.push({
+    if ($userStore && ($userStore.bugsFound || 0) >= 1) {
+      achievementsList.push({
         title: 'Bug Hunter',
         description: 'Find your first bug',
         icon: '🐛',
@@ -144,8 +152,8 @@
       });
     }
     
-    if ($userStore?.totalBounty >= 100) {
-      achievements.push({
+    if ($userStore && ($userStore.totalBounty || 0) >= 100) {
+      achievementsList.push({
         title: 'First Bounty',
         description: 'Earn $100 in bounties',
         icon: '💰',
@@ -156,7 +164,7 @@
 
     // Add some locked achievements
     if (completedTasks < 50) {
-      achievements.push({
+      achievementsList.push({
         title: 'Half Century',
         description: 'Complete 50 tasks',
         icon: '🏆',
@@ -165,8 +173,8 @@
       });
     }
     
-    if ($userStore?.totalXP < 5000) {
-      achievements.push({
+    if (!$userStore || $userStore.totalXP < 5000) {
+      achievementsList.push({
         title: 'XP Master',
         description: 'Earn 5000 XP',
         icon: '👑',
@@ -175,7 +183,7 @@
       });
     }
 
-    return achievements;
+    return achievementsList;
   }
 
   async function updateUsername() {
@@ -234,6 +242,7 @@
   }
 
   $: nextLevelBenefits = $userProgress ? getLevelBenefits($userProgress.level + 1) : [];
+  $: badge = $userStore ? getAchievementBadge($userStore.totalXP) : getAchievementBadge(0);
 </script>
 
 <Navbar />
@@ -267,7 +276,6 @@
         <!-- Profile Hero Card -->
         <div class="card overflow-hidden mb-8 shadow-xl">
           <!-- Cover Background -->
-          {@const badge = getAchievementBadge($userStore.totalXP)}
           <div class={`bg-gradient-to-r ${badge.color} p-8 sm:p-12 relative overflow-hidden`}>
             <!-- Background Pattern -->
             <div class="absolute inset-0 opacity-10">
@@ -655,7 +663,7 @@
                 
                 <div class="flex justify-between">
                   <span class="text-gray-600 dark:text-gray-400">Current Phase</span>
-                  <span class={`font-medium capitalize ${getAchievementBadge($userStore.totalXP).textColor}`}>
+                  <span class={`font-medium capitalize ${badge.textColor}`}>
                     {$userStore.currentPhase}
                   </span>
                 </div>
@@ -663,7 +671,7 @@
                 <div class="flex justify-between">
                   <span class="text-gray-600 dark:text-gray-400">Success Rate</span>
                   <span class="font-medium text-gray-900 dark:text-white">
-                    {$userStore.bugsFound > 0 ? Math.round((($userStore.totalBounty || 0) / $userStore.bugsFound) * 100) / 100 : 0}%
+                    {($userStore.bugsFound || 0) > 0 ? Math.round((($userStore.totalBounty || 0) / ($userStore.bugsFound || 1)) * 100) / 100 : 0}%
                   </span>
                 </div>
               </div>

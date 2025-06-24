@@ -30,7 +30,7 @@
     phase.categories.forEach(category => {
       category.tasks.forEach(task => {
         total++;
-        if ($userStore.completedTasks.includes(task.id)) {
+        if ($userStore!.completedTasks.includes(task.id)) {
           completed++;
         }
       });
@@ -47,7 +47,7 @@
     
     const total = category.tasks.length;
     const completed = category.tasks.filter(task => 
-      $userStore.completedTasks.includes(task.id)
+      $userStore!.completedTasks.includes(task.id)
     ).length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     
@@ -109,8 +109,8 @@
     }
   }
 
-  function getCategoryIcon(categoryId: string) {
-    const icons = {
+  function getCategoryIcon(categoryId: string): string {
+    const icons: Record<string, string> = {
       'foundations': 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
       'practice-platforms': 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
       'core-vulnerabilities': 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',

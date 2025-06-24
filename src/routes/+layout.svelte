@@ -1,33 +1,91 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { authStore } from '$lib/stores/auth';
+  import { browser } from '$app/environment';
   import '../app.css';
 
   let darkMode = false;
+  let activityTimer: NodeJS.Timeout | null = null;
+  let lastActivity = Date.now();
+  const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
   onMount(() => {
+    // Initialize auth store
     authStore.initialize();
     
     // Check for saved theme preference or default to light mode
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      darkMode = true;
-      document.documentElement.classList.add('dark');
-    }
-    
-    // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if (!localStorage.getItem('theme')) {
-        darkMode = e.matches;
-        document.documentElement.classList.toggle('dark', darkMode);
+    if (browser) {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        darkMode = true;
+        document.documentElement.classList.add('dark');
       }
-    });
+      
+      // Listen for system theme changes
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e: MediaQueryListEvent) => {
+        if (!localStorage.getItem('theme')) {
+          darkMode = e.matches;
+          document.documentElement.classList.toggle('dark', darkMode);
+        }
+      };
+      
+      mediaQuery.addEventListener('change', handleChange);
+      
+      // Activity monitoring for auto-logout
+      const updateActivity = () => {
+        lastActivity = Date.now();
+      };
+      
+      const checkInactivity = () => {
+        if (Date.now() - lastActivity > INACTIVITY_TIMEOUT) {
+          authStore.signOut();
+          alert('You have been logged out due to inactivity.');
+        }
+      };
+      
+      // Monitor user activity
+      document.addEventListener('mousedown', updateActivity);
+      document.addEventListener('keydown', updateActivity);
+      document.addEventListener('touchstart', updateActivity);
+      
+      // Check for inactivity every minute
+      activityTimer = setInterval(checkInactivity, 60000);
+      
+      // Cleanup function
+      return () => {
+        mediaQuery.removeEventListener('change', handleChange);
+        document.removeEventListener('mousedown', updateActivity);
+        document.removeEventListener('keydown', updateActivity);
+        document.removeEventListener('touchstart', updateActivity);
+        if (activityTimer) {
+          clearInterval(activityTimer);
+        }
+      };
+    }
+  });
+
+  onDestroy(() => {
+    // Clean up auth subscriptions
+    authStore.cleanup();
+    
+    // Clear activity timer
+    if (activityTimer) {
+      clearInterval(activityTimer);
+    }
   });
 
   function toggleDarkMode() {
+    if (!browser) return;
+    
     darkMode = !darkMode;
     document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    
+    try {
+      localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    } catch (error) {
+      console.error('Error saving theme preference:', error);
+    }
   }
 </script>
 
@@ -35,7 +93,7 @@
   <!-- Theme toggle button -->
   <button
     on:click={toggleDarkMode}
-    class="fixed bottom-4 right-4 z-50 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+    class="fixed bottom-4 right-4 z-50 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-shadow focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
     aria-label="Toggle dark mode"
   >
     {#if darkMode}
@@ -49,5 +107,12 @@
     {/if}
   </button>
   
-  <slot />
+  <!-- Skip to main content for accessibility -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-indigo-600 text-white px-4 py-2 rounded-md">
+    Skip to main content
+  </a>
+  
+  <main id="main-content">
+    <slot />
+  </main>
 </div>
