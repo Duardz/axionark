@@ -1,7 +1,13 @@
 <script lang="ts">
-	import '../app.css';
+  import { onMount } from 'svelte';
+  import { authStore } from '$lib/stores/auth';
+  import '../app.css';
 
-	let { children } = $props();
+  onMount(() => {
+    authStore.initialize();
+  });
 </script>
 
-{@render children()}
+<div class="min-h-screen bg-gray-50">
+  <slot />
+</div>
