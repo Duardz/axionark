@@ -21,8 +21,6 @@
   let toastMessage = '';
 
   // Real-time stats
-  let todayCompleted = 0;
-  let streakDays = 0;
   let totalXPEarned = 0;
 
   onMount(() => {
@@ -45,8 +43,6 @@
   function calculateStats() {
     if (!$userStore) return;
     
-    todayCompleted = Math.floor(Math.random() * 5);
-    streakDays = Math.floor(Math.random() * 30) + 1;
     totalXPEarned = $userStore.totalXP;
   }
 
@@ -71,7 +67,6 @@
         recentlyCompleted = recentlyCompleted;
       }, 3000);
       
-      todayCompleted++;
       calculateStats();
       
       const taskElement = document.getElementById(`task-${task.id}`);
@@ -278,7 +273,7 @@
       <!-- Progress Overview -->
       {#if $userStore && $userProgress}
         <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-6 sm:p-8 mb-8 text-white shadow-2xl">
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <!-- Current Level -->
             <div class="text-center sm:text-left">
               <div class="flex items-center justify-center sm:justify-start mb-2">
@@ -309,7 +304,7 @@
               </div>
             </div>
 
-            <!-- Today's Progress -->
+            <!-- Tasks Completed -->
             <div class="text-center sm:text-left">
               <div class="flex items-center justify-center sm:justify-start mb-2">
                 <div class="p-2 bg-white/20 rounded-lg mr-3">
@@ -318,23 +313,8 @@
                   </svg>
                 </div>
                 <div>
-                  <div class="text-2xl font-bold">{todayCompleted}</div>
-                  <div class="text-sm opacity-80">Today's Tasks</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Streak -->
-            <div class="text-center sm:text-left">
-              <div class="flex items-center justify-center sm:justify-start mb-2">
-                <div class="p-2 bg-white/20 rounded-lg mr-3">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-                  </svg>
-                </div>
-                <div>
-                  <div class="text-2xl font-bold">{streakDays}</div>
-                  <div class="text-sm opacity-80">Day Streak</div>
+                  <div class="text-2xl font-bold">{$userStore.completedTasks.length}</div>
+                  <div class="text-sm opacity-80">Tasks Completed</div>
                 </div>
               </div>
             </div>

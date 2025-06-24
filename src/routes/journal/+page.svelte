@@ -33,7 +33,6 @@
   let totalEntries = 0;
   let thisWeekEntries = 0;
   let averageMood = 'good';
-  let streakDays = 0;
   let mostUsedTags: { tag: string; count: number }[] = [];
 
   // Store unsubscribe function
@@ -103,9 +102,6 @@
       else if (avgValue >= 1.5) averageMood = 'okay';
       else averageMood = 'bad';
     }
-    
-    // Calculate streak
-    streakDays = Math.min(thisWeekEntries * 2, 30);
     
     // Calculate most used tags
     const tagCounts = new Map<string, number>();
@@ -473,20 +469,20 @@
           <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Overall Mood</h3>
         </div>
 
-        <!-- Streak -->
+        <!-- Most Used Tags -->
         <div class="stat-card hover:scale-105 transition-transform duration-300">
           <div class="flex items-center justify-between mb-4">
             <div class="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl text-white">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
               </svg>
             </div>
             <div class="text-right">
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{streakDays}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">day streak</div>
+              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{mostUsedTags.length}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">unique tags</div>
             </div>
           </div>
-          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Learning Streak</h3>
+          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Tags Used</h3>
         </div>
       </div>
 
