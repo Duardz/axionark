@@ -1,4 +1,4 @@
-<!-- // src/routes/journal/+page.svelte -->
+<!-- src/routes/journal/+page.svelte -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
@@ -33,28 +33,36 @@
   let averageMood = 'good';
   let streakDays = 0;
 
+  // Store unsubscribe function
+  let authUnsubscribe: (() => void) | null = null;
+
   onMount(() => {
-    const unsubscribe = authStore.subscribe(async (user) => {
+    authUnsubscribe = authStore.subscribe(async (user) => {
       if (!user) {
         goto('/');
         return;
       }
       currentUser = user;
       loading = true;
+      
+      // Load profile and journal entries with real-time listeners
       await userStore.loadProfile(user.uid);
       await journalStore.loadEntries(user.uid);
-      calculateStats();
+      
       loading = false;
     });
 
     return () => {
-      unsubscribe();
+      if (authUnsubscribe) {
+        authUnsubscribe();
+      }
       // Cleanup store listeners
       journalStore.cleanup();
       userStore.cleanup();
     };
   });
 
+  // Reactive statement to calculate stats whenever journal store updates
   $: if ($journalStore) {
     calculateStats();
   }
@@ -133,11 +141,21 @@
     loading = true;
     try {
       if (editingEntry && editingEntry.id) {
-        // Update functionality - since we don't have update in store, we'll delete and re-add
-        // In a real app, you'd want to implement an update method in the store
-        successMessage = 'Journal updates are not yet implemented. Please delete and create a new entry.';
+        // Update existing entry
+        await journalStore.updateEntry(editingEntry.id, {
+          title: title.trim(),
+          content: content.trim(),
+          mood,
+          tags: tags.split(',').map(t => t.trim()).filter(t => t)
+        });
+        
+        // Success feedback
+        successMessage = 'Entry updated successfully! 📝';
         showSuccessToast = true;
         setTimeout(() => showSuccessToast = false, 3000);
+        
+        // Reset form
+        resetForm();
       } else {
         const entry: JournalEntry = {
           uid: currentUser.uid,
@@ -149,13 +167,15 @@
         };
         
         await journalStore.addEntry(entry);
+        
+        // Success feedback
         successMessage = 'Entry saved successfully! 📝';
         showSuccessToast = true;
         setTimeout(() => showSuccessToast = false, 3000);
+        
+        // Reset form
+        resetForm();
       }
-      
-      // Reset form
-      resetForm();
     } catch (error: any) {
       console.error('Error saving journal entry:', error);
       successMessage = error.message || 'Error saving entry. Please try again.';
@@ -172,10 +192,12 @@
     if (!confirm('Are you sure you want to delete this entry?')) return;
     
     processingEntries.add(entryId);
-    processingEntries = processingEntries;
+    processingEntries = processingEntries; // Trigger reactivity
     
     try {
       await journalStore.deleteEntry(entryId);
+      
+      // Success feedback
       successMessage = 'Entry deleted successfully!';
       showSuccessToast = true;
       setTimeout(() => showSuccessToast = false, 3000);
@@ -186,7 +208,7 @@
       setTimeout(() => showSuccessToast = false, 3000);
     } finally {
       processingEntries.delete(entryId);
-      processingEntries = processingEntries;
+      processingEntries = processingEntries; // Trigger reactivity
     }
   }
 
@@ -265,6 +287,7 @@
     return entryId ? processingEntries.has(entryId) : false;
   }
 
+  // Reactive statement for filtered entries
   $: filteredEntries = getFilteredEntries();
 </script>
 

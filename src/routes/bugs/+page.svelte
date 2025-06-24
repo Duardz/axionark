@@ -38,27 +38,36 @@
   let monthlyEarnings = 0;
   let highSeverityCount = 0;
 
+  // Store unsubscribe function
+  let authUnsubscribe: (() => void) | null = null;
+
   onMount(() => {
-    const unsubscribe = authStore.subscribe(async (user) => {
+    authUnsubscribe = authStore.subscribe(async (user) => {
       if (!user) {
         goto('/');
         return;
       }
       currentUser = user;
       loading = true;
+      
+      // Load profile and bugs with real-time listeners
       await userStore.loadProfile(user.uid);
       await bugStore.loadBugs(user.uid);
+      
       loading = false;
     });
 
     return () => {
-      unsubscribe();
+      if (authUnsubscribe) {
+        authUnsubscribe();
+      }
       // Cleanup store listeners
       bugStore.cleanup();
       userStore.cleanup();
     };
   });
 
+  // Reactive statement to calculate stats whenever bug store updates
   $: if ($bugStore) {
     calculateStats();
   }
@@ -136,7 +145,11 @@
           description: description.trim(),
           dateFound: new Date(dateFound)
         });
+        
+        // Success feedback
         successMessage = 'Bug updated successfully! 🎉';
+        showSuccessToast = true;
+        setTimeout(() => showSuccessToast = false, 3000);
       } else {
         // Add new bug
         const bug: Bug = {
@@ -151,11 +164,12 @@
         };
         
         await bugStore.addBug(bug);
+        
+        // Success feedback
         successMessage = 'Bug reported successfully! 🎉';
+        showSuccessToast = true;
+        setTimeout(() => showSuccessToast = false, 3000);
       }
-      
-      showSuccessToast = true;
-      setTimeout(() => showSuccessToast = false, 3000);
       
       // Reset form
       resetForm();
@@ -175,10 +189,12 @@
     if (!confirm('Are you sure you want to delete this bug report?')) return;
     
     processingBugs.add(bug.id);
-    processingBugs = processingBugs;
+    processingBugs = processingBugs; // Trigger reactivity
     
     try {
       await bugStore.deleteBug(bug.id, bug.uid, bug.bounty);
+      
+      // Success feedback
       successMessage = 'Bug deleted successfully!';
       showSuccessToast = true;
       setTimeout(() => showSuccessToast = false, 3000);
@@ -189,7 +205,7 @@
       setTimeout(() => showSuccessToast = false, 3000);
     } finally {
       processingBugs.delete(bug.id!);
-      processingBugs = processingBugs;
+      processingBugs = processingBugs; // Trigger reactivity
     }
   }
 
@@ -269,6 +285,7 @@
     return bugId ? processingBugs.has(bugId) : false;
   }
 
+  // Reactive statement for filtered bugs
   $: filteredBugs = getFilteredBugs();
 </script>
 

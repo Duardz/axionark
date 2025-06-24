@@ -1,4 +1,4 @@
-// src/lib/stores/user.ts - Real-time version with working undo
+// src/lib/stores/user.ts - Real-time version with working undo and update methods
 import { writable, derived, get } from 'svelte/store';
 import { db } from '$lib/firebase';
 import { 
@@ -368,6 +368,46 @@ function createJournalStore() {
         // Real-time listener will automatically update the store
         return docRef.id;
       }, 'Error adding journal entry');
+    },
+    
+    updateEntry: async (entryId: string, updates: Partial<JournalEntry>) => {
+      if (!db || !entryId) return;
+      
+      // Rate limiting
+      if (!checkRateLimit(`update_journal_${entryId}`, 10, 3600000)) {
+        throw new Error('Too many updates. Please try again later.');
+      }
+      
+      // Validate and sanitize updates
+      const sanitizedUpdates: any = { updatedAt: serverTimestamp() };
+      
+      if (updates.title !== undefined) {
+        sanitizedUpdates.title = sanitizeText(updates.title).slice(0, 200);
+      }
+      
+      if (updates.content !== undefined) {
+        sanitizedUpdates.content = sanitizeHtml(updates.content).slice(0, 5000);
+      }
+      
+      if (updates.mood !== undefined) {
+        if (validateMood(updates.mood)) {
+          sanitizedUpdates.mood = updates.mood;
+        }
+      }
+      
+      if (updates.tags !== undefined) {
+        sanitizedUpdates.tags = updates.tags.map(tag => sanitizeText(tag).slice(0, 50)).slice(0, 10);
+      }
+      
+      if (updates.date !== undefined) {
+        sanitizedUpdates.date = updates.date instanceof Date ? 
+          Timestamp.fromDate(updates.date) : updates.date;
+      }
+      
+      return handleFirestoreOperation(async () => {
+        await updateDoc(doc(db!, 'journal', entryId), sanitizedUpdates);
+        // Real-time listener will automatically update the store
+      }, 'Error updating journal entry');
     },
     
     deleteEntry: async (entryId: string) => {
