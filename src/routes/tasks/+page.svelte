@@ -46,6 +46,23 @@
     }
   }
 
+  async function uncompleteTask(task: Task) {
+    if (!currentUser || !$userStore) return;
+    
+    if (!confirm('Are you sure you want to mark this task as incomplete? You will lose the XP.')) {
+      return;
+    }
+    
+    loading = true;
+    try {
+      await userStore.uncompleteTask(currentUser.uid, task.id, task.xp);
+    } catch (error) {
+      console.error('Error uncompleting task:', error);
+    } finally {
+      loading = false;
+    }
+  }
+
   function isTaskCompleted(taskId: string) {
     return $userStore?.completedTasks.includes(taskId) || false;
   }
@@ -236,7 +253,21 @@
                     {loading ? 'Completing...' : 'Complete'}
                   </button>
                 {:else}
-                  <span class="text-sm text-green-600 font-medium">Completed</span>
+                  <div class="flex flex-col items-end space-y-2">
+                    <span class="text-sm text-green-600 font-medium flex items-center">
+                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Completed
+                    </span>
+                    <button
+                      on:click={() => uncompleteTask(task)}
+                      disabled={loading}
+                      class="text-xs text-gray-500 hover:text-red-600 transition-colors"
+                    >
+                      Mark as incomplete
+                    </button>
+                  </div>
                 {/if}
               </div>
             </div>

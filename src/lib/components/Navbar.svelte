@@ -2,7 +2,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth';
-  import { userStore } from '$lib/stores/user';
+  import { userStore, userProgress } from '$lib/stores/user';
   
   let mobileMenuOpen = false;
   
@@ -20,54 +20,82 @@
   }
 </script>
 
-<nav class="bg-white shadow-lg sticky top-0 z-50">
+<nav class="bg-black/90 backdrop-blur-lg border-b border-gray-800 sticky top-0 z-50">
   <div class="container mx-auto px-4">
     <div class="flex justify-between items-center h-16">
       <!-- Logo -->
-      <a href="/dashboard" class="flex items-center space-x-2">
-        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+      <a href="/dashboard" class="flex items-center space-x-3 group">
+        <div class="relative">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center transform rotate-12 group-hover:rotate-0 transition-transform neon-glow">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
         </div>
-        <span class="font-bold text-xl text-gray-900">BugHunter</span>
+        <span class="font-bold text-xl bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+          AXIONARK
+        </span>
       </a>
       
       <!-- Desktop Navigation -->
-      <div class="hidden md:flex items-center space-x-8">
+      <div class="hidden md:flex items-center space-x-1">
         <a 
           href="/dashboard" 
-          class={`font-medium transition-colors ${isActive('/dashboard') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'}`}
+          class={`px-4 py-2 rounded-lg font-medium transition-all ${
+            isActive('/dashboard') 
+              ? 'bg-blue-500/20 text-blue-400 neon-text' 
+              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+          }`}
         >
           Dashboard
         </a>
         <a 
           href="/roadmap" 
-          class={`font-medium transition-colors ${isActive('/roadmap') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'}`}
+          class={`px-4 py-2 rounded-lg font-medium transition-all ${
+            isActive('/roadmap') 
+              ? 'bg-blue-500/20 text-blue-400 neon-text' 
+              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+          }`}
         >
           Roadmap
         </a>
         <a 
           href="/tasks" 
-          class={`font-medium transition-colors ${isActive('/tasks') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'}`}
+          class={`px-4 py-2 rounded-lg font-medium transition-all ${
+            isActive('/tasks') 
+              ? 'bg-blue-500/20 text-blue-400 neon-text' 
+              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+          }`}
         >
           Tasks
         </a>
         <a 
           href="/journal" 
-          class={`font-medium transition-colors ${isActive('/journal') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'}`}
+          class={`px-4 py-2 rounded-lg font-medium transition-all ${
+            isActive('/journal') 
+              ? 'bg-blue-500/20 text-blue-400 neon-text' 
+              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+          }`}
         >
           Journal
         </a>
         <a 
           href="/bugs" 
-          class={`font-medium transition-colors ${isActive('/bugs') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'}`}
+          class={`px-4 py-2 rounded-lg font-medium transition-all ${
+            isActive('/bugs') 
+              ? 'bg-blue-500/20 text-blue-400 neon-text' 
+              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+          }`}
         >
           Bugs
         </a>
         <a 
           href="/profile" 
-          class={`font-medium transition-colors ${isActive('/profile') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'}`}
+          class={`px-4 py-2 rounded-lg font-medium transition-all ${
+            isActive('/profile') 
+              ? 'bg-blue-500/20 text-blue-400 neon-text' 
+              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+          }`}
         >
           Profile
         </a>
@@ -75,25 +103,34 @@
       
       <!-- User Menu -->
       <div class="hidden md:flex items-center space-x-4">
-        {#if $userStore}
-          <div class="flex items-center space-x-2">
-            <span class="text-sm text-gray-600">Level {Math.floor($userStore.totalXP / 1000) + 1}</span>
-            <div class="w-2 h-2 bg-blue-600 rounded-full"></div>
-            <span class="text-sm font-medium text-gray-900">{$userStore.username}</span>
+        {#if $userStore && $userProgress}
+          <div class="flex items-center space-x-3 text-sm">
+            <div class="text-right">
+              <div class="text-gray-400">Level {$userProgress.level}</div>
+              <div class="text-xs text-gray-500">{$userStore.totalXP} XP</div>
+            </div>
+            <div class="w-24 h-2 bg-gray-800 rounded-full overflow-hidden">
+              <div 
+                class="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
+                style="width: {$userProgress.percentage}%"
+              ></div>
+            </div>
+            <div class="h-8 w-px bg-gray-700"></div>
+            <div class="text-gray-300 font-medium">{$userStore.username}</div>
           </div>
         {/if}
         <button
           on:click={handleSignOut}
-          class="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors"
+          class="px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
         >
-          Sign Out
+          Logout
         </button>
       </div>
       
       <!-- Mobile menu button -->
       <button
         on:click={() => mobileMenuOpen = !mobileMenuOpen}
-        class="md:hidden rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none"
+        class="md:hidden rounded-lg p-2 text-gray-400 hover:text-white hover:bg-gray-800/50 transition-all"
       >
         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           {#if mobileMenuOpen}
@@ -107,62 +144,87 @@
     
     <!-- Mobile Navigation -->
     {#if mobileMenuOpen}
-      <div class="md:hidden border-t border-gray-200 py-2">
+      <div class="md:hidden border-t border-gray-800 py-4 animate-slide-up">
         <div class="space-y-1">
           <a 
             href="/dashboard" 
-            class={`block px-4 py-2 text-sm font-medium rounded-md ${isActive('/dashboard') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+            class={`block px-4 py-2 rounded-lg text-sm font-medium ${
+              isActive('/dashboard') 
+                ? 'bg-blue-500/20 text-blue-400' 
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            }`}
             on:click={() => mobileMenuOpen = false}
           >
             Dashboard
           </a>
           <a 
             href="/roadmap" 
-            class={`block px-4 py-2 text-sm font-medium rounded-md ${isActive('/roadmap') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+            class={`block px-4 py-2 rounded-lg text-sm font-medium ${
+              isActive('/roadmap') 
+                ? 'bg-blue-500/20 text-blue-400' 
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            }`}
             on:click={() => mobileMenuOpen = false}
           >
             Roadmap
           </a>
           <a 
             href="/tasks" 
-            class={`block px-4 py-2 text-sm font-medium rounded-md ${isActive('/tasks') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+            class={`block px-4 py-2 rounded-lg text-sm font-medium ${
+              isActive('/tasks') 
+                ? 'bg-blue-500/20 text-blue-400' 
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            }`}
             on:click={() => mobileMenuOpen = false}
           >
             Tasks
           </a>
           <a 
             href="/journal" 
-            class={`block px-4 py-2 text-sm font-medium rounded-md ${isActive('/journal') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+            class={`block px-4 py-2 rounded-lg text-sm font-medium ${
+              isActive('/journal') 
+                ? 'bg-blue-500/20 text-blue-400' 
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            }`}
             on:click={() => mobileMenuOpen = false}
           >
             Journal
           </a>
           <a 
             href="/bugs" 
-            class={`block px-4 py-2 text-sm font-medium rounded-md ${isActive('/bugs') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+            class={`block px-4 py-2 rounded-lg text-sm font-medium ${
+              isActive('/bugs') 
+                ? 'bg-blue-500/20 text-blue-400' 
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            }`}
             on:click={() => mobileMenuOpen = false}
           >
             Bugs
           </a>
           <a 
             href="/profile" 
-            class={`block px-4 py-2 text-sm font-medium rounded-md ${isActive('/profile') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+            class={`block px-4 py-2 rounded-lg text-sm font-medium ${
+              isActive('/profile') 
+                ? 'bg-blue-500/20 text-blue-400' 
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            }`}
             on:click={() => mobileMenuOpen = false}
           >
             Profile
           </a>
-          <div class="border-t border-gray-200 mt-2 pt-2">
+          <div class="border-t border-gray-800 mt-4 pt-4">
             {#if $userStore}
-              <div class="px-4 py-2">
-                <p class="text-sm text-gray-600">Signed in as</p>
-                <p class="text-sm font-medium text-gray-900">{$userStore.username}</p>
+              <div class="px-4 py-2 space-y-1">
+                <p class="text-sm text-gray-400">Signed in as</p>
+                <p class="text-sm font-medium text-gray-200">{$userStore.username}</p>
+                <p class="text-xs text-gray-500">Level {$userProgress.level} • {$userStore.totalXP} XP</p>
               </div>
             {/if}
             <button
               on:click={handleSignOut}
-              class="block w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-md"
+              class="block w-full text-left px-4 py-2 text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg"
             >
-              Sign Out
+              Logout
             </button>
           </div>
         </div>

@@ -91,6 +91,39 @@ function createUserStore() {
         throw error;
       }
     },
+    uncompleteTask: async (uid: string, taskId: string, xp: number) => {
+      if (!db) return;
+      
+      try {
+        const userRef = doc(db, 'users', uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as UserProfile;
+          
+          if (userData.completedTasks.includes(taskId)) {
+            const updatedTasks = userData.completedTasks.filter(id => id !== taskId);
+            const updatedXP = Math.max(0, userData.totalXP - xp);
+            
+            await updateDoc(userRef, {
+              completedTasks: updatedTasks,
+              totalXP: updatedXP
+            });
+            
+            update(profile => {
+              if (profile) {
+                profile.completedTasks = updatedTasks;
+                profile.totalXP = updatedXP;
+              }
+              return profile;
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error uncompleting task:', error);
+        throw error;
+      }
+    },
     updatePhase: async (uid: string, phase: 'beginner' | 'intermediate' | 'advanced') => {
       if (!db) return;
       
