@@ -26,18 +26,20 @@
   let searchQuery = '';
   let filterMood = 'all';
   let sortBy = 'newest';
+  let filterTags = '';
+  let dateRange = 'all';
 
   // Stats
   let totalEntries = 0;
   let thisWeekEntries = 0;
   let averageMood = 'good';
   let streakDays = 0;
+  let mostUsedTags: { tag: string; count: number }[] = [];
 
   // Store unsubscribe function
   let authUnsubscribe: (() => void) | null = null;
 
   onMount(() => {
-    // First check if we have an authenticated user
     const unsubscribeAuth = authStore.subscribe(async (user) => {
       if (!user) {
         goto('/');
@@ -45,12 +47,10 @@
       }
       
       if (!currentUser) {
-        // Only load data on initial mount
         currentUser = user;
         loading = true;
         
         try {
-          // Load profile and journal entries with real-time listeners
           await userStore.loadProfile(user.uid);
           await journalStore.loadEntries(user.uid);
         } catch (error) {
@@ -67,13 +67,12 @@
       if (authUnsubscribe) {
         authUnsubscribe();
       }
-      // Cleanup store listeners
       journalStore.cleanup();
       userStore.cleanup();
     };
   });
 
-  // Reactive statement to calculate stats whenever journal store updates
+  // Reactive statement to calculate stats
   $: if ($journalStore) {
     calculateStats();
   }
@@ -105,8 +104,23 @@
       else averageMood = 'bad';
     }
     
-    // Calculate streak (mock for now - you might want to implement proper streak tracking)
+    // Calculate streak
     streakDays = Math.min(thisWeekEntries * 2, 30);
+    
+    // Calculate most used tags
+    const tagCounts = new Map<string, number>();
+    $journalStore.forEach(entry => {
+      if (entry.tags) {
+        entry.tags.forEach(tag => {
+          tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+        });
+      }
+    });
+    
+    mostUsedTags = Array.from(tagCounts.entries())
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
   }
 
   function getFilteredEntries() {
@@ -127,15 +141,60 @@
       );
     }
     
+    // Apply tag filter
+    if (filterTags.trim()) {
+      const tagQuery = filterTags.toLowerCase();
+      filtered = filtered.filter(entry =>
+        entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(tagQuery))
+      );
+    }
+    
+    // Apply date range filter
+    if (dateRange !== 'all') {
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (dateRange) {
+        case 'today':
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      
+      filtered = filtered.filter(entry => {
+        const entryDate = firebaseTimestampToDate(entry.date);
+        return entryDate >= startDate;
+      });
+    }
+    
     // Apply sorting
     filtered.sort((a, b) => {
       const dateA = firebaseTimestampToDate(a.date).getTime();
       const dateB = firebaseTimestampToDate(b.date).getTime();
       
-      if (sortBy === 'newest') return dateB - dateA;
-      if (sortBy === 'oldest') return dateA - dateB;
-      if (sortBy === 'title') return a.title.localeCompare(b.title);
-      return dateB - dateA;
+      switch (sortBy) {
+        case 'newest':
+          return dateB - dateA;
+        case 'oldest':
+          return dateA - dateB;
+        case 'title':
+          return a.title.localeCompare(b.title);
+        case 'mood':
+          const moodOrder = { great: 0, good: 1, okay: 2, bad: 3 };
+          const moodA = a.mood ? moodOrder[a.mood] : 4;
+          const moodB = b.mood ? moodOrder[b.mood] : 4;
+          return moodA - moodB;
+        default:
+          return dateB - dateA;
+      }
     });
     
     return filtered;
@@ -152,7 +211,6 @@
     loading = true;
     try {
       if (editingEntry && editingEntry.id) {
-        // Update existing entry
         await journalStore.updateEntry(editingEntry.id, {
           title: title.trim(),
           content: content.trim(),
@@ -160,12 +218,10 @@
           tags: tags.split(',').map(t => t.trim()).filter(t => t)
         });
         
-        // Success feedback
         successMessage = 'Entry updated successfully! 📝';
         showSuccessToast = true;
         setTimeout(() => showSuccessToast = false, 3000);
         
-        // Reset form
         resetForm();
       } else {
         const entry: JournalEntry = {
@@ -179,12 +235,10 @@
         
         await journalStore.addEntry(entry);
         
-        // Success feedback
         successMessage = 'Entry saved successfully! 📝';
         showSuccessToast = true;
         setTimeout(() => showSuccessToast = false, 3000);
         
-        // Reset form
         resetForm();
       }
     } catch (error: any) {
@@ -203,12 +257,11 @@
     if (!confirm('Are you sure you want to delete this entry?')) return;
     
     processingEntries.add(entryId);
-    processingEntries = processingEntries; // Trigger reactivity
+    processingEntries = processingEntries;
     
     try {
       await journalStore.deleteEntry(entryId);
       
-      // Success feedback
       successMessage = 'Entry deleted successfully!';
       showSuccessToast = true;
       setTimeout(() => showSuccessToast = false, 3000);
@@ -219,7 +272,7 @@
       setTimeout(() => showSuccessToast = false, 3000);
     } finally {
       processingEntries.delete(entryId);
-      processingEntries = processingEntries; // Trigger reactivity
+      processingEntries = processingEntries;
     }
   }
 
@@ -239,6 +292,14 @@
     tags = '';
     showForm = false;
     editingEntry = null;
+  }
+
+  function clearFilters() {
+    searchQuery = '';
+    filterMood = 'all';
+    sortBy = 'newest';
+    filterTags = '';
+    dateRange = 'all';
   }
 
   function getMoodEmoji(mood: string) {
@@ -298,24 +359,31 @@
     return entryId ? processingEntries.has(entryId) : false;
   }
 
-  // Force re-computation of filtered entries when journal store updates
-  let storeVersion = 0;
-  $: if ($journalStore) {
-    storeVersion += 1;
+  // Force filter update
+  function applyFilters() {
+    // Force recalculation by reassigning
+    filteredEntries = $journalStore ? getFilteredEntries() : [];
   }
+
+  // Reactive statements
+  $: filteredEntries = $journalStore ? getFilteredEntries() : [];
+  $: hasActiveFilters = searchQuery || filterMood !== 'all' || sortBy !== 'newest' || filterTags || dateRange !== 'all';
   
-  // Reactive statement for filtered entries - will update when store or version changes
-  $: filteredEntries = storeVersion && $journalStore ? getFilteredEntries() : [];
+  // Manual trigger for filters when values change
+  $: if ($journalStore) {
+    searchQuery, filterMood, sortBy, filterTags, dateRange;
+    applyFilters();
+  }
 </script>
 
 <Navbar />
 
 <!-- Success Toast -->
 {#if showSuccessToast}
-  <div class="toast {successMessage.includes('Error') || successMessage.includes('fill') || successMessage.includes('not yet implemented') ? 'toast-error' : 'toast-success'} animate-slide-up">
+  <div class="toast {successMessage.includes('Error') || successMessage.includes('fill') ? 'toast-error' : 'toast-success'} animate-slide-up">
     <div class="flex items-center">
-      <svg class="w-5 h-5 {successMessage.includes('Error') || successMessage.includes('fill') || successMessage.includes('not yet implemented') ? 'text-red-600' : 'text-green-600'} mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        {#if successMessage.includes('Error') || successMessage.includes('fill') || successMessage.includes('not yet implemented')}
+      <svg class="w-5 h-5 {successMessage.includes('Error') || successMessage.includes('fill') ? 'text-red-600' : 'text-green-600'} mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {#if successMessage.includes('Error') || successMessage.includes('fill')}
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         {:else}
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -424,7 +492,7 @@
 
       <!-- Entry Form -->
       {#if showForm}
-        <div class="card p-6 mb-8 animate-slide-up shadow-xl">
+        <div class="card p-6 mb-8 animate-slide-up shadow-xl bg-white dark:bg-gray-800">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
             <div class="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg text-white mr-3">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -546,17 +614,31 @@
       {/if}
 
       <!-- Filters & Search -->
-      <div class="card p-6 mb-8">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
-          </svg>
-          Search & Filter
-        </h3>
+      <div class="card p-6 mb-8 bg-white dark:bg-gray-800 shadow-lg">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+            <svg class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+            </svg>
+            Search & Filter
+          </h3>
+          
+          {#if hasActiveFilters}
+            <button
+              on:click={clearFilters}
+              class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center"
+            >
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Clear all
+            </button>
+          {/if}
+        </div>
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <!-- Search -->
-          <div class="lg:col-span-2">
+          <div class="lg:col-span-2 xl:col-span-2">
             <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Search Entries
             </label>
@@ -571,7 +653,7 @@
                 type="text"
                 bind:value={searchQuery}
                 placeholder="Search by title, content, or tags..."
-                class="input pl-10"
+                class="input pl-10 bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
               />
             </div>
           </div>
@@ -584,7 +666,7 @@
             <select
               id="mood-filter"
               bind:value={filterMood}
-              class="input"
+              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
             >
               <option value="all">All Moods</option>
               <option value="great">😄 Great</option>
@@ -602,18 +684,85 @@
             <select
               id="sort"
               bind:value={sortBy}
-              class="input"
+              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
               <option value="title">Title A-Z</option>
+              <option value="mood">Mood</option>
             </select>
+          </div>
+
+          <!-- Date Range -->
+          <div>
+            <label for="date-range" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Date Range
+            </label>
+            <select
+              id="date-range"
+              bind:value={dateRange}
+              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+              <option value="year">Last Year</option>
+            </select>
+          </div>
+
+          <!-- Tag Filter -->
+          <div class="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+            <label for="tag-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Filter by Tag
+            </label>
+            <input
+              id="tag-filter"
+              type="text"
+              bind:value={filterTags}
+              placeholder="Enter tag to filter..."
+              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
+            />
           </div>
         </div>
 
-        <!-- Results Summary -->
-        <div class="mt-4 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg inline-block">
-          Showing {filteredEntries.length} of {$journalStore.length} entries
+        <!-- Results Summary & Popular Tags -->
+        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                Showing <span class="font-medium text-gray-900 dark:text-white">{filteredEntries.length}</span> of <span class="font-medium">{$journalStore.length}</span> entries
+              </div>
+              
+              <!-- Apply Filters Button -->
+              <button
+                on:click={applyFilters}
+                class="btn btn-primary btn-sm"
+              >
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Apply Filters
+              </button>
+            </div>
+            
+            {#if mostUsedTags.length > 0}
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Popular tags:</span>
+                {#each mostUsedTags as tagInfo}
+                  <button
+                    on:click={() => { filterTags = tagInfo.tag; applyFilters(); }}
+                    class="badge bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/30 cursor-pointer transition-colors"
+                  >
+                    #{tagInfo.tag} ({tagInfo.count})
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
         </div>
       </div>
 
@@ -623,9 +772,9 @@
           <div class="spinner"></div>
         </div>
       {:else if filteredEntries.length === 0}
-        <div class="card p-12 text-center">
-          <div class="w-20 h-20 mx-auto mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-full">
-            <svg class="w-12 h-12 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="card p-12 text-center bg-white dark:bg-gray-800">
+          <div class="w-20 h-20 mx-auto mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-full">
+            <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
@@ -646,11 +795,7 @@
             </button>
           {:else}
             <button
-              on:click={() => {
-                searchQuery = '';
-                filterMood = 'all';
-                sortBy = 'newest';
-              }}
+              on:click={clearFilters}
               class="btn btn-primary"
             >
               Clear Filters
@@ -660,11 +805,11 @@
       {:else}
         <div class="space-y-6">
           {#each filteredEntries as entry, index (entry.id)}
-            <article class="card p-6 hover:shadow-xl transition-all duration-300 group {isProcessing(entry.id) ? 'opacity-50' : ''}" style="animation-delay: {index * 100}ms;">
+            <article class="card p-6 hover:shadow-xl transition-all duration-300 group bg-white dark:bg-gray-800 {isProcessing(entry.id) ? 'opacity-50' : ''}" style="animation-delay: {index * 100}ms;">
               <!-- Entry Header -->
               <header class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                 <div class="flex-1 min-w-0">
-                  <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-2">
+                  <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-2">
                     {entry.title}
                   </h2>
                   <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
@@ -693,7 +838,7 @@
                     <button
                       on:click={() => editEntry(entry)}
                       disabled={isProcessing(entry.id)}
-                      class="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
+                      class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                       title="Edit entry"
                       aria-label="Edit journal entry"
                     >
@@ -731,9 +876,12 @@
               {#if entry.tags && entry.tags.length > 0}
                 <footer class="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
                   {#each entry.tags as tag}
-                    <span class="badge bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                    <button
+                      on:click={() => { filterTags = tag; applyFilters(); }}
+                      class="badge bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors"
+                    >
                       #{tag}
-                    </span>
+                    </button>
                   {/each}
                 </footer>
               {/if}

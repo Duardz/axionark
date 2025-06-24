@@ -23,12 +23,14 @@
   let bounty = 0;
   let status: 'reported' | 'triaged' | 'resolved' | 'duplicate' | 'rejected' = 'reported';
   let description = '';
-  let dateFound = new Date().toISOString().split('T')[0]; // For date input
+  let dateFound = new Date().toISOString().split('T')[0];
 
   // Filter states
   let filterSeverity = 'all';
   let filterStatus = 'all';
   let searchQuery = '';
+  let sortBy = 'newest';
+  let dateRange = 'all';
 
   // Stats
   let totalBounty = 0;
@@ -42,7 +44,6 @@
   let authUnsubscribe: (() => void) | null = null;
 
   onMount(() => {
-    // First check if we have an authenticated user
     const unsubscribeAuth = authStore.subscribe(async (user) => {
       if (!user) {
         goto('/');
@@ -50,12 +51,10 @@
       }
       
       if (!currentUser) {
-        // Only load data on initial mount
         currentUser = user;
         loading = true;
         
         try {
-          // Load profile and bugs with real-time listeners
           await userStore.loadProfile(user.uid);
           await bugStore.loadBugs(user.uid);
         } catch (error) {
@@ -72,13 +71,12 @@
       if (authUnsubscribe) {
         authUnsubscribe();
       }
-      // Cleanup store listeners
       bugStore.cleanup();
       userStore.cleanup();
     };
   });
 
-  // Reactive statement to calculate stats whenever bug store updates
+  // Reactive statement to calculate stats
   $: if ($bugStore) {
     calculateStats();
   }
@@ -89,7 +87,7 @@
     resolvedBugs = $bugStore.filter(bug => bug.status === 'resolved').length;
     avgBounty = totalBugs > 0 ? Math.round(totalBounty / totalBugs) : 0;
     
-    // Calculate monthly earnings (last 30 days)
+    // Calculate monthly earnings
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
@@ -128,11 +126,52 @@
       );
     }
     
-    return filtered.sort((a, b) => {
-      const dateA = firebaseTimestampToDate(a.dateFound);
-      const dateB = firebaseTimestampToDate(b.dateFound);
-      return dateB.getTime() - dateA.getTime();
+    // Apply date range filter
+    if (dateRange !== 'all') {
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (dateRange) {
+        case 'today':
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      
+      filtered = filtered.filter(bug => {
+        const bugDate = firebaseTimestampToDate(bug.dateFound);
+        return bugDate >= startDate;
+      });
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return firebaseTimestampToDate(b.dateFound).getTime() - firebaseTimestampToDate(a.dateFound).getTime();
+        case 'oldest':
+          return firebaseTimestampToDate(a.dateFound).getTime() - firebaseTimestampToDate(b.dateFound).getTime();
+        case 'highest-bounty':
+          return b.bounty - a.bounty;
+        case 'lowest-bounty':
+          return a.bounty - b.bounty;
+        case 'severity':
+          const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+          return severityOrder[a.severity] - severityOrder[b.severity];
+        default:
+          return firebaseTimestampToDate(b.dateFound).getTime() - firebaseTimestampToDate(a.dateFound).getTime();
+      }
     });
+    
+    return filtered;
   }
 
   async function handleSubmit() {
@@ -146,7 +185,6 @@
     loading = true;
     try {
       if (editingBug && editingBug.id) {
-        // Update existing bug
         await bugStore.updateBug(editingBug.id, {
           type: type.trim(),
           severity,
@@ -157,12 +195,10 @@
           dateFound: new Date(dateFound)
         });
         
-        // Success feedback
         successMessage = 'Bug updated successfully! 🎉';
         showSuccessToast = true;
         setTimeout(() => showSuccessToast = false, 3000);
       } else {
-        // Add new bug
         const bug: Bug = {
           uid: currentUser.uid,
           type: type.trim(),
@@ -176,13 +212,11 @@
         
         await bugStore.addBug(bug);
         
-        // Success feedback
         successMessage = 'Bug reported successfully! 🎉';
         showSuccessToast = true;
         setTimeout(() => showSuccessToast = false, 3000);
       }
       
-      // Reset form
       resetForm();
     } catch (error: any) {
       console.error('Error saving bug:', error);
@@ -200,12 +234,11 @@
     if (!confirm('Are you sure you want to delete this bug report?')) return;
     
     processingBugs.add(bug.id);
-    processingBugs = processingBugs; // Trigger reactivity
+    processingBugs = processingBugs;
     
     try {
       await bugStore.deleteBug(bug.id, bug.uid, bug.bounty);
       
-      // Success feedback
       successMessage = 'Bug deleted successfully!';
       showSuccessToast = true;
       setTimeout(() => showSuccessToast = false, 3000);
@@ -216,7 +249,7 @@
       setTimeout(() => showSuccessToast = false, 3000);
     } finally {
       processingBugs.delete(bug.id!);
-      processingBugs = processingBugs; // Trigger reactivity
+      processingBugs = processingBugs;
     }
   }
 
@@ -229,7 +262,6 @@
     status = bug.status;
     description = bug.description || '';
     
-    // Format date for input
     const bugDate = firebaseTimestampToDate(bug.dateFound);
     dateFound = bugDate.toISOString().split('T')[0];
     
@@ -246,6 +278,14 @@
     dateFound = new Date().toISOString().split('T')[0];
     showForm = false;
     editingBug = null;
+  }
+
+  function clearFilters() {
+    searchQuery = '';
+    filterSeverity = 'all';
+    filterStatus = 'all';
+    sortBy = 'newest';
+    dateRange = 'all';
   }
 
   function getSeverityColor(severity: string) {
@@ -281,7 +321,11 @@
 
   function formatDate(date: any) {
     const d = firebaseTimestampToDate(date);
-    return d.toLocaleDateString();
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   }
 
   function formatCurrency(amount: number) {
@@ -296,14 +340,21 @@
     return bugId ? processingBugs.has(bugId) : false;
   }
 
-  // Force re-computation of filtered bugs when bug store updates
-  let storeVersion = 0;
-  $: if ($bugStore) {
-    storeVersion += 1;
+  // Force filter update
+  function applyFilters() {
+    // Force recalculation by reassigning
+    filteredBugs = $bugStore ? getFilteredBugs() : [];
   }
+
+  // Reactive statements
+  $: filteredBugs = $bugStore ? getFilteredBugs() : [];
+  $: hasActiveFilters = searchQuery || filterSeverity !== 'all' || filterStatus !== 'all' || sortBy !== 'newest' || dateRange !== 'all';
   
-  // Reactive statement for filtered bugs - will update when store or version changes
-  $: filteredBugs = storeVersion && $bugStore ? getFilteredBugs() : [];
+  // Manual trigger for filters when values change
+  $: if ($bugStore) {
+    searchQuery, filterSeverity, filterStatus, sortBy, dateRange;
+    applyFilters();
+  }
 </script>
 
 <Navbar />
@@ -424,7 +475,7 @@
 
       <!-- Bug Form -->
       {#if showForm}
-        <div class="card p-6 mb-8 animate-slide-up shadow-xl">
+        <div class="card p-6 mb-8 animate-slide-up shadow-xl bg-white dark:bg-gray-800">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
             <div class="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg text-white mr-3">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -577,17 +628,31 @@
       {/if}
 
       <!-- Filters -->
-      <div class="card p-6 mb-8">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
-          </svg>
-          Filters & Search
-        </h3>
+      <div class="card p-6 mb-8 bg-white dark:bg-gray-800 shadow-lg">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+            <svg class="w-5 h-5 mr-2 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+            </svg>
+            Filters & Search
+          </h3>
+          
+          {#if hasActiveFilters}
+            <button
+              on:click={clearFilters}
+              class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium flex items-center"
+            >
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Clear all
+            </button>
+          {/if}
+        </div>
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <!-- Search -->
-          <div class="lg:col-span-2">
+          <div class="lg:col-span-2 xl:col-span-2">
             <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Search Bugs
             </label>
@@ -602,7 +667,7 @@
                 type="text"
                 bind:value={searchQuery}
                 placeholder="Search by type, program, or description..."
-                class="input pl-10"
+                class="input pl-10 bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
               />
             </div>
           </div>
@@ -615,7 +680,7 @@
             <select
               id="severity-filter"
               bind:value={filterSeverity}
-              class="input"
+              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
             >
               <option value="all">All Severities</option>
               <option value="critical">Critical</option>
@@ -633,7 +698,7 @@
             <select
               id="status-filter"
               bind:value={filterStatus}
-              class="input"
+              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
             >
               <option value="all">All Statuses</option>
               <option value="reported">Reported</option>
@@ -643,11 +708,76 @@
               <option value="rejected">Rejected</option>
             </select>
           </div>
+
+          <!-- Sort By -->
+          <div>
+            <label for="sort-by" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Sort By
+            </label>
+            <select
+              id="sort-by"
+              bind:value={sortBy}
+              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="highest-bounty">Highest Bounty</option>
+              <option value="lowest-bounty">Lowest Bounty</option>
+              <option value="severity">Severity</option>
+            </select>
+          </div>
+
+          <!-- Date Range -->
+          <div class="lg:col-span-2 xl:col-span-1">
+            <label for="date-range" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Date Range
+            </label>
+            <select
+              id="date-range"
+              bind:value={dateRange}
+              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+              <option value="year">Last Year</option>
+            </select>
+          </div>
         </div>
 
         <!-- Results Summary -->
-        <div class="mt-4 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg inline-block">
-          Showing {filteredBugs.length} of {$bugStore.length} bugs
+        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Showing <span class="font-medium text-gray-900 dark:text-white">{filteredBugs.length}</span> of <span class="font-medium">{$bugStore.length}</span> bugs
+              </div>
+              
+              <!-- Apply Filters Button -->
+              <button
+                on:click={applyFilters}
+                class="btn btn-primary btn-sm"
+              >
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Apply Filters
+              </button>
+            </div>
+            
+            {#if filteredBugs.length > 0}
+              <div class="text-sm text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20 px-4 py-2 rounded-lg inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Total: <span class="font-medium">{formatCurrency(filteredBugs.reduce((sum, bug) => sum + bug.bounty, 0))}</span>
+              </div>
+            {/if}
+          </div>
         </div>
       </div>
 
@@ -657,9 +787,9 @@
           <div class="spinner"></div>
         </div>
       {:else if filteredBugs.length === 0}
-        <div class="card p-12 text-center">
-          <div class="w-20 h-20 mx-auto mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-full">
-            <svg class="w-12 h-12 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="card p-12 text-center bg-white dark:bg-gray-800">
+          <div class="w-20 h-20 mx-auto mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-full">
+            <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
@@ -680,11 +810,7 @@
             </button>
           {:else}
             <button
-              on:click={() => {
-                searchQuery = '';
-                filterSeverity = 'all';
-                filterStatus = 'all';
-              }}
+              on:click={clearFilters}
               class="btn btn-primary"
             >
               Clear Filters
@@ -695,7 +821,7 @@
         <div class="space-y-4">
           {#each filteredBugs as bug, index (bug.id)}
             <div 
-              class="card p-6 hover:shadow-xl transition-all duration-300 group {isProcessing(bug.id) ? 'opacity-50' : ''}" 
+              class="card p-6 hover:shadow-xl transition-all duration-300 group bg-white dark:bg-gray-800 {isProcessing(bug.id) ? 'opacity-50' : ''}" 
               style="animation-delay: {index * 50}ms;"
             >
               <div class="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -703,7 +829,7 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
                     <div class="flex-1">
-                      <h3 class="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      <h3 class="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                         {bug.type}
                       </h3>
                       <p class="text-gray-600 dark:text-gray-400 font-medium">{bug.program}</p>

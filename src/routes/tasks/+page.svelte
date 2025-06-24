@@ -1,4 +1,4 @@
-<!-- // src/routes/tasks/+page.svelte -->
+<!-- src/routes/tasks/+page.svelte -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
@@ -14,7 +14,7 @@
   let showCompleted = true;
   let currentUser: any = null;
   let searchQuery = '';
-  let processingTasks = new Set<string>(); // Changed from completingTasks
+  let processingTasks = new Set<string>();
   let recentlyCompleted = new Set<string>();
   let showSuccessToast = false;
   let lastCompletedTask: Task | null = null;
@@ -38,7 +38,6 @@
 
     return () => {
       unsubscribe();
-      // Cleanup store listeners
       userStore.cleanup();
     };
   });
@@ -46,32 +45,24 @@
   function calculateStats() {
     if (!$userStore) return;
     
-    // Calculate today's completed tasks (mock - you might want to track timestamps)
     todayCompleted = Math.floor(Math.random() * 5);
-    
-    // Calculate streak (mock)
     streakDays = Math.floor(Math.random() * 30) + 1;
-    
-    // Calculate total XP earned
     totalXPEarned = $userStore.totalXP;
   }
 
   async function completeTask(task: Task) {
     if (!currentUser || !$userStore || processingTasks.has(task.id)) return;
     
-    // Add to processing set
     processingTasks.add(task.id);
-    processingTasks = processingTasks; // Trigger reactivity
+    processingTasks = processingTasks;
     
     try {
       await userStore.completeTask(currentUser.uid, task.id, task.xp);
       
-      // Add to recently completed for animation
       recentlyCompleted.add(task.id);
-      recentlyCompleted = recentlyCompleted; // Trigger reactivity
+      recentlyCompleted = recentlyCompleted;
       lastCompletedTask = task;
       
-      // Show success toast
       toastMessage = `Task Completed! 🎉 +${task.xp} XP earned`;
       showSuccessToast = true;
       setTimeout(() => {
@@ -80,11 +71,9 @@
         recentlyCompleted = recentlyCompleted;
       }, 3000);
       
-      // Update stats
       todayCompleted++;
       calculateStats();
       
-      // Trigger task completion animation
       const taskElement = document.getElementById(`task-${task.id}`);
       if (taskElement) {
         taskElement.classList.add('task-completed');
@@ -99,34 +88,24 @@
       showSuccessToast = true;
       setTimeout(() => showSuccessToast = false, 3000);
     } finally {
-      // Remove from processing set
       processingTasks.delete(task.id);
-      processingTasks = processingTasks; // Trigger reactivity
+      processingTasks = processingTasks;
     }
   }
 
   async function uncompleteTask(task: Task) {
     if (!currentUser || !$userStore || processingTasks.has(task.id)) return;
     
-    console.log('Uncompleting task:', { 
-      currentUser: currentUser.uid, 
-      taskId: task.id, 
-      xp: task.xp,
-      userStore: $userStore 
-    });
-    
     if (!confirm('Are you sure you want to mark this task as incomplete? You will lose the XP.')) {
       return;
     }
     
-    // Add to processing set
     processingTasks.add(task.id);
-    processingTasks = processingTasks; // Trigger reactivity
+    processingTasks = processingTasks;
     
     try {
       await userStore.uncompleteTask(currentUser.uid, task.id, task.xp);
       
-      // Show success toast
       toastMessage = `Task marked incomplete. -${task.xp} XP`;
       showSuccessToast = true;
       setTimeout(() => showSuccessToast = false, 3000);
@@ -139,14 +118,12 @@
       showSuccessToast = true;
       setTimeout(() => showSuccessToast = false, 3000);
     } finally {
-      // Remove from processing set
       processingTasks.delete(task.id);
-      processingTasks = processingTasks; // Trigger reactivity
+      processingTasks = processingTasks;
     }
   }
 
   function isTaskCompleted(taskId: string) {
-    // Don't show as completed if currently processing
     if (processingTasks.has(taskId)) {
       return false;
     }
@@ -188,7 +165,6 @@
     }
 
     return allTasks.sort((a, b) => {
-      // Sort completed tasks to the bottom if showing completed
       if (showCompleted) {
         const aCompleted = isTaskCompleted(a.id);
         const bCompleted = isTaskCompleted(b.id);
@@ -241,21 +217,40 @@
     return icons[categoryId] || 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2';
   }
 
-  // Reactive statements - these will update automatically when dependencies change
+  function clearFilters() {
+    searchQuery = '';
+    selectedCategory = 'all';
+    selectedPhase = 'all';
+    showCompleted = true;
+  }
+
+  // Force filter update
+  function applyFilters() {
+    // Force recalculation by reassigning
+    filteredTasks = $userStore ? getFilteredTasks() : [];
+  }
+
+  // Reactive statements
   $: filteredTasks = $userStore ? getFilteredTasks() : [];
   $: allCategories = getAllCategories();
   $: completedCount = $userStore ? filteredTasks.filter(task => isTaskCompleted(task.id)).length : 0;
   $: totalFilteredTasks = filteredTasks.length;
   $: completionPercentage = totalFilteredTasks > 0 ? Math.round((completedCount / totalFilteredTasks) * 100) : 0;
+  
+  // Manual trigger for filters when values change
+  $: if ($userStore) {
+    searchQuery, selectedCategory, selectedPhase, showCompleted;
+    applyFilters();
+  }
 </script>
 
 <Navbar />
 
 <!-- Success Toast -->
 {#if showSuccessToast}
-  <div class="toast {toastMessage.includes('Error') ? 'toast-error' : 'toast-success'} animate-slide-up">
+  <div class="toast {toastMessage.includes('Error') || toastMessage.includes('incomplete') ? 'toast-error' : 'toast-success'} animate-slide-up">
     <div class="flex items-center">
-      <svg class="w-5 h-5 {toastMessage.includes('Error') ? 'text-red-600' : 'text-green-600'} mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-5 h-5 {toastMessage.includes('Error') || toastMessage.includes('incomplete') ? 'text-red-600' : 'text-green-600'} mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         {#if toastMessage.includes('Error')}
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         {:else}
@@ -362,13 +357,27 @@
       {/if}
 
       <!-- Filters Section -->
-      <div class="card p-6 mb-8">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
-          </svg>
-          Filters & Search
-        </h3>
+      <div class="card p-6 mb-8 bg-white dark:bg-gray-800 shadow-lg">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+            <svg class="w-5 h-5 mr-2 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
+            </svg>
+            Filters & Search
+          </h3>
+          
+          {#if searchQuery || selectedCategory !== 'all' || selectedPhase !== 'all' || !showCompleted}
+            <button
+              on:click={clearFilters}
+              class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium flex items-center"
+            >
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Clear all
+            </button>
+          {/if}
+        </div>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <!-- Search -->
@@ -387,7 +396,7 @@
                 type="text"
                 bind:value={searchQuery}
                 placeholder="Search by title, description, or category..."
-                class="input pl-10"
+                class="input pl-10 bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
               />
             </div>
           </div>
@@ -400,7 +409,7 @@
             <select
               id="phase-filter"
               bind:value={selectedPhase}
-              class="input"
+              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
             >
               <option value="all">All Phases</option>
               <option value="beginner">🌱 Beginner</option>
@@ -417,7 +426,7 @@
             <select
               id="category-filter"
               bind:value={selectedCategory}
-              class="input"
+              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
             >
               <option value="all">All Categories</option>
               {#each allCategories as category}
@@ -427,20 +436,50 @@
           </div>
         </div>
 
-        <!-- Toggle Options -->
-        <div class="mt-4 flex flex-wrap items-center gap-4">
-          <label class="flex items-center cursor-pointer bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-            <input
-              type="checkbox"
-              bind:checked={showCompleted}
-              class="w-4 h-4 text-indigo-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 focus:ring-2"
-            />
-            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Show completed tasks</span>
-          </label>
-          
-          <!-- Results Summary -->
-          <div class="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg update-indicator">
-            Showing {totalFilteredTasks} tasks • {completedCount} completed ({completionPercentage}%)
+        <!-- Toggle Options & Results -->
+        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <label class="flex items-center cursor-pointer bg-gray-50 dark:bg-gray-700 px-4 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-600 transition-all">
+                <input
+                  type="checkbox"
+                  bind:checked={showCompleted}
+                  on:change={applyFilters}
+                  class="w-4 h-4 text-indigo-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 focus:ring-2"
+                />
+                <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Show completed tasks</span>
+              </label>
+              
+              <!-- Apply Filters Button -->
+              <button
+                on:click={applyFilters}
+                class="btn btn-primary btn-sm"
+              >
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Apply Filters
+              </button>
+            </div>
+            
+            <!-- Results Summary -->
+            <div class="flex items-center gap-3">
+              <div class="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span class="font-medium">{totalFilteredTasks}</span> tasks
+              </div>
+              
+              {#if completedCount > 0}
+                <div class="text-sm text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20 px-4 py-2 rounded-lg flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span class="font-medium">{completedCount}</span> completed ({completionPercentage}%)
+                </div>
+              {/if}
+            </div>
           </div>
         </div>
       </div>
@@ -448,9 +487,9 @@
       <!-- Tasks List -->
       <div class="space-y-4">
         {#if filteredTasks.length === 0}
-          <div class="card p-12 text-center">
-            <div class="w-20 h-20 mx-auto mb-6 p-4 bg-gray-100 dark:bg-gray-800 rounded-full">
-              <svg class="w-12 h-12 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="card p-12 text-center bg-white dark:bg-gray-800">
+            <div class="w-20 h-20 mx-auto mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
@@ -459,12 +498,7 @@
               {searchQuery ? 'Try adjusting your search terms or filters' : 'Try enabling completed tasks or changing your filters'}
             </p>
             <button
-              on:click={() => {
-                searchQuery = '';
-                selectedCategory = 'all';
-                selectedPhase = 'all';
-                showCompleted = true;
-              }}
+              on:click={clearFilters}
               class="btn btn-primary"
             >
               Clear Filters
@@ -476,7 +510,7 @@
             {@const isProcessing = isTaskProcessing(task.id)}
             <div
               id="task-{task.id}"
-              class="card p-6 hover:shadow-xl transition-all duration-300 group {recentlyCompleted.has(task.id) ? 'ring-2 ring-green-500' : ''}"
+              class="card p-6 hover:shadow-xl transition-all duration-300 group bg-white dark:bg-gray-800 {recentlyCompleted.has(task.id) ? 'ring-2 ring-green-500' : ''}"
               class:opacity-75={completed && !isProcessing}
               class:opacity-50={isProcessing}
               style="animation-delay: {index * 50}ms;"
@@ -505,8 +539,8 @@
                   </div>
                   
                   <!-- Category Icon -->
-                  <div class="p-3 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-xl">
-                    <svg class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="p-3 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-xl">
+                    <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={getCategoryIcon(task.category)} />
                     </svg>
                   </div>
@@ -532,7 +566,7 @@
                           {#if task.phase === 'beginner'}🌱{:else if task.phase === 'intermediate'}🚀{:else}👑{/if}
                           {task.phase}
                         </span>
-                        <span class="badge bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                        <span class="badge bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
                           {task.category.replace('-', ' ')}
                         </span>
                       </div>
@@ -621,7 +655,6 @@
 </div>
 
 <style>
-  /* Add smooth transitions for completed state */
   .task-completed {
     animation: taskComplete 0.6s ease-out;
   }

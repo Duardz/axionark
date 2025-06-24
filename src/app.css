@@ -535,12 +535,26 @@ body {
 
 .toast-success {
   border-color: var(--success);
-  background: var(--success-light);
+  background: white;
+  color: var(--text-primary);
+  border-left: 4px solid var(--success);
+}
+
+.dark .toast-success {
+  background: var(--gray-800);
+  color: var(--text-primary);
 }
 
 .toast-error {
   border-color: var(--error);
-  background: var(--error-light);
+  background: white;
+  color: var(--text-primary);
+  border-left: 4px solid var(--error);
+}
+
+.dark .toast-error {
+  background: var(--gray-800);
+  color: var(--text-primary);
 }
 
 /* Mobile optimizations */
