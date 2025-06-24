@@ -54,18 +54,23 @@
     if (!currentUser || !$userStore || completingTasks.has(task.id)) return;
     
     completingTasks.add(task.id);
-    loading = true;
+    completingTasks = completingTasks; // Trigger reactivity
     
     try {
       await userStore.completeTask(currentUser.uid, task.id, task.xp);
       
       // Add to recently completed for animation
       recentlyCompleted.add(task.id);
+      recentlyCompleted = recentlyCompleted; // Trigger reactivity
       lastCompletedTask = task;
       
       // Show success toast
       showSuccessToast = true;
-      setTimeout(() => showSuccessToast = false, 3000);
+      setTimeout(() => {
+        showSuccessToast = false;
+        recentlyCompleted.delete(task.id);
+        recentlyCompleted = recentlyCompleted;
+      }, 3000);
       
       // Update stats
       todayCompleted++;
@@ -77,7 +82,6 @@
         taskElement.classList.add('task-completed');
         setTimeout(() => {
           taskElement.classList.remove('task-completed');
-          recentlyCompleted.delete(task.id);
         }, 1000);
       }
       
@@ -85,7 +89,7 @@
       console.error('Error completing task:', error);
     } finally {
       completingTasks.delete(task.id);
-      loading = false;
+      completingTasks = completingTasks; // Trigger reactivity
     }
   }
 
@@ -97,7 +101,7 @@
     }
     
     completingTasks.add(task.id);
-    loading = true;
+    completingTasks = completingTasks; // Trigger reactivity
     
     try {
       await userStore.uncompleteTask(currentUser.uid, task.id, task.xp);
@@ -106,7 +110,7 @@
       console.error('Error uncompleting task:', error);
     } finally {
       completingTasks.delete(task.id);
-      loading = false;
+      completingTasks = completingTasks; // Trigger reactivity
     }
   }
 
@@ -139,22 +143,31 @@
       );
     }
 
-    // Apply completion filter
+    // Apply completion filter - Fixed logic
     if (!showCompleted) {
       allTasks = allTasks.filter(task => !isTaskCompleted(task.id));
     }
 
-    return allTasks.sort((a, b) => a.order - b.order);
+    return allTasks.sort((a, b) => {
+      // Sort completed tasks to the bottom if showing completed
+      if (showCompleted) {
+        const aCompleted = isTaskCompleted(a.id);
+        const bCompleted = isTaskCompleted(b.id);
+        if (aCompleted && !bCompleted) return 1;
+        if (!aCompleted && bCompleted) return -1;
+      }
+      return a.order - b.order;
+    });
   }
 
   function getAllCategories() {
-    const categories = new Set<{id: string, title: string}>();
+    const categories = new Map<string, string>();
     roadmapData.forEach(phase => {
       phase.categories.forEach(category => {
-        categories.add({ id: category.id, title: category.title });
+        categories.set(category.id, category.title);
       });
     });
-    return Array.from(categories);
+    return Array.from(categories, ([id, title]) => ({ id, title }));
   }
 
   function getPhaseColor(phase: string) {
@@ -189,10 +202,12 @@
     return icons[categoryId] || 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2';
   }
 
-  $: filteredTasks = getFilteredTasks();
+  // Reactive statements - these will update automatically when dependencies change
+  $: filteredTasks = $userStore ? getFilteredTasks() : [];
   $: allCategories = getAllCategories();
-  $: completedCount = filteredTasks.filter(task => isTaskCompleted(task.id)).length;
-  $: completionPercentage = filteredTasks.length > 0 ? Math.round((completedCount / filteredTasks.length) * 100) : 0;
+  $: completedCount = $userStore ? filteredTasks.filter(task => isTaskCompleted(task.id)).length : 0;
+  $: totalFilteredTasks = filteredTasks.length;
+  $: completionPercentage = totalFilteredTasks > 0 ? Math.round((completedCount / totalFilteredTasks) * 100) : 0;
 </script>
 
 <Navbar />
@@ -253,7 +268,7 @@
                   </svg>
                 </div>
                 <div>
-                  <div class="text-2xl font-bold">{$userStore.totalXP}</div>
+                  <div class="text-2xl font-bold update-indicator">{$userStore.totalXP}</div>
                   <div class="text-sm opacity-80">Total XP</div>
                 </div>
               </div>
@@ -384,8 +399,8 @@
           </label>
           
           <!-- Results Summary -->
-          <div class="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg">
-            Showing {filteredTasks.length} tasks • {completedCount} completed ({completionPercentage}%)
+          <div class="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg update-indicator">
+            Showing {totalFilteredTasks} tasks • {completedCount} completed ({completionPercentage}%)
           </div>
         </div>
       </div>
@@ -416,19 +431,21 @@
             </button>
           </div>
         {:else}
-          {#each filteredTasks as task, index}
+          {#each filteredTasks as task, index (task.id)}
+            {@const completed = isTaskCompleted(task.id)}
+            {@const isCompleting = completingTasks.has(task.id)}
             <div
               id="task-{task.id}"
-              class="card p-6 hover:shadow-xl transition-all duration-300 group {recentlyCompleted.has(task.id) ? 'ring-2 ring-green-500' : ''}"
-              class:opacity-75={isTaskCompleted(task.id)}
+              class="card p-6 hover:shadow-xl transition-all duration-300 group {recentlyCompleted.has(task.id) ? 'ring-2 ring-green-500' : ''} {completed && !showCompleted ? 'hidden' : ''}"
+              class:opacity-75={completed}
               style="animation-delay: {index * 50}ms;"
             >
               <div class="flex flex-col lg:flex-row lg:items-center gap-4">
                 <!-- Checkbox & Icon -->
                 <div class="flex items-center space-x-4 flex-shrink-0">
                   <div class="relative">
-                    {#if isTaskCompleted(task.id)}
-                      <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                    {#if completed}
+                      <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg animate-scale-in">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                         </svg>
@@ -455,7 +472,7 @@
                   <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div class="flex-1">
                       <h3 class={`text-lg sm:text-xl font-semibold mb-2 transition-colors ${
-                        isTaskCompleted(task.id) 
+                        completed 
                           ? 'text-gray-500 dark:text-gray-500 line-through' 
                           : 'text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
                       }`}>
@@ -485,13 +502,13 @@
                         <div class="text-xs text-gray-500 dark:text-gray-400">XP</div>
                       </div>
                       
-                      {#if !isTaskCompleted(task.id)}
+                      {#if !completed}
                         <button
                           on:click={() => completeTask(task)}
-                          disabled={completingTasks.has(task.id)}
-                          class="btn btn-success btn-lg group-hover:scale-105 shadow-lg"
+                          disabled={isCompleting}
+                          class="btn btn-success btn-lg group-hover:scale-105 shadow-lg transition-all duration-300"
                         >
-                          {#if completingTasks.has(task.id)}
+                          {#if isCompleting}
                             <div class="spinner w-4 h-4 mr-2"></div>
                             Completing...
                           {:else}
@@ -511,10 +528,10 @@
                           </div>
                           <button
                             on:click={() => uncompleteTask(task)}
-                            disabled={completingTasks.has(task.id)}
+                            disabled={isCompleting}
                             class="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors font-medium"
                           >
-                            Undo
+                            {isCompleting ? 'Processing...' : 'Undo'}
                           </button>
                         </div>
                       {/if}
@@ -558,3 +575,23 @@
     </div>
   </div>
 </div>
+
+<style>
+  /* Add smooth transitions for completed state */
+  .task-completed {
+    animation: taskComplete 0.6s ease-out;
+  }
+  
+  @keyframes taskComplete {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+</style>
