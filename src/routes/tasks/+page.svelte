@@ -1,5 +1,6 @@
+// src/routes/tasks/+page.svelte
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth';
   import { userStore, userProgress } from '$lib/stores/user';
@@ -13,10 +14,11 @@
   let showCompleted = true;
   let currentUser: any = null;
   let searchQuery = '';
-  let completingTasks = new Set<string>();
+  let processingTasks = new Set<string>(); // Changed from completingTasks
   let recentlyCompleted = new Set<string>();
   let showSuccessToast = false;
   let lastCompletedTask: Task | null = null;
+  let toastMessage = '';
 
   // Real-time stats
   let todayCompleted = 0;
@@ -34,7 +36,11 @@
       calculateStats();
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      // Cleanup store listeners
+      userStore.cleanup();
+    };
   });
 
   function calculateStats() {
@@ -51,10 +57,11 @@
   }
 
   async function completeTask(task: Task) {
-    if (!currentUser || !$userStore || completingTasks.has(task.id)) return;
+    if (!currentUser || !$userStore || processingTasks.has(task.id)) return;
     
-    completingTasks.add(task.id);
-    completingTasks = completingTasks; // Trigger reactivity
+    // Add to processing set
+    processingTasks.add(task.id);
+    processingTasks = processingTasks; // Trigger reactivity
     
     try {
       await userStore.completeTask(currentUser.uid, task.id, task.xp);
@@ -65,6 +72,7 @@
       lastCompletedTask = task;
       
       // Show success toast
+      toastMessage = `Task Completed! 🎉 +${task.xp} XP earned`;
       showSuccessToast = true;
       setTimeout(() => {
         showSuccessToast = false;
@@ -87,35 +95,66 @@
       
     } catch (error) {
       console.error('Error completing task:', error);
+      toastMessage = 'Error completing task. Please try again.';
+      showSuccessToast = true;
+      setTimeout(() => showSuccessToast = false, 3000);
     } finally {
-      completingTasks.delete(task.id);
-      completingTasks = completingTasks; // Trigger reactivity
+      // Remove from processing set
+      processingTasks.delete(task.id);
+      processingTasks = processingTasks; // Trigger reactivity
     }
   }
 
   async function uncompleteTask(task: Task) {
-    if (!currentUser || !$userStore || completingTasks.has(task.id)) return;
+    if (!currentUser || !$userStore || processingTasks.has(task.id)) return;
+    
+    console.log('Uncompleting task:', { 
+      currentUser: currentUser.uid, 
+      taskId: task.id, 
+      xp: task.xp,
+      userStore: $userStore 
+    });
     
     if (!confirm('Are you sure you want to mark this task as incomplete? You will lose the XP.')) {
       return;
     }
     
-    completingTasks.add(task.id);
-    completingTasks = completingTasks; // Trigger reactivity
+    // Add to processing set
+    processingTasks.add(task.id);
+    processingTasks = processingTasks; // Trigger reactivity
     
     try {
       await userStore.uncompleteTask(currentUser.uid, task.id, task.xp);
+      
+      // Show success toast
+      toastMessage = `Task marked incomplete. -${task.xp} XP`;
+      showSuccessToast = true;
+      setTimeout(() => showSuccessToast = false, 3000);
+      
       calculateStats();
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error('Error uncompleting task:', error);
+      toastMessage = error.message || 'Error removing task completion. Please try again.';
+      showSuccessToast = true;
+      setTimeout(() => showSuccessToast = false, 3000);
     } finally {
-      completingTasks.delete(task.id);
-      completingTasks = completingTasks; // Trigger reactivity
+      // Remove from processing set
+      processingTasks.delete(task.id);
+      processingTasks = processingTasks; // Trigger reactivity
     }
   }
 
   function isTaskCompleted(taskId: string) {
+    // Don't show as completed if currently processing
+    if (processingTasks.has(taskId)) {
+      return false;
+    }
     return $userStore?.completedTasks.includes(taskId) || false;
+  }
+
+  function isTaskProcessing(taskId: string) {
+    return processingTasks.has(taskId);
   }
 
   function getFilteredTasks() {
@@ -143,7 +182,7 @@
       );
     }
 
-    // Apply completion filter - Fixed logic
+    // Apply completion filter
     if (!showCompleted) {
       allTasks = allTasks.filter(task => !isTaskCompleted(task.id));
     }
@@ -213,16 +252,17 @@
 <Navbar />
 
 <!-- Success Toast -->
-{#if showSuccessToast && lastCompletedTask}
-  <div class="toast toast-success animate-slide-up">
+{#if showSuccessToast}
+  <div class="toast {toastMessage.includes('Error') ? 'toast-error' : 'toast-success'} animate-slide-up">
     <div class="flex items-center">
-      <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <svg class="w-5 h-5 {toastMessage.includes('Error') ? 'text-red-600' : 'text-green-600'} mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {#if toastMessage.includes('Error')}
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        {:else}
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        {/if}
       </svg>
-      <div>
-        <div class="font-semibold">Task Completed! 🎉</div>
-        <div class="text-sm opacity-90">+{lastCompletedTask.xp} XP earned</div>
-      </div>
+      <div class="font-semibold">{toastMessage}</div>
     </div>
   </div>
 {/if}
@@ -433,18 +473,23 @@
         {:else}
           {#each filteredTasks as task, index (task.id)}
             {@const completed = isTaskCompleted(task.id)}
-            {@const isCompleting = completingTasks.has(task.id)}
+            {@const isProcessing = isTaskProcessing(task.id)}
             <div
               id="task-{task.id}"
-              class="card p-6 hover:shadow-xl transition-all duration-300 group {recentlyCompleted.has(task.id) ? 'ring-2 ring-green-500' : ''} {completed && !showCompleted ? 'hidden' : ''}"
-              class:opacity-75={completed}
+              class="card p-6 hover:shadow-xl transition-all duration-300 group {recentlyCompleted.has(task.id) ? 'ring-2 ring-green-500' : ''}"
+              class:opacity-75={completed && !isProcessing}
+              class:opacity-50={isProcessing}
               style="animation-delay: {index * 50}ms;"
             >
               <div class="flex flex-col lg:flex-row lg:items-center gap-4">
                 <!-- Checkbox & Icon -->
                 <div class="flex items-center space-x-4 flex-shrink-0">
                   <div class="relative">
-                    {#if completed}
+                    {#if isProcessing}
+                      <div class="w-10 h-10 border-2 border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center">
+                        <div class="spinner w-6 h-6"></div>
+                      </div>
+                    {:else if completed}
                       <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg animate-scale-in">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
@@ -502,23 +547,18 @@
                         <div class="text-xs text-gray-500 dark:text-gray-400">XP</div>
                       </div>
                       
-                      {#if !completed}
+                      {#if !completed && !isProcessing}
                         <button
                           on:click={() => completeTask(task)}
-                          disabled={isCompleting}
+                          disabled={isProcessing}
                           class="btn btn-success btn-lg group-hover:scale-105 shadow-lg transition-all duration-300"
                         >
-                          {#if isCompleting}
-                            <div class="spinner w-4 h-4 mr-2"></div>
-                            Completing...
-                          {:else}
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                            </svg>
-                            Complete
-                          {/if}
+                          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          Complete
                         </button>
-                      {:else}
+                      {:else if completed && !isProcessing}
                         <div class="flex flex-col items-end gap-2">
                           <div class="flex items-center text-green-600 dark:text-green-400 font-semibold text-sm">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -528,11 +568,15 @@
                           </div>
                           <button
                             on:click={() => uncompleteTask(task)}
-                            disabled={isCompleting}
+                            disabled={isProcessing}
                             class="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors font-medium"
                           >
-                            {isCompleting ? 'Processing...' : 'Undo'}
+                            Undo
                           </button>
+                        </div>
+                      {:else}
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                          Processing...
                         </div>
                       {/if}
                     </div>

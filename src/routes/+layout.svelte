@@ -1,6 +1,8 @@
+// src/routes/+layout.svelte
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { authStore } from '$lib/stores/auth';
+  import { userStore, journalStore, bugStore } from '$lib/stores/user';
   import { browser } from '$app/environment';
   import '../app.css';
 
@@ -66,8 +68,11 @@
   });
 
   onDestroy(() => {
-    // Clean up auth subscriptions
+    // Clean up all subscriptions and listeners
     authStore.cleanup();
+    userStore.cleanup();
+    journalStore.cleanup();
+    bugStore.cleanup();
     
     // Clear activity timer
     if (activityTimer) {

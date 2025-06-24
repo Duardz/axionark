@@ -1,10 +1,12 @@
+// src/routes/bugs/+page.svelte
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth';
-  import { bugStore } from '$lib/stores/user';
+  import { bugStore, userStore } from '$lib/stores/user';
   import Navbar from '$lib/components/Navbar.svelte';
   import type { Bug } from '$lib/stores/user';
+  import { firebaseTimestampToDate } from '$lib/utils/security';
 
   let currentUser: any = null;
   let loading = false;
@@ -12,6 +14,7 @@
   let editingBug: Bug | null = null;
   let showSuccessToast = false;
   let successMessage = '';
+  let processingBugs = new Set<string>();
   
   // Form fields
   let type = '';
@@ -20,6 +23,7 @@
   let bounty = 0;
   let status: 'reported' | 'triaged' | 'resolved' | 'duplicate' | 'rejected' = 'reported';
   let description = '';
+  let dateFound = new Date().toISOString().split('T')[0]; // For date input
 
   // Filter states
   let filterSeverity = 'all';
@@ -42,11 +46,17 @@
       }
       currentUser = user;
       loading = true;
+      await userStore.loadProfile(user.uid);
       await bugStore.loadBugs(user.uid);
       loading = false;
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      // Cleanup store listeners
+      bugStore.cleanup();
+      userStore.cleanup();
+    };
   });
 
   $: if ($bugStore) {
@@ -65,9 +75,7 @@
     
     monthlyEarnings = $bugStore
       .filter(bug => {
-        const bugDate = bug.dateFound && typeof bug.dateFound === 'object' && 'seconds' in bug.dateFound ? 
-          new Date((bug.dateFound as any).seconds * 1000) : 
-          new Date(bug.dateFound as Date);
+        const bugDate = firebaseTimestampToDate(bug.dateFound);
         return bugDate >= thirtyDaysAgo;
       })
       .reduce((sum, bug) => sum + bug.bounty, 0);
@@ -101,30 +109,32 @@
     }
     
     return filtered.sort((a, b) => {
-      const dateA = a.dateFound && typeof a.dateFound === 'object' && 'seconds' in a.dateFound ? 
-        (a.dateFound as any).seconds : 
-        new Date(a.dateFound as Date).getTime() / 1000;
-      const dateB = b.dateFound && typeof b.dateFound === 'object' && 'seconds' in b.dateFound ? 
-        (b.dateFound as any).seconds : 
-        new Date(b.dateFound as Date).getTime() / 1000;
-      return dateB - dateA;
+      const dateA = firebaseTimestampToDate(a.dateFound);
+      const dateB = firebaseTimestampToDate(b.dateFound);
+      return dateB.getTime() - dateA.getTime();
     });
   }
 
   async function handleSubmit() {
-    if (!currentUser || !type.trim() || !program.trim()) return;
+    if (!currentUser || !type.trim() || !program.trim()) {
+      successMessage = 'Please fill in all required fields';
+      showSuccessToast = true;
+      setTimeout(() => showSuccessToast = false, 3000);
+      return;
+    }
     
     loading = true;
     try {
-      if (editingBug) {
+      if (editingBug && editingBug.id) {
         // Update existing bug
-        await bugStore.updateBug(editingBug.id!, {
+        await bugStore.updateBug(editingBug.id, {
           type: type.trim(),
           severity,
           program: program.trim(),
           bounty,
           status,
-          description: description.trim()
+          description: description.trim(),
+          dateFound: new Date(dateFound)
         });
         successMessage = 'Bug updated successfully! 🎉';
       } else {
@@ -136,7 +146,7 @@
           program: program.trim(),
           bounty,
           status,
-          dateFound: new Date(),
+          dateFound: new Date(dateFound),
           description: description.trim()
         };
         
@@ -149,26 +159,37 @@
       
       // Reset form
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving bug:', error);
+      successMessage = error.message || 'Error saving bug. Please try again.';
+      showSuccessToast = true;
+      setTimeout(() => showSuccessToast = false, 3000);
     } finally {
       loading = false;
     }
   }
 
   async function deleteBug(bug: Bug) {
+    if (!bug.id || processingBugs.has(bug.id)) return;
+    
     if (!confirm('Are you sure you want to delete this bug report?')) return;
     
-    loading = true;
+    processingBugs.add(bug.id);
+    processingBugs = processingBugs;
+    
     try {
-      await bugStore.deleteBug(bug.id!, bug.uid, bug.bounty);
+      await bugStore.deleteBug(bug.id, bug.uid, bug.bounty);
       successMessage = 'Bug deleted successfully!';
       showSuccessToast = true;
       setTimeout(() => showSuccessToast = false, 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting bug:', error);
+      successMessage = error.message || 'Error deleting bug. Please try again.';
+      showSuccessToast = true;
+      setTimeout(() => showSuccessToast = false, 3000);
     } finally {
-      loading = false;
+      processingBugs.delete(bug.id!);
+      processingBugs = processingBugs;
     }
   }
 
@@ -180,6 +201,11 @@
     bounty = bug.bounty;
     status = bug.status;
     description = bug.description || '';
+    
+    // Format date for input
+    const bugDate = firebaseTimestampToDate(bug.dateFound);
+    dateFound = bugDate.toISOString().split('T')[0];
+    
     showForm = true;
   }
 
@@ -190,6 +216,7 @@
     bounty = 0;
     status = 'reported';
     description = '';
+    dateFound = new Date().toISOString().split('T')[0];
     showForm = false;
     editingBug = null;
   }
@@ -226,10 +253,8 @@
   }
 
   function formatDate(date: any) {
-    if (date && typeof date === 'object' && 'seconds' in date) {
-      return new Date(date.seconds * 1000).toLocaleDateString();
-    }
-    return new Date(date).toLocaleDateString();
+    const d = firebaseTimestampToDate(date);
+    return d.toLocaleDateString();
   }
 
   function formatCurrency(amount: number) {
@@ -240,6 +265,10 @@
     }).format(amount);
   }
 
+  function isProcessing(bugId?: string) {
+    return bugId ? processingBugs.has(bugId) : false;
+  }
+
   $: filteredBugs = getFilteredBugs();
 </script>
 
@@ -247,10 +276,14 @@
 
 <!-- Success Toast -->
 {#if showSuccessToast}
-  <div class="toast toast-success animate-slide-up">
+  <div class="toast {successMessage.includes('Error') || successMessage.includes('fill') ? 'toast-error' : 'toast-success'} animate-slide-up">
     <div class="flex items-center">
-      <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <svg class="w-5 h-5 {successMessage.includes('Error') || successMessage.includes('fill') ? 'text-red-600' : 'text-green-600'} mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {#if successMessage.includes('Error') || successMessage.includes('fill')}
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        {:else}
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        {/if}
       </svg>
       <span class="font-semibold">{successMessage}</span>
     </div>
@@ -299,7 +332,7 @@
               </svg>
             </div>
             <div class="text-right">
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalBounty)}</div>
+              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white update-indicator">{formatCurrency(totalBounty)}</div>
               <div class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">+{formatCurrency(monthlyEarnings)} this month</div>
             </div>
           </div>
@@ -315,7 +348,7 @@
               </svg>
             </div>
             <div class="text-right">
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{totalBugs}</div>
+              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white update-indicator">{totalBugs}</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">{highSeverityCount} high/critical</div>
             </div>
           </div>
@@ -331,7 +364,7 @@
               </svg>
             </div>
             <div class="text-right">
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{resolvedBugs}</div>
+              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white update-indicator">{resolvedBugs}</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">{totalBugs > 0 ? Math.round((resolvedBugs / totalBugs) * 100) : 0}% resolved</div>
             </div>
           </div>
@@ -449,6 +482,20 @@
                   <option value="duplicate">Duplicate</option>
                   <option value="rejected">Rejected</option>
                 </select>
+              </div>
+
+              <!-- Date Found -->
+              <div>
+                <label for="dateFound" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Date Found
+                </label>
+                <input
+                  id="dateFound"
+                  type="date"
+                  bind:value={dateFound}
+                  class="input"
+                  required
+                />
               </div>
             </div>
 
@@ -613,7 +660,10 @@
       {:else}
         <div class="space-y-4">
           {#each filteredBugs as bug, index}
-            <div class="card p-6 hover:shadow-xl transition-all duration-300 group" style="animation-delay: {index * 50}ms;">
+            <div 
+              class="card p-6 hover:shadow-xl transition-all duration-300 group {isProcessing(bug.id) ? 'opacity-50' : ''}" 
+              style="animation-delay: {index * 50}ms;"
+            >
               <div class="flex flex-col lg:flex-row lg:items-center gap-4">
                 <!-- Bug Info -->
                 <div class="flex-1 min-w-0">
@@ -662,6 +712,7 @@
                 <div class="flex items-center gap-3 flex-shrink-0">
                   <button
                     on:click={() => editBug(bug)}
+                    disabled={isProcessing(bug.id)}
                     class="btn btn-secondary btn-sm group-hover:scale-105 transition-transform"
                   >
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -671,47 +722,23 @@
                   </button>
                   <button
                     on:click={() => deleteBug(bug)}
+                    disabled={isProcessing(bug.id)}
                     class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     title="Delete bug"
                     aria-label="Delete bug report"
                   >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    {#if isProcessing(bug.id)}
+                      <div class="spinner w-4 h-4"></div>
+                    {:else}
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    {/if}
                   </button>
                 </div>
               </div>
             </div>
           {/each}
-        </div>
-      {/if}
-
-      <!-- Motivational Footer -->
-      {#if filteredBugs.length > 0}
-        <div class="text-center py-12">
-          <div class="max-w-2xl mx-auto">
-            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              🏆 Great Work, Bug Hunter!
-            </h3>
-            <p class="text-gray-600 dark:text-gray-400 text-lg mb-6">
-              Every vulnerability you discover makes the digital world safer. 
-              Keep hunting, keep learning, and keep making an impact!
-            </p>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div class="text-center">
-                <div class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(totalBounty)}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">Total Earned</div>
-              </div>
-              <div class="text-center">
-                <div class="text-3xl font-bold text-red-600 dark:text-red-400">{totalBugs}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">Bugs Found</div>
-              </div>
-              <div class="text-center">
-                <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{Math.round((resolvedBugs / Math.max(totalBugs, 1)) * 100)}%</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">Success Rate</div>
-              </div>
-            </div>
-          </div>
         </div>
       {/if}
     </div>

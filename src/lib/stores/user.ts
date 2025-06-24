@@ -1,5 +1,5 @@
-// src/lib/stores/user.ts
-import { writable, derived } from 'svelte/store';
+// src/lib/stores/user.ts - Real-time version with working undo
+import { writable, derived, get } from 'svelte/store';
 import { db } from '$lib/firebase';
 import { 
   doc, 
@@ -16,7 +16,9 @@ import {
   limit,
   serverTimestamp,
   Timestamp,
-  type FieldValue
+  type FieldValue,
+  onSnapshot,
+  type Unsubscribe
 } from 'firebase/firestore';
 import type { Task } from '$lib/data/roadmap';
 import {
@@ -83,43 +85,70 @@ async function handleFirestoreOperation<T>(
   }
 }
 
+// User Store with real-time updates
 function createUserStore() {
   const { subscribe, set, update } = writable<UserProfile | null>(null);
+  let unsubscribe: Unsubscribe | null = null;
 
   return {
     subscribe,
     
+    // Load profile with real-time listener
     loadProfile: async (uid: string) => {
       if (!db || !uid) return;
       
+      // Clean up previous listener
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      
       return handleFirestoreOperation(async () => {
         const docRef = doc(db!, 'users', uid);
-        const docSnap = await getDoc(docRef);
         
+        // Set up real-time listener
+        unsubscribe = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data() as UserProfile;
+            set(data);
+          } else {
+            // Create default profile if doesn't exist
+            const defaultProfile = {
+              uid,
+              email: '',
+              username: 'Anonymous',
+              totalXP: 0,
+              completedTasks: [],
+              currentPhase: 'beginner' as const,
+              totalBounty: 0,
+              bugsFound: 0,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            };
+            
+            setDoc(docRef, defaultProfile).then(() => {
+              set(defaultProfile as UserProfile);
+            });
+          }
+        }, (error) => {
+          console.error('Error listening to user profile:', error);
+        });
+        
+        // Initial load
+        const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data() as UserProfile;
           set(data);
           return data;
-        } else {
-          // Create default profile with server timestamp
-          const defaultProfile = {
-            uid,
-            email: '',
-            username: 'Anonymous',
-            totalXP: 0,
-            completedTasks: [],
-            currentPhase: 'beginner' as const,
-            totalBounty: 0,
-            bugsFound: 0,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          };
-          
-          await setDoc(docRef, defaultProfile);
-          set(defaultProfile as UserProfile);
-          return defaultProfile as UserProfile;
         }
       }, 'Error loading user profile');
+    },
+    
+    // Cleanup listener
+    cleanup: () => {
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
     },
     
     completeTask: async (uid: string, taskId: string, xp: number) => {
@@ -131,7 +160,7 @@ function createUserStore() {
       }
       
       // Rate limiting
-      if (!checkRateLimit(`complete_task_${uid}`, 30, 60000)) { // 30 tasks per minute max
+      if (!checkRateLimit(`complete_task_${uid}`, 30, 60000)) {
         throw new Error('Too many task completions. Please slow down.');
       }
       
@@ -153,58 +182,71 @@ function createUserStore() {
               updatedAt: serverTimestamp()
             });
             
-            update(profile => {
-              if (profile) {
-                profile.completedTasks = updatedTasks;
-                profile.totalXP = updatedXP;
-              }
-              return profile;
-            });
+            // Note: Real-time listener will automatically update the store
           }
         }
       }, 'Error completing task');
     },
     
     uncompleteTask: async (uid: string, taskId: string, xp: number) => {
-      if (!db || !uid || !taskId) return;
+      if (!db || !uid || !taskId) {
+        console.error('Missing required parameters:', { db: !!db, uid, taskId });
+        throw new Error('Missing required parameters');
+      }
       
       // Validate XP
       if (!validateXP(xp)) {
+        console.error('Invalid XP value:', xp);
         throw new Error('Invalid XP value');
       }
       
       // Rate limiting
-      if (!checkRateLimit(`uncomplete_task_${uid}`, 10, 60000)) { // 10 per minute max
+      if (!checkRateLimit(`uncomplete_task_${uid}`, 10, 60000)) {
         throw new Error('Too many operations. Please slow down.');
       }
       
-      return handleFirestoreOperation(async () => {
+      try {
         const userRef = doc(db!, 'users', uid);
         const userDoc = await getDoc(userRef);
         
-        if (userDoc.exists()) {
-          const userData = userDoc.data() as UserProfile;
-          
-          if (userData.completedTasks.includes(taskId)) {
-            const updatedTasks = userData.completedTasks.filter(id => id !== taskId);
-            const updatedXP = Math.max(0, userData.totalXP - xp);
-            
-            await updateDoc(userRef, {
-              completedTasks: updatedTasks,
-              totalXP: updatedXP,
-              updatedAt: serverTimestamp()
-            });
-            
-            update(profile => {
-              if (profile) {
-                profile.completedTasks = updatedTasks;
-                profile.totalXP = updatedXP;
-              }
-              return profile;
-            });
-          }
+        if (!userDoc.exists()) {
+          console.error('User document not found:', uid);
+          throw new Error('User profile not found');
         }
-      }, 'Error removing task completion');
+        
+        const userData = userDoc.data() as UserProfile;
+        console.log('Current user data:', userData);
+        
+        if (!userData.completedTasks || !Array.isArray(userData.completedTasks)) {
+          console.error('Invalid completedTasks:', userData.completedTasks);
+          throw new Error('Invalid user data structure');
+        }
+        
+        if (userData.completedTasks.includes(taskId)) {
+          const updatedTasks = userData.completedTasks.filter(id => id !== taskId);
+          const updatedXP = Math.max(0, (userData.totalXP || 0) - xp);
+          
+          console.log('Updating user with:', { 
+            completedTasks: updatedTasks, 
+            totalXP: updatedXP,
+            previousTasks: userData.completedTasks,
+            previousXP: userData.totalXP
+          });
+          
+          await updateDoc(userRef, {
+            completedTasks: updatedTasks,
+            totalXP: updatedXP,
+            updatedAt: serverTimestamp()
+          });
+          
+          console.log('Task uncompleted successfully');
+        } else {
+          console.warn('Task not in completed list:', taskId);
+        }
+      } catch (error) {
+        console.error('Error in uncompleteTask:', error);
+        throw error;
+      }
     },
     
     updatePhase: async (uid: string, phase: 'beginner' | 'intermediate' | 'advanced') => {
@@ -221,39 +263,26 @@ function createUserStore() {
           currentPhase: phase,
           updatedAt: serverTimestamp()
         });
-        
-        update(profile => {
-          if (profile) {
-            profile.currentPhase = phase;
-          }
-          return profile;
-        });
       }, 'Error updating phase');
     },
     
     updateUsername: async (uid: string, username: string) => {
       if (!db || !uid) return;
       
-      // Username validation is handled in auth store
       return handleFirestoreOperation(async () => {
         await updateDoc(doc(db!, 'users', uid), {
           username: username,
           updatedAt: serverTimestamp()
-        });
-        
-        update(profile => {
-          if (profile) {
-            profile.username = username;
-          }
-          return profile;
         });
       }, 'Error updating username');
     }
   };
 }
 
+// Journal Store with real-time updates
 function createJournalStore() {
   const { subscribe, set, update } = writable<JournalEntry[]>([]);
+  let unsubscribe: Unsubscribe | null = null;
 
   return {
     subscribe,
@@ -261,15 +290,37 @@ function createJournalStore() {
     loadEntries: async (uid: string) => {
       if (!db || !uid) return [];
       
+      // Clean up previous listener
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      
       return handleFirestoreOperation(async () => {
         const q = query(
           collection(db!, 'journal'), 
           where('uid', '==', uid),
           orderBy('date', 'desc'),
-          limit(100) // Limit to prevent loading too many entries
+          limit(100)
         );
-        const querySnapshot = await getDocs(q);
         
+        // Set up real-time listener
+        unsubscribe = onSnapshot(q, (querySnapshot) => {
+          const entries: JournalEntry[] = [];
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            entries.push({ 
+              id: doc.id, 
+              ...data,
+              date: firebaseTimestampToDate(data.date)
+            } as JournalEntry);
+          });
+          set(entries);
+        }, (error) => {
+          console.error('Error listening to journal entries:', error);
+        });
+        
+        // Initial load
+        const querySnapshot = await getDocs(q);
         const entries: JournalEntry[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
@@ -285,30 +336,36 @@ function createJournalStore() {
       }, 'Error loading journal entries');
     },
     
+    cleanup: () => {
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+    },
+    
     addEntry: async (entry: JournalEntry) => {
       if (!db) return;
       
       // Rate limiting
-      if (!checkRateLimit(`add_journal_${entry.uid}`, 10, 3600000)) { // 10 entries per hour
+      if (!checkRateLimit(`add_journal_${entry.uid}`, 10, 3600000)) {
         throw new Error('Too many journal entries. Please try again later.');
       }
       
       // Sanitize input
       const sanitizedEntry = {
-        ...entry,
+        uid: entry.uid,
         title: sanitizeText(entry.title).slice(0, 200),
         content: sanitizeHtml(entry.content).slice(0, 5000),
-        tags: entry.tags?.map(tag => sanitizeText(tag).slice(0, 50)).slice(0, 10), // Max 10 tags
-        mood: entry.mood && validateMood(entry.mood) ? entry.mood : undefined,
         date: entry.date instanceof Date ? Timestamp.fromDate(entry.date) : entry.date,
+        ...(entry.mood && validateMood(entry.mood) ? { mood: entry.mood } : {}),
+        ...(entry.tags ? { tags: entry.tags.map(tag => sanitizeText(tag).slice(0, 50)).slice(0, 10) } : {}),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
       
       return handleFirestoreOperation(async () => {
         const docRef = await addDoc(collection(db!, 'journal'), sanitizedEntry);
-        
-        update(entries => [...entries, { ...entry, id: docRef.id }]);
+        // Real-time listener will automatically update the store
         return docRef.id;
       }, 'Error adding journal entry');
     },
@@ -317,20 +374,23 @@ function createJournalStore() {
       if (!db || !entryId) return;
       
       // Rate limiting
-      if (!checkRateLimit(`delete_journal_${entryId}`, 5, 3600000)) { // 5 deletions per hour
+      if (!checkRateLimit(`delete_journal_${entryId}`, 5, 3600000)) {
         throw new Error('Too many deletions. Please try again later.');
       }
       
       return handleFirestoreOperation(async () => {
         await deleteDoc(doc(db!, 'journal', entryId));
-        update(entries => entries.filter(e => e.id !== entryId));
+        // Real-time listener will automatically update the store
       }, 'Error deleting journal entry');
     }
   };
 }
 
+// Bug Store with real-time updates
 function createBugStore() {
   const { subscribe, set, update } = writable<Bug[]>([]);
+  let unsubscribe: Unsubscribe | null = null;
+  let userStatsUnsubscribe: Unsubscribe | null = null;
 
   return {
     subscribe,
@@ -338,15 +398,51 @@ function createBugStore() {
     loadBugs: async (uid: string) => {
       if (!db || !uid) return [];
       
+      // Clean up previous listeners
+      if (unsubscribe) {
+        unsubscribe();
+      }
+      if (userStatsUnsubscribe) {
+        userStatsUnsubscribe();
+      }
+      
       return handleFirestoreOperation(async () => {
         const q = query(
           collection(db!, 'bugs'), 
           where('uid', '==', uid),
           orderBy('dateFound', 'desc'),
-          limit(200) // Limit to prevent loading too many bugs
+          limit(200)
         );
-        const querySnapshot = await getDocs(q);
         
+        // Set up real-time listener for bugs
+        unsubscribe = onSnapshot(q, async (querySnapshot) => {
+          const bugs: Bug[] = [];
+          querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            bugs.push({ 
+              id: doc.id, 
+              ...data,
+              dateFound: firebaseTimestampToDate(data.dateFound)
+            } as Bug);
+          });
+          set(bugs);
+          
+          // Update user stats
+          const totalBounty = bugs.reduce((sum, bug) => sum + bug.bounty, 0);
+          const bugsFound = bugs.length;
+          
+          const userRef = doc(db!, 'users', uid);
+          await updateDoc(userRef, {
+            totalBounty,
+            bugsFound,
+            updatedAt: serverTimestamp()
+          });
+        }, (error) => {
+          console.error('Error listening to bugs:', error);
+        });
+        
+        // Initial load
+        const querySnapshot = await getDocs(q);
         const bugs: Bug[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
@@ -358,31 +454,26 @@ function createBugStore() {
         });
         
         set(bugs);
-        
-        // Update user stats
-        const totalBounty = bugs.reduce((sum, bug) => sum + bug.bounty, 0);
-        const bugsFound = bugs.length;
-        
-        const userRef = doc(db!, 'users', uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (userDoc.exists()) {
-          await updateDoc(userRef, {
-            totalBounty,
-            bugsFound,
-            updatedAt: serverTimestamp()
-          });
-        }
-        
         return bugs;
       }, 'Error loading bugs');
+    },
+    
+    cleanup: () => {
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+      if (userStatsUnsubscribe) {
+        userStatsUnsubscribe();
+        userStatsUnsubscribe = null;
+      }
     },
     
     addBug: async (bug: Bug) => {
       if (!db) return;
       
       // Rate limiting
-      if (!checkRateLimit(`add_bug_${bug.uid}`, 20, 3600000)) { // 20 bugs per hour
+      if (!checkRateLimit(`add_bug_${bug.uid}`, 20, 3600000)) {
         throw new Error('Too many bug reports. Please try again later.');
       }
       
@@ -401,33 +492,21 @@ function createBugStore() {
       
       // Sanitize input
       const sanitizedBug = {
-        ...bug,
+        uid: bug.uid,
         type: sanitizeText(bug.type).slice(0, 100),
+        severity: bug.severity,
         program: sanitizeText(bug.program).slice(0, 100),
-        description: bug.description ? sanitizeHtml(bug.description).slice(0, 2000) : undefined,
+        bounty: bug.bounty,
+        status: bug.status,
         dateFound: bug.dateFound instanceof Date ? Timestamp.fromDate(bug.dateFound) : bug.dateFound,
+        ...(bug.description ? { description: sanitizeHtml(bug.description).slice(0, 2000) } : {}),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
       
       return handleFirestoreOperation(async () => {
         const docRef = await addDoc(collection(db!, 'bugs'), sanitizedBug);
-        
-        update(bugs => [...bugs, { ...bug, id: docRef.id }]);
-        
-        // Update user stats
-        const userRef = doc(db!, 'users', bug.uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          await updateDoc(userRef, {
-            totalBounty: (userData.totalBounty || 0) + bug.bounty,
-            bugsFound: (userData.bugsFound || 0) + 1,
-            updatedAt: serverTimestamp()
-          });
-        }
-        
+        // Real-time listener will automatically update the store and user stats
         return docRef.id;
       }, 'Error adding bug report');
     },
@@ -436,7 +515,7 @@ function createBugStore() {
       if (!db || !bugId) return;
       
       // Rate limiting
-      if (!checkRateLimit(`update_bug_${bugId}`, 10, 3600000)) { // 10 updates per hour
+      if (!checkRateLimit(`update_bug_${bugId}`, 10, 3600000)) {
         throw new Error('Too many updates. Please try again later.');
       }
       
@@ -476,14 +555,14 @@ function createBugStore() {
         sanitizedUpdates.bounty = updates.bounty;
       }
       
+      if (updates.dateFound !== undefined) {
+        sanitizedUpdates.dateFound = updates.dateFound instanceof Date ? 
+          Timestamp.fromDate(updates.dateFound) : updates.dateFound;
+      }
+      
       return handleFirestoreOperation(async () => {
         await updateDoc(doc(db!, 'bugs', bugId), sanitizedUpdates);
-        
-        update(bugs => {
-          return bugs.map(bug => 
-            bug.id === bugId ? { ...bug, ...sanitizedUpdates } : bug
-          );
-        });
+        // Real-time listener will automatically update the store
       }, 'Error updating bug report');
     },
     
@@ -491,27 +570,13 @@ function createBugStore() {
       if (!db || !bugId || !uid) return;
       
       // Rate limiting
-      if (!checkRateLimit(`delete_bug_${bugId}`, 5, 3600000)) { // 5 deletions per hour
+      if (!checkRateLimit(`delete_bug_${bugId}`, 5, 3600000)) {
         throw new Error('Too many deletions. Please try again later.');
       }
       
       return handleFirestoreOperation(async () => {
         await deleteDoc(doc(db!, 'bugs', bugId));
-        
-        update(bugs => bugs.filter(b => b.id !== bugId));
-        
-        // Update user stats
-        const userRef = doc(db!, 'users', uid);
-        const userDoc = await getDoc(userRef);
-        
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          await updateDoc(userRef, {
-            totalBounty: Math.max(0, (userData.totalBounty || 0) - bounty),
-            bugsFound: Math.max(0, (userData.bugsFound || 0) - 1),
-            updatedAt: serverTimestamp()
-          });
-        }
+        // Real-time listener will automatically update the store and user stats
       }, 'Error deleting bug report');
     }
   };

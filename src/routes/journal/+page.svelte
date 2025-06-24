@@ -1,8 +1,9 @@
+// src/routes/journal/+page.svelte
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth';
-  import { journalStore } from '$lib/stores/user';
+  import { journalStore, userStore } from '$lib/stores/user';
   import Navbar from '$lib/components/Navbar.svelte';
   import type { JournalEntry } from '$lib/stores/user';
   import { firebaseTimestampToDate } from '$lib/utils/security';
@@ -13,6 +14,7 @@
   let editingEntry: JournalEntry | null = null;
   let showSuccessToast = false;
   let successMessage = '';
+  let processingEntries = new Set<string>();
   
   // Form fields
   let title = '';
@@ -39,12 +41,18 @@
       }
       currentUser = user;
       loading = true;
+      await userStore.loadProfile(user.uid);
       await journalStore.loadEntries(user.uid);
       calculateStats();
       loading = false;
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      // Cleanup store listeners
+      journalStore.cleanup();
+      userStore.cleanup();
+    };
   });
 
   $: if ($journalStore) {
@@ -115,13 +123,21 @@
   }
 
   async function handleSubmit() {
-    if (!currentUser || !title.trim() || !content.trim()) return;
+    if (!currentUser || !title.trim() || !content.trim()) {
+      successMessage = 'Please fill in all required fields';
+      showSuccessToast = true;
+      setTimeout(() => showSuccessToast = false, 3000);
+      return;
+    }
     
     loading = true;
     try {
-      if (editingEntry) {
-        // Note: Update functionality would need to be implemented in the store
-        successMessage = 'Entry updated successfully! 📝';
+      if (editingEntry && editingEntry.id) {
+        // Update functionality - since we don't have update in store, we'll delete and re-add
+        // In a real app, you'd want to implement an update method in the store
+        successMessage = 'Journal updates are not yet implemented. Please delete and create a new entry.';
+        showSuccessToast = true;
+        setTimeout(() => showSuccessToast = false, 3000);
       } else {
         const entry: JournalEntry = {
           uid: currentUser.uid,
@@ -134,33 +150,43 @@
         
         await journalStore.addEntry(entry);
         successMessage = 'Entry saved successfully! 📝';
+        showSuccessToast = true;
+        setTimeout(() => showSuccessToast = false, 3000);
       }
-      
-      showSuccessToast = true;
-      setTimeout(() => showSuccessToast = false, 3000);
       
       // Reset form
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving journal entry:', error);
+      successMessage = error.message || 'Error saving entry. Please try again.';
+      showSuccessToast = true;
+      setTimeout(() => showSuccessToast = false, 3000);
     } finally {
       loading = false;
     }
   }
 
   async function deleteEntry(entryId: string) {
+    if (!entryId || processingEntries.has(entryId)) return;
+    
     if (!confirm('Are you sure you want to delete this entry?')) return;
     
-    loading = true;
+    processingEntries.add(entryId);
+    processingEntries = processingEntries;
+    
     try {
       await journalStore.deleteEntry(entryId);
       successMessage = 'Entry deleted successfully!';
       showSuccessToast = true;
       setTimeout(() => showSuccessToast = false, 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting entry:', error);
+      successMessage = error.message || 'Error deleting entry. Please try again.';
+      showSuccessToast = true;
+      setTimeout(() => showSuccessToast = false, 3000);
     } finally {
-      loading = false;
+      processingEntries.delete(entryId);
+      processingEntries = processingEntries;
     }
   }
 
@@ -228,11 +254,15 @@
     const diffTime = Math.abs(now.getTime() - entryDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
+    if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
-    if (diffDays === 2) return 'Today';
     if (diffDays <= 7) return `${diffDays} days ago`;
     if (diffDays <= 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
     return `${Math.ceil(diffDays / 30)} months ago`;
+  }
+
+  function isProcessing(entryId?: string) {
+    return entryId ? processingEntries.has(entryId) : false;
   }
 
   $: filteredEntries = getFilteredEntries();
@@ -242,10 +272,14 @@
 
 <!-- Success Toast -->
 {#if showSuccessToast}
-  <div class="toast toast-success animate-slide-up">
+  <div class="toast {successMessage.includes('Error') || successMessage.includes('fill') || successMessage.includes('not yet implemented') ? 'toast-error' : 'toast-success'} animate-slide-up">
     <div class="flex items-center">
-      <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <svg class="w-5 h-5 {successMessage.includes('Error') || successMessage.includes('fill') || successMessage.includes('not yet implemented') ? 'text-red-600' : 'text-green-600'} mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {#if successMessage.includes('Error') || successMessage.includes('fill') || successMessage.includes('not yet implemented')}
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        {:else}
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        {/if}
       </svg>
       <span class="font-semibold">{successMessage}</span>
     </div>
@@ -294,7 +328,7 @@
               </svg>
             </div>
             <div class="text-right">
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{totalEntries}</div>
+              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white update-indicator">{totalEntries}</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">total entries</div>
             </div>
           </div>
@@ -310,7 +344,7 @@
               </svg>
             </div>
             <div class="text-right">
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{thisWeekEntries}</div>
+              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white update-indicator">{thisWeekEntries}</div>
               <div class="text-xs text-gray-500 dark:text-gray-400">this week</div>
             </div>
           </div>
@@ -586,7 +620,7 @@
       {:else}
         <div class="space-y-6">
           {#each filteredEntries as entry, index}
-            <article class="card p-6 hover:shadow-xl transition-all duration-300 group" style="animation-delay: {index * 100}ms;">
+            <article class="card p-6 hover:shadow-xl transition-all duration-300 group {isProcessing(entry.id) ? 'opacity-50' : ''}" style="animation-delay: {index * 100}ms;">
               <!-- Entry Header -->
               <header class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                 <div class="flex-1 min-w-0">
@@ -618,6 +652,7 @@
                   <div class="flex items-center gap-1">
                     <button
                       on:click={() => editEntry(entry)}
+                      disabled={isProcessing(entry.id)}
                       class="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors"
                       title="Edit entry"
                       aria-label="Edit journal entry"
@@ -628,13 +663,18 @@
                     </button>
                     <button
                       on:click={() => entry.id && deleteEntry(entry.id)}
+                      disabled={isProcessing(entry.id)}
                       class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                       title="Delete entry"
                       aria-label="Delete journal entry"
                     >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      {#if isProcessing(entry.id)}
+                        <div class="spinner w-4 h-4"></div>
+                      {:else}
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      {/if}
                     </button>
                   </div>
                 </div>
