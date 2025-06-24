@@ -89,99 +89,104 @@ function createAuthStore() {
     },
     
     signUp: async (email: string, password: string, username: string) => {
-      if (!auth || !db) throw new Error('Firebase not initialized');
-      
-      // Rate limiting
-      if (!checkRateLimit(`signup_${email}`, 3, 3600000)) { // 3 attempts per hour
-        throw new Error('Too many signup attempts. Please try again later.');
+    if (!auth || !db) throw new Error('Firebase not initialized');
+
+    // Rate limiting
+    if (!checkRateLimit(`signup_${email}`, 10, 3600000)) { // 10 attempts per hour
+      throw new Error('Too many signup attempts. Please try again later.');
+    }
+
+    // Input validation
+    if (!validateEmail(email)) {
+      throw new Error('Invalid email address');
+    }
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      throw new Error(passwordValidation.errors[0]);
+    }
+
+    const sanitizedUsername = sanitizeUsername(username);
+    if (sanitizedUsername.length < 3) {
+      throw new Error('Username must be at least 3 characters long');
+    }
+
+    if (sanitizedUsername.length > 50) {
+      throw new Error('Username must be less than 50 characters');
+    }
+
+    let user: User | null = null;
+
+    try {
+      // Check if username already exists BEFORE creating the auth user
+      const usernameDoc = await getDoc(doc(db, 'usernames', sanitizedUsername.toLowerCase()));
+      if (usernameDoc.exists()) {
+        throw new Error('Username already taken');
       }
-      
-      // Input validation
-      if (!validateEmail(email)) {
-        throw new Error('Invalid email address');
-      }
-      
-      const passwordValidation = validatePassword(password);
-      if (!passwordValidation.valid) {
-        throw new Error(passwordValidation.errors[0]);
-      }
-      
-      const sanitizedUsername = sanitizeUsername(username);
-      if (sanitizedUsername.length < 3) {
-        throw new Error('Username must be at least 3 characters long');
-      }
-      
-      if (sanitizedUsername.length > 50) {
-        throw new Error('Username must be less than 50 characters');
-      }
-      
+
+      // Step 1: Create the authentication user
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      user = userCredential.user;
+
+      // ✅ Step 2: Force refresh ID token to ensure Firestore has access to request.auth
+      await user.getIdToken(true);
+
+      // Step 3: Wait briefly (optional)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Step 4: Create user document
+      const userData: UserData = {
+        uid: user.uid,
+        email: user.email!,
+        username: sanitizedUsername,
+        createdAt: serverTimestamp(),
+        totalXP: 0,
+        completedTasks: [],
+        currentPhase: 'beginner',
+        totalBounty: 0,
+        bugsFound: 0,
+        lastLogin: serverTimestamp(),
+        loginAttempts: 0,
+        accountLocked: false,
+        updatedAt: serverTimestamp()
+      };
+
       try {
-        // Check if username already exists
-        const usernameDoc = await getDoc(doc(db, 'usernames', sanitizedUsername.toLowerCase()));
-        if (usernameDoc.exists()) {
-          throw new Error('Username already taken');
-        }
-        
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        
-        // Create user document with required fields
-        const userData: UserData = {
+        // Create user profile
+        await setDoc(doc(db, 'users', user.uid), userData);
+
+        // Create username mapping
+        await setDoc(doc(db, 'usernames', sanitizedUsername.toLowerCase()), {
           uid: user.uid,
-          email: user.email!,
-          username: sanitizedUsername,
-          createdAt: serverTimestamp(),
-          totalXP: 0,
-          completedTasks: [],
-          currentPhase: 'beginner',
-          totalBounty: 0,
-          bugsFound: 0,
-          lastLogin: serverTimestamp(),
-          loginAttempts: 0,
-          accountLocked: false,
-          updatedAt: serverTimestamp()
-        };
-        
-        try {
-          // Use batch write to ensure atomicity
-          const batch = writeBatch(db);
-          
-          // Create user document
-          batch.set(doc(db, 'users', user.uid), userData);
-          
-          // Create username document
-          batch.set(doc(db, 'usernames', sanitizedUsername.toLowerCase()), { 
-            uid: user.uid,
-            createdAt: serverTimestamp()
-          });
-          
-          // Commit the batch
-          await batch.commit();
-          
-          console.log('User profile created successfully for:', user.uid);
-        } catch (profileError) {
-          // If profile creation fails, delete the auth user
-          console.error('Error creating user profile:', profileError);
+          createdAt: serverTimestamp()
+        });
+
+        console.log('User profile created successfully for:', user.uid);
+      } catch (profileError) {
+        // Rollback if profile creation fails
+        console.error('Error creating user profile:', profileError);
+        if (user) {
           await user.delete();
-          throw new Error('Failed to create user profile. Please try again.');
         }
-        
-        return user;
-      } catch (error: any) {
-        // If user was created but profile creation failed, delete the user
-        if (auth.currentUser && error.code !== 'auth/email-already-in-use') {
-          try {
-            await auth.currentUser.delete();
-          } catch (deleteError) {
-            console.error('Error deleting user after failed profile creation:', deleteError);
-          }
-        }
-        
-        // Handle specific Firebase errors
-        const authError = handleAuthError(error);
-        throw new Error(authError.message);
+        throw new Error('Failed to create user profile. Please try again.');
       }
-    },
+
+      return user;
+
+    } catch (error: any) {
+      if (user) {
+        try {
+          await user.delete(); // Cleanup
+        } catch (deleteError) {
+          console.error('Error deleting user after failed profile creation:', deleteError);
+        }
+      }
+
+      const authError = handleAuthError(error);
+      throw new Error(authError.message);
+    }
+  },
+
     
     signIn: async (email: string, password: string) => {
       if (!auth || !db) throw new Error('Firebase not initialized');
