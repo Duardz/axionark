@@ -15,7 +15,8 @@ import {
   updateDoc, 
   deleteDoc,
   writeBatch,
-  serverTimestamp 
+  serverTimestamp,
+  Timestamp
 } from 'firebase/firestore';
 import { browser } from '$app/environment';
 import { 
@@ -29,16 +30,16 @@ interface UserData {
   uid: string;
   email: string;
   username: string;
-  createdAt: Date | any; // Allow both Date and serverTimestamp
+  createdAt: Date | Timestamp | any;
   totalXP: number;
   completedTasks: string[];
   currentPhase: 'beginner' | 'intermediate' | 'advanced';
   totalBounty: number;
   bugsFound: number;
-  lastLogin?: Date | any;
+  lastLogin?: Date | Timestamp | any;
   loginAttempts?: number;
   accountLocked?: boolean;
-  updatedAt?: Date | any;
+  updatedAt?: Date | Timestamp | any;
 }
 
 interface AuthError {
@@ -71,25 +72,6 @@ function createAuthStore() {
                 await updateDoc(doc(db, 'users', user.uid), {
                   lastLogin: serverTimestamp()
                 });
-              } else {
-                // Create user document if it doesn't exist (for users created before this system)
-                console.log('Creating missing user profile for:', user.uid);
-                const userData: UserData = {
-                  uid: user.uid,
-                  email: user.email!,
-                  username: user.email!.split('@')[0] || 'User',
-                  createdAt: serverTimestamp(),
-                  totalXP: 0,
-                  completedTasks: [],
-                  currentPhase: 'beginner',
-                  totalBounty: 0,
-                  bugsFound: 0,
-                  lastLogin: serverTimestamp(),
-                  loginAttempts: 0,
-                  accountLocked: false,
-                  updatedAt: serverTimestamp()
-                };
-                await setDoc(doc(db, 'users', user.uid), userData);
               }
             } catch (error) {
               console.error('Error updating last login:', error);
@@ -143,49 +125,46 @@ function createAuthStore() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
-        // Create user document with ALL required fields
-        // Use Date for initial creation to pass validation
-        const now = new Date();
-        const userData = {
+        // Create user document with required fields
+        const userData: UserData = {
           uid: user.uid,
           email: user.email!,
           username: sanitizedUsername,
-          createdAt: now,
+          createdAt: serverTimestamp(),
           totalXP: 0,
           completedTasks: [],
           currentPhase: 'beginner',
           totalBounty: 0,
           bugsFound: 0,
-          lastLogin: now,
+          lastLogin: serverTimestamp(),
           loginAttempts: 0,
           accountLocked: false,
-          updatedAt: now
+          updatedAt: serverTimestamp()
         };
         
         try {
-          // Create user document first
-          await setDoc(doc(db, 'users', user.uid), userData);
+          // Use batch write to ensure atomicity
+          const batch = writeBatch(db);
+          
+          // Create user document
+          batch.set(doc(db, 'users', user.uid), userData);
           
           // Create username document
-          await setDoc(doc(db, 'usernames', sanitizedUsername.toLowerCase()), { 
+          batch.set(doc(db, 'usernames', sanitizedUsername.toLowerCase()), { 
             uid: user.uid,
-            createdAt: now
+            createdAt: serverTimestamp()
           });
           
-          // Update with server timestamps after creation
-          await updateDoc(doc(db, 'users', user.uid), {
-            createdAt: serverTimestamp(),
-            lastLogin: serverTimestamp(),
-            updatedAt: serverTimestamp()
-          });
+          // Commit the batch
+          await batch.commit();
+          
+          console.log('User profile created successfully for:', user.uid);
         } catch (profileError) {
           // If profile creation fails, delete the auth user
           console.error('Error creating user profile:', profileError);
           await user.delete();
-          throw profileError;
+          throw new Error('Failed to create user profile. Please try again.');
         }
-        
-        console.log('User profile created successfully for:', user.uid);
         
         return user;
       } catch (error: any) {
