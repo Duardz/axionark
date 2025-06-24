@@ -1,4 +1,4 @@
-// src/routes/bugs/+page.svelte
+<!-- src/routes/bugs/+page.svelte -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';

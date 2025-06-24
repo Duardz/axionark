@@ -1,4 +1,4 @@
-// src/routes/+layout.svelte
+<!-- // src/routes/+layout.svelte -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { authStore } from '$lib/stores/auth';

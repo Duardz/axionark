@@ -1,4 +1,4 @@
-// src/routes/tasks/+page.svelte
+<!-- // src/routes/tasks/+page.svelte -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
