@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { db } from '$lib/firebase';
-import { doc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, deleteDoc, orderBy } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, addDoc, query, where, getDocs, deleteDoc, orderBy } from 'firebase/firestore';
 import type { Task } from '$lib/data/roadmap';
 
 export interface JournalEntry {
@@ -53,6 +53,23 @@ function createUserStore() {
           const data = docSnap.data() as UserProfile;
           set(data);
           return data;
+        } else {
+          // If document doesn't exist, create it with default values
+          const defaultProfile: UserProfile = {
+            uid,
+            email: '', // Will be updated by auth
+            username: 'Anonymous',
+            totalXP: 0,
+            completedTasks: [],
+            currentPhase: 'beginner',
+            totalBounty: 0,
+            bugsFound: 0,
+            createdAt: new Date()
+          };
+          
+          await setDoc(docRef, defaultProfile);
+          set(defaultProfile);
+          return defaultProfile;
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -250,10 +267,27 @@ function createBugStore() {
         const totalBounty = bugs.reduce((sum, bug) => sum + bug.bounty, 0);
         const bugsFound = bugs.length;
         
-        await updateDoc(doc(db, 'users', uid), {
-          totalBounty,
-          bugsFound
-        });
+        // Check if user document exists before updating
+        const userRef = doc(db, 'users', uid);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          await updateDoc(userRef, {
+            totalBounty,
+            bugsFound
+          });
+        } else {
+          // Create user document if it doesn't exist
+          await setDoc(userRef, {
+            uid,
+            totalBounty,
+            bugsFound,
+            totalXP: 0,
+            completedTasks: [],
+            currentPhase: 'beginner',
+            createdAt: new Date()
+          }, { merge: true });
+        }
         
         return bugs;
       } catch (error) {
@@ -282,6 +316,17 @@ function createBugStore() {
             totalBounty: (userData.totalBounty || 0) + bug.bounty,
             bugsFound: (userData.bugsFound || 0) + 1
           });
+        } else {
+          // Create user document if it doesn't exist
+          await setDoc(userRef, {
+            uid: bug.uid,
+            totalBounty: bug.bounty,
+            bugsFound: 1,
+            totalXP: 0,
+            completedTasks: [],
+            currentPhase: 'beginner',
+            createdAt: new Date()
+          }, { merge: true });
         }
         
         return docRef.id;
@@ -339,7 +384,7 @@ export const bugStore = createBugStore();
 
 // Derived stores
 export const userProgress = derived(userStore, $user => {
-  if (!$user) return { percentage: 0, level: 1 };
+  if (!$user) return { percentage: 0, level: 1, currentLevelXP: 0, xpPerLevel: 1000 };
   
   const xpPerLevel = 1000;
   const level = Math.floor($user.totalXP / xpPerLevel) + 1;

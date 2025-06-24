@@ -36,8 +36,8 @@
       // Show success animation
       const button = document.getElementById(`task-${task.id}`);
       if (button) {
-        button.classList.add('glow-effect');
-        setTimeout(() => button.classList.remove('glow-effect'), 2000);
+        button.classList.add('animate-scaleIn');
+        setTimeout(() => button.classList.remove('animate-scaleIn'), 500);
       }
     } catch (error) {
       console.error('Error completing task:', error);
@@ -99,181 +99,201 @@
     return Array.from(categories);
   }
 
+  function getPhaseColor(phase: string) {
+    switch (phase) {
+      case 'beginner':
+        return 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400';
+      case 'intermediate':
+        return 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400';
+      case 'advanced':
+        return 'bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400';
+      default:
+        return 'bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400';
+    }
+  }
+
   $: filteredTasks = getFilteredTasks();
   $: allCategories = getAllCategories();
 </script>
 
 <Navbar />
 
-<div class="container mx-auto px-4 py-8 max-w-7xl">
-  <div class="animate-fade-in">
-    <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Tasks</h1>
-      <p class="text-gray-600">Complete tasks to earn XP and track your progress</p>
-    </div>
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="animate-fadeIn">
+      <!-- Header -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Tasks</h1>
+        <p class="text-gray-600 dark:text-gray-400">Complete tasks to earn XP and level up your skills</p>
+      </div>
 
-    <!-- Progress Overview -->
-    {#if $userStore && $userProgress}
-      <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 mb-8 text-white">
-        <div class="flex items-center justify-between mb-4">
+      <!-- Progress Overview -->
+      {#if $userStore && $userProgress}
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-6 mb-8 text-white">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h2 class="text-lg font-medium opacity-90 mb-1">Current Level</h2>
+              <p class="text-3xl font-bold">Level {$userProgress.level}</p>
+            </div>
+            <div>
+              <h2 class="text-lg font-medium opacity-90 mb-1">Total XP</h2>
+              <p class="text-3xl font-bold">{$userStore.totalXP} XP</p>
+            </div>
+            <div>
+              <h2 class="text-lg font-medium opacity-90 mb-1">Progress to Next Level</h2>
+              <div class="mt-2">
+                <div class="flex justify-between text-sm mb-1">
+                  <span>{$userProgress.currentLevelXP} XP</span>
+                  <span>{$userProgress.xpPerLevel} XP</span>
+                </div>
+                <div class="w-full bg-white/20 rounded-full h-3">
+                  <div 
+                    class="bg-white h-3 rounded-full transition-all duration-500"
+                    style="width: {$userProgress.percentage}%"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Filters -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Filters</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Phase Filter -->
           <div>
-            <h2 class="text-2xl font-bold">Level {$userProgress.level}</h2>
-            <p class="text-blue-100">Total XP: {$userStore.totalXP}</p>
+            <label for="phase-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Phase
+            </label>
+            <select
+              id="phase-filter"
+              bind:value={selectedPhase}
+              class="input"
+            >
+              <option value="all">All Phases</option>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
           </div>
-          <div class="text-right">
-            <p class="text-sm text-blue-100">Next level</p>
-            <p class="text-xl font-semibold">{$userProgress.currentLevelXP}/{$userProgress.xpPerLevel} XP</p>
+
+          <!-- Category Filter -->
+          <div>
+            <label for="category-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Category
+            </label>
+            <select
+              id="category-filter"
+              bind:value={selectedCategory}
+              class="input"
+            >
+              <option value="all">All Categories</option>
+              {#each allCategories as category}
+                <option value={category.id}>{category.title}</option>
+              {/each}
+            </select>
           </div>
-        </div>
-        <div class="w-full bg-blue-400 bg-opacity-30 rounded-full h-3">
-          <div 
-            class="bg-white h-3 rounded-full transition-all duration-500"
-            style="width: {$userProgress.percentage}%"
-          ></div>
+
+          <!-- Show Completed Toggle -->
+          <div class="flex items-end">
+            <label class="flex items-center cursor-pointer bg-gray-50 dark:bg-gray-700/50 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <input
+                type="checkbox"
+                bind:checked={showCompleted}
+                class="w-4 h-4 text-indigo-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500 focus:ring-2"
+              />
+              <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Show completed tasks</span>
+            </label>
+          </div>
         </div>
       </div>
-    {/if}
 
-    <!-- Filters -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Filters</h3>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Phase Filter -->
-        <div>
-          <label for="phase-filter" class="block text-sm font-medium text-gray-700 mb-2">
-            Phase
-          </label>
-          <select
-            id="phase-filter"
-            bind:value={selectedPhase}
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">All Phases</option>
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </select>
-        </div>
-
-        <!-- Category Filter -->
-        <div>
-          <label for="category-filter" class="block text-sm font-medium text-gray-700 mb-2">
-            Category
-          </label>
-          <select
-            id="category-filter"
-            bind:value={selectedCategory}
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="all">All Categories</option>
-            {#each allCategories as category}
-              <option value={category.id}>{category.title}</option>
-            {/each}
-          </select>
-        </div>
-
-        <!-- Show Completed Toggle -->
-        <div class="flex items-end">
-          <label class="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              bind:checked={showCompleted}
-              class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <span class="text-sm font-medium text-gray-700">Show completed tasks</span>
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tasks List -->
-    <div class="space-y-4">
-      {#if filteredTasks.length === 0}
-        <div class="bg-white rounded-lg shadow-md p-8 text-center">
-          <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p class="text-gray-500">No tasks found. Try adjusting your filters.</p>
-        </div>
-      {:else}
-        {#each filteredTasks as task}
-          <div
-            id="task-{task.id}"
-            class="bg-white rounded-lg shadow-md p-6 transition-all hover:shadow-lg"
-            class:opacity-60={isTaskCompleted(task.id)}
-          >
-            <div class="flex items-start justify-between">
-              <div class="flex-1">
-                <div class="flex items-start">
-                  <div class="flex-shrink-0 mr-4">
-                    {#if isTaskCompleted(task.id)}
-                      <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <!-- Tasks List -->
+      <div class="space-y-4">
+        {#if filteredTasks.length === 0}
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center">
+            <svg class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No tasks found</h3>
+            <p class="text-gray-500 dark:text-gray-400">Try adjusting your filters or enabling completed tasks</p>
+          </div>
+        {:else}
+          {#each filteredTasks as task}
+            <div
+              id="task-{task.id}"
+              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all p-6"
+              class:opacity-60={isTaskCompleted(task.id)}
+            >
+              <div class="flex flex-col sm:flex-row sm:items-start gap-4">
+                <!-- Checkbox -->
+                <div class="flex-shrink-0">
+                  {#if isTaskCompleted(task.id)}
+                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                       </svg>
-                    {:else}
-                      <div class="w-8 h-8 border-3 border-gray-300 rounded-full"></div>
-                    {/if}
-                  </div>
+                    </div>
+                  {:else}
+                    <div class="w-8 h-8 border-2 border-gray-300 dark:border-gray-600 rounded-full hover:border-indigo-500 transition-colors"></div>
+                  {/if}
+                </div>
+                
+                <!-- Content -->
+                <div class="flex-1">
+                  <h3 class={`text-lg font-semibold mb-2 ${isTaskCompleted(task.id) ? 'text-gray-500 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-white'}`}>
+                    {task.title}
+                  </h3>
+                  <p class="text-gray-600 dark:text-gray-400 mb-3">{task.description}</p>
                   
-                  <div class="flex-1">
-                    <h3 class={`text-lg font-semibold ${isTaskCompleted(task.id) ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                      {task.title}
-                    </h3>
-                    <p class="mt-1 text-gray-600">{task.description}</p>
-                    
-                    <div class="mt-3 flex items-center flex-wrap gap-2">
-                      <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        task.phase === 'beginner' ? 'bg-green-100 text-green-800' :
-                        task.phase === 'intermediate' ? 'bg-blue-100 text-blue-800' :
-                        'bg-purple-100 text-purple-800'
-                      }`}>
-                        {task.phase}
-                      </span>
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {task.category}
-                      </span>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class={`badge ${getPhaseColor(task.phase)}`}>
+                      {task.phase}
+                    </span>
+                    <span class="badge bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                      {task.category}
+                    </span>
+                    <div class="ml-auto flex items-center gap-3">
+                      <div class="text-center">
+                        <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{task.xp}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">XP</p>
+                      </div>
+                      
+                      {#if !isTaskCompleted(task.id)}
+                        <button
+                          on:click={() => completeTask(task)}
+                          disabled={loading}
+                          class="btn btn-primary"
+                        >
+                          {loading ? 'Completing...' : 'Complete'}
+                        </button>
+                      {:else}
+                        <div class="flex flex-col items-end gap-1">
+                          <span class="text-sm text-green-600 dark:text-green-400 font-medium flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Completed
+                          </span>
+                          <button
+                            on:click={() => uncompleteTask(task)}
+                            disabled={loading}
+                            class="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                          >
+                            Undo
+                          </button>
+                        </div>
+                      {/if}
                     </div>
                   </div>
                 </div>
               </div>
-              
-              <div class="ml-4 flex-shrink-0 flex flex-col items-end">
-                <div class="text-center mb-2">
-                  <p class="text-2xl font-bold text-blue-600">{task.xp}</p>
-                  <p class="text-xs text-gray-500">XP</p>
-                </div>
-                
-                {#if !isTaskCompleted(task.id)}
-                  <button
-                    on:click={() => completeTask(task)}
-                    disabled={loading}
-                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {loading ? 'Completing...' : 'Complete'}
-                  </button>
-                {:else}
-                  <div class="flex flex-col items-end space-y-2">
-                    <span class="text-sm text-green-600 font-medium flex items-center">
-                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                      Completed
-                    </span>
-                    <button
-                      on:click={() => uncompleteTask(task)}
-                      disabled={loading}
-                      class="text-xs text-gray-500 hover:text-red-600 transition-colors"
-                    >
-                      Mark as incomplete
-                    </button>
-                  </div>
-                {/if}
-              </div>
             </div>
-          </div>
-        {/each}
-      {/if}
+          {/each}
+        {/if}
+      </div>
     </div>
   </div>
 </div>
