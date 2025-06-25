@@ -177,7 +177,7 @@ export function validateBountyAmount(amount: number): boolean {
 // Validate task XP (enhanced)
 export function validateXP(xp: number): boolean {
   return xp >= 0 && 
-         xp <= 10000 && 
+         xp <= 500000 && 
          Number.isInteger(xp) &&
          !isNaN(xp) &&
          Number.isFinite(xp);

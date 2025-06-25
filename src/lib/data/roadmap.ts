@@ -37,7 +37,7 @@ export const roadmapData: Phase[] = [
             id: 'networking-basics',
             title: 'Networking Fundamentals',
             description: 'TCP/IP, OSI model, DNS, ports/protocols, subnetting, packet analysis with Wireshark',
-            xp: 150,
+            xp: 500,
             phase: 'beginner',
             category: 'core-fundamentals',
             order: 1
@@ -46,7 +46,7 @@ export const roadmapData: Phase[] = [
             id: 'linux-mastery',
             title: 'Linux Command Line Mastery',
             description: 'File system, permissions, processes, services, bash scripting, grep/sed/awk',
-            xp: 200,
+            xp: 800,
             phase: 'beginner',
             category: 'core-fundamentals',
             order: 2
@@ -55,7 +55,7 @@ export const roadmapData: Phase[] = [
             id: 'windows-basics',
             title: 'Windows Fundamentals',
             description: 'PowerShell basics, services, registry, file system, user management',
-            xp: 100,
+            xp: 400,
             phase: 'beginner',
             category: 'core-fundamentals',
             order: 3
@@ -64,7 +64,7 @@ export const roadmapData: Phase[] = [
             id: 'virtualization',
             title: 'Virtualization & Lab Setup',
             description: 'VMware/VirtualBox, create hacking lab, snapshot management, networking between VMs',
-            xp: 80,
+            xp: 300,
             phase: 'beginner',
             category: 'core-fundamentals',
             order: 4
@@ -79,7 +79,7 @@ export const roadmapData: Phase[] = [
             id: 'http-deep-dive',
             title: 'HTTP Protocol Mastery',
             description: 'Master HTTP methods, headers, status codes, request smuggling, HTTP/2 differences',
-            xp: 100,
+            xp: 600,
             phase: 'beginner',
             category: 'http-mastery',
             order: 5
@@ -88,7 +88,7 @@ export const roadmapData: Phase[] = [
             id: 'web-tech-stack',
             title: 'Web Technology Stack',
             description: 'Understand frontend (JS, DOM, AJAX), backend (PHP, Python, Node.js), and databases',
-            xp: 150,
+            xp: 900,
             phase: 'beginner',
             category: 'http-mastery',
             order: 6
@@ -97,7 +97,7 @@ export const roadmapData: Phase[] = [
             id: 'burp-mastery',
             title: 'Burp Suite Complete Mastery',
             description: 'Master proxy, repeater, intruder, decoder, comparer, and extensions',
-            xp: 100,
+            xp: 1000,
             phase: 'beginner',
             category: 'http-mastery',
             order: 7
@@ -106,7 +106,7 @@ export const roadmapData: Phase[] = [
             id: 'browser-devtools',
             title: 'Browser Developer Tools',
             description: 'Master Chrome/Firefox DevTools, network tab, console, debugger, storage inspection',
-            xp: 80,
+            xp: 500,
             phase: 'beginner',
             category: 'http-mastery',
             order: 8
@@ -121,7 +121,7 @@ export const roadmapData: Phase[] = [
             id: 'python-web',
             title: 'Python for Web Hacking',
             description: 'Master requests library, BeautifulSoup, urllib, regex, and asyncio for web automation',
-            xp: 200,
+            xp: 1200,
             phase: 'beginner',
             category: 'programming-foundations',
             order: 9
@@ -130,7 +130,7 @@ export const roadmapData: Phase[] = [
             id: 'javascript-security',
             title: 'JavaScript Security',
             description: 'Understand JS execution, DOM manipulation, prototype pollution, and XSS crafting',
-            xp: 150,
+            xp: 1100,
             phase: 'beginner',
             category: 'programming-foundations',
             order: 10
@@ -139,7 +139,7 @@ export const roadmapData: Phase[] = [
             id: 'sql-basics',
             title: 'SQL All Dialects',
             description: 'Learn MySQL, PostgreSQL, MSSQL, Oracle differences for injection attacks',
-            xp: 100,
+            xp: 900,
             phase: 'beginner',
             category: 'programming-foundations',
             order: 11
@@ -148,7 +148,7 @@ export const roadmapData: Phase[] = [
             id: 'bash-automation',
             title: 'Bash One-Liners',
             description: 'Create recon scripts, automation tools, and quick exploitation commands',
-            xp: 80,
+            xp: 700,
             phase: 'beginner',
             category: 'programming-foundations',
             order: 12
@@ -163,7 +163,7 @@ export const roadmapData: Phase[] = [
             id: 'sqli-mastery',
             title: 'SQL Injection Expert',
             description: 'Union, blind, time-based, second-order, out-of-band SQLi with WAF bypass',
-            xp: 300,
+            xp: 2000,
             phase: 'beginner',
             category: 'injection-attacks',
             order: 13
@@ -172,7 +172,7 @@ export const roadmapData: Phase[] = [
             id: 'command-injection',
             title: 'OS Command Injection',
             description: 'Find and exploit command injection in all contexts, bypass filters',
-            xp: 200,
+            xp: 1500,
             phase: 'beginner',
             category: 'injection-attacks',
             order: 14
@@ -181,7 +181,7 @@ export const roadmapData: Phase[] = [
             id: 'nosql-injection',
             title: 'NoSQL Injection',
             description: 'MongoDB, CouchDB, Redis injection techniques and data extraction',
-            xp: 150,
+            xp: 1200,
             phase: 'beginner',
             category: 'injection-attacks',
             order: 15
@@ -190,7 +190,7 @@ export const roadmapData: Phase[] = [
             id: 'ldap-xpath',
             title: 'LDAP & XPath Injection',
             description: 'Exploit directory services and XML path language injections',
-            xp: 100,
+            xp: 1000,
             phase: 'beginner',
             category: 'injection-attacks',
             order: 16
@@ -205,7 +205,7 @@ export const roadmapData: Phase[] = [
             id: 'xss-contexts',
             title: 'XSS All Contexts',
             description: 'HTML, attribute, JavaScript, DOM-based XSS with filter bypasses',
-            xp: 250,
+            xp: 1800,
             phase: 'beginner',
             category: 'xss-csrf',
             order: 13
@@ -214,7 +214,7 @@ export const roadmapData: Phase[] = [
             id: 'csrf-mastery',
             title: 'CSRF Advanced',
             description: 'CSRF with JSON, multipart, SameSite bypass, and token prediction',
-            xp: 150,
+            xp: 1400,
             phase: 'beginner',
             category: 'xss-csrf',
             order: 14
@@ -223,7 +223,7 @@ export const roadmapData: Phase[] = [
             id: 'cors-misconfig',
             title: 'CORS Exploitation',
             description: 'Find and exploit CORS misconfigurations for data theft',
-            xp: 100,
+            xp: 1100,
             phase: 'beginner',
             category: 'xss-csrf',
             order: 15
@@ -232,7 +232,7 @@ export const roadmapData: Phase[] = [
             id: 'clickjacking',
             title: 'Clickjacking & UI Redress',
             description: 'Create PoCs for clickjacking vulnerabilities',
-            xp: 80,
+            xp: 800,
             phase: 'beginner',
             category: 'xss-csrf',
             order: 16
@@ -247,7 +247,7 @@ export const roadmapData: Phase[] = [
             id: 'portswigger-all',
             title: 'PortSwigger Academy Complete',
             description: 'Finish ALL free labs, understand every vulnerability deeply',
-            xp: 500,
+            xp: 4000,
             phase: 'beginner',
             category: 'practice-labs',
             order: 17
@@ -256,7 +256,7 @@ export const roadmapData: Phase[] = [
             id: 'pentesterlab-essential',
             title: 'PentesterLab Essential Badge',
             description: 'Complete essential exercises and understand exploitation basics',
-            xp: 300,
+            xp: 2500,
             phase: 'beginner',
             category: 'practice-labs',
             order: 18
@@ -265,7 +265,7 @@ export const roadmapData: Phase[] = [
             id: 'dvwa-juice',
             title: 'DVWA & Juice Shop',
             description: 'Complete all challenges in both platforms locally',
-            xp: 200,
+            xp: 1800,
             phase: 'beginner',
             category: 'practice-labs',
             order: 19
@@ -274,7 +274,7 @@ export const roadmapData: Phase[] = [
             id: 'first-ctf',
             title: 'First CTF Web Challenges',
             description: 'Solve 20 web challenges from various CTF platforms',
-            xp: 150,
+            xp: 1500,
             phase: 'beginner',
             category: 'practice-labs',
             order: 20
@@ -297,7 +297,7 @@ export const roadmapData: Phase[] = [
             id: 'jwt-attacks',
             title: 'JWT Complete Attacks',
             description: 'None algorithm, weak secrets, key confusion, kid injection, jku/x5u spoofing',
-            xp: 300,
+            xp: 3000,
             phase: 'intermediate',
             category: 'auth-session',
             order: 21
@@ -306,7 +306,7 @@ export const roadmapData: Phase[] = [
             id: 'oauth-exploitation',
             title: 'OAuth 2.0 & OpenID',
             description: 'Authorization flaws, redirect attacks, CSRF, token leakage, state attacks',
-            xp: 250,
+            xp: 2800,
             phase: 'intermediate',
             category: 'auth-session',
             order: 22
@@ -315,7 +315,7 @@ export const roadmapData: Phase[] = [
             id: 'saml-attacks',
             title: 'SAML Exploitation',
             description: 'XML signature wrapping, assertion replay, recipient confusion',
-            xp: 200,
+            xp: 2500,
             phase: 'intermediate',
             category: 'auth-session',
             order: 23
@@ -324,7 +324,7 @@ export const roadmapData: Phase[] = [
             id: 'session-advanced',
             title: 'Advanced Session Attacks',
             description: 'Session puzzling, fixation, donation, race conditions in sessions',
-            xp: 150,
+            xp: 2200,
             phase: 'intermediate',
             category: 'auth-session',
             order: 24
@@ -339,7 +339,7 @@ export const roadmapData: Phase[] = [
             id: 'rest-api',
             title: 'REST API Complete Testing',
             description: 'Mass assignment, IDOR, method tampering, versioning attacks',
-            xp: 250,
+            xp: 2500,
             phase: 'intermediate',
             category: 'api-security',
             order: 25
@@ -348,7 +348,7 @@ export const roadmapData: Phase[] = [
             id: 'graphql-expert',
             title: 'GraphQL Exploitation',
             description: 'Introspection, query depth attacks, batching, field suggestions abuse',
-            xp: 300,
+            xp: 3200,
             phase: 'intermediate',
             category: 'api-security',
             order: 26
@@ -357,7 +357,7 @@ export const roadmapData: Phase[] = [
             id: 'websocket-security',
             title: 'WebSocket Attacks',
             description: 'CSWSH, message tampering, auth bypass, injection in WebSockets',
-            xp: 200,
+            xp: 2700,
             phase: 'intermediate',
             category: 'api-security',
             order: 27
@@ -366,7 +366,7 @@ export const roadmapData: Phase[] = [
             id: 'api-fuzzing',
             title: 'API Fuzzing & Automation',
             description: 'Build custom API fuzzers, automate testing, discover hidden endpoints',
-            xp: 250,
+            xp: 3000,
             phase: 'intermediate',
             category: 'api-security',
             order: 28
@@ -381,7 +381,7 @@ export const roadmapData: Phase[] = [
             id: 'ssrf-advanced',
             title: 'SSRF Complete Mastery',
             description: 'Cloud metadata, blind SSRF, protocol smuggling, DNS rebinding',
-            xp: 400,
+            xp: 4000,
             phase: 'intermediate',
             category: 'server-side',
             order: 29
@@ -390,7 +390,7 @@ export const roadmapData: Phase[] = [
             id: 'xxe-mastery',
             title: 'XXE All Contexts',
             description: 'File disclosure, SSRF via XXE, blind XXE, XXE in formats (XLSX, SVG)',
-            xp: 300,
+            xp: 3500,
             phase: 'intermediate',
             category: 'server-side',
             order: 30
@@ -399,7 +399,7 @@ export const roadmapData: Phase[] = [
             id: 'ssti-rce',
             title: 'Template Injection to RCE',
             description: 'Jinja2, Twig, Freemarker, Velocity exploitation for code execution',
-            xp: 350,
+            xp: 4200,
             phase: 'intermediate',
             category: 'server-side',
             order: 31
@@ -408,7 +408,7 @@ export const roadmapData: Phase[] = [
             id: 'file-upload',
             title: 'File Upload to RCE',
             description: 'Bypass filters, polyglot files, race conditions, zip slip attacks',
-            xp: 300,
+            xp: 3800,
             phase: 'intermediate',
             category: 'server-side',
             order: 32
@@ -423,7 +423,7 @@ export const roadmapData: Phase[] = [
             id: 'scanner-dev',
             title: 'Build Web Scanner',
             description: 'Create modular scanner better than existing tools for specific cases',
-            xp: 500,
+            xp: 5000,
             phase: 'intermediate',
             category: 'tool-development',
             order: 33
@@ -432,7 +432,7 @@ export const roadmapData: Phase[] = [
             id: 'fuzzer-go',
             title: 'High-Performance Fuzzer',
             description: 'Build fuzzer in Go with smart wordlist generation and response analysis',
-            xp: 400,
+            xp: 4500,
             phase: 'intermediate',
             category: 'tool-development',
             order: 34
@@ -441,7 +441,7 @@ export const roadmapData: Phase[] = [
             id: 'payload-generator',
             title: 'Payload Generation Framework',
             description: 'Context-aware XSS/SQLi payload generator with encoding and evasion',
-            xp: 350,
+            xp: 4200,
             phase: 'intermediate',
             category: 'tool-development',
             order: 35
@@ -450,7 +450,7 @@ export const roadmapData: Phase[] = [
             id: 'recon-automation',
             title: 'Recon Automation Suite',
             description: 'Subdomain enum, port scan, content discovery, vulnerability correlation',
-            xp: 300,
+            xp: 4000,
             phase: 'intermediate',
             category: 'tool-development',
             order: 36
@@ -465,7 +465,7 @@ export const roadmapData: Phase[] = [
             id: 'methodology',
             title: 'Develop Personal Methodology',
             description: 'Create and refine your unique approach to finding bugs',
-            xp: 200,
+            xp: 2000,
             phase: 'intermediate',
             category: 'real-hunting',
             order: 37
@@ -474,7 +474,7 @@ export const roadmapData: Phase[] = [
             id: 'automation-workflow',
             title: 'Automated Hunting Workflow',
             description: 'Build complete automation from recon to reporting',
-            xp: 300,
+            xp: 3800,
             phase: 'intermediate',
             category: 'real-hunting',
             order: 38
@@ -483,7 +483,7 @@ export const roadmapData: Phase[] = [
             id: 'high-impact',
             title: 'Find High/Critical Bugs',
             description: 'Discover and report 5 high or critical severity vulnerabilities',
-            xp: 500,
+            xp: 6000,
             phase: 'intermediate',
             category: 'real-hunting',
             order: 39
@@ -492,7 +492,7 @@ export const roadmapData: Phase[] = [
             id: 'bug-chains',
             title: 'Vulnerability Chains',
             description: 'Chain multiple bugs for maximum impact demonstrations',
-            xp: 400,
+            xp: 5000,
             phase: 'intermediate',
             category: 'real-hunting',
             order: 40
@@ -515,7 +515,7 @@ export const roadmapData: Phase[] = [
             id: 'deserialization',
             title: 'Deserialization Mastery',
             description: 'Java, PHP, Python, .NET deserialization with gadget chain construction',
-            xp: 800,
+            xp: 10000,
             phase: 'advanced',
             category: 'advanced-exploitation',
             order: 41
@@ -524,7 +524,7 @@ export const roadmapData: Phase[] = [
             id: 'race-conditions',
             title: 'Race Condition Exploitation',
             description: 'Time-of-check time-of-use, payment races, async vulnerabilities',
-            xp: 700,
+            xp: 9000,
             phase: 'advanced',
             category: 'advanced-exploitation',
             order: 42
@@ -533,7 +533,7 @@ export const roadmapData: Phase[] = [
             id: 'cache-attacks',
             title: 'Cache Poisoning & Deception',
             description: 'Web cache poisoning, deception, key injection, DoS via cache',
-            xp: 600,
+            xp: 8000,
             phase: 'advanced',
             category: 'cache-attacks',
             order: 43
@@ -542,7 +542,7 @@ export const roadmapData: Phase[] = [
             id: 'proto-pollution',
             title: 'Prototype Pollution to RCE',
             description: 'Client and server-side prototype pollution leading to code execution',
-            xp: 900,
+            xp: 11000,
             phase: 'advanced',
             category: 'advanced-exploitation',
             order: 44
@@ -557,7 +557,7 @@ export const roadmapData: Phase[] = [
             id: 'cloud-ssrf',
             title: 'Cloud Metadata Exploitation',
             description: 'AWS, Azure, GCP metadata endpoints, IAM privilege escalation',
-            xp: 800,
+            xp: 10000,
             phase: 'advanced',
             category: 'cloud-container',
             order: 45
@@ -566,7 +566,7 @@ export const roadmapData: Phase[] = [
             id: 'k8s-attacks',
             title: 'Kubernetes Exploitation',
             description: 'API abuse, RBAC bypass, container escape, service mesh attacks',
-            xp: 900,
+            xp: 12000,
             phase: 'advanced',
             category: 'cloud-container',
             order: 46
@@ -575,7 +575,7 @@ export const roadmapData: Phase[] = [
             id: 'serverless',
             title: 'Serverless Security',
             description: 'Lambda/Functions injection, event injection, cold start attacks',
-            xp: 700,
+            xp: 9000,
             phase: 'advanced',
             category: 'cloud-container',
             order: 47
@@ -584,7 +584,7 @@ export const roadmapData: Phase[] = [
             id: 'cicd-compromise',
             title: 'CI/CD Pipeline Attacks',
             description: 'Pipeline poisoning, secret extraction, supply chain compromise',
-            xp: 1000,
+            xp: 13000,
             phase: 'advanced',
             category: 'cloud-container',
             order: 48
@@ -599,7 +599,7 @@ export const roadmapData: Phase[] = [
             id: 'new-techniques',
             title: 'Develop New Techniques',
             description: 'Create novel attack methods, discover new vulnerability classes',
-            xp: 1500,
+            xp: 20000,
             phase: 'advanced',
             category: 'research-development',
             order: 49
@@ -608,7 +608,7 @@ export const roadmapData: Phase[] = [
             id: 'framework-vulns',
             title: 'Framework 0-days',
             description: 'Find vulnerabilities in popular frameworks (React, Angular, Django)',
-            xp: 2000,
+            xp: 25000,
             phase: 'advanced',
             category: 'research-development',
             order: 50
@@ -617,7 +617,7 @@ export const roadmapData: Phase[] = [
             id: 'tool-release',
             title: 'Release Popular Tools',
             description: 'Create and maintain tools used by the security community',
-            xp: 1200,
+            xp: 15000,
             phase: 'advanced',
             category: 'research-development',
             order: 51
@@ -626,7 +626,7 @@ export const roadmapData: Phase[] = [
             id: 'cve-research',
             title: 'CVE Discoveries',
             description: 'Discover and responsibly disclose 10+ CVEs',
-            xp: 1800,
+            xp: 22000,
             phase: 'advanced',
             category: 'research-development',
             order: 52
@@ -641,7 +641,7 @@ export const roadmapData: Phase[] = [
             id: 'conference-talks',
             title: 'Conference Speaker',
             description: 'Present at major security conferences (Black Hat, DEF CON)',
-            xp: 1500,
+            xp: 18000,
             phase: 'advanced',
             category: 'community-leadership',
             order: 53
@@ -650,7 +650,7 @@ export const roadmapData: Phase[] = [
             id: 'training-creation',
             title: 'Create Training Content',
             description: 'Develop comprehensive training courses or materials',
-            xp: 1000,
+            xp: 12000,
             phase: 'advanced',
             category: 'community-leadership',
             order: 54
@@ -659,7 +659,7 @@ export const roadmapData: Phase[] = [
             id: 'blog-influence',
             title: 'Influential Blog/Channel',
             description: 'Build following with technical writeups and tutorials',
-            xp: 800,
+            xp: 10000,
             phase: 'advanced',
             category: 'community-leadership',
             order: 55
@@ -668,7 +668,7 @@ export const roadmapData: Phase[] = [
             id: 'mentor-hackers',
             title: 'Mentor Next Generation',
             description: 'Help train and guide new security researchers',
-            xp: 600,
+            xp: 8000,
             phase: 'advanced',
             category: 'community-leadership',
             order: 56
@@ -683,7 +683,7 @@ export const roadmapData: Phase[] = [
             id: 'browser-rce',
             title: 'Browser RCE',
             description: 'Find and exploit browser vulnerability for code execution',
-            xp: 5000,
+            xp: 75000,
             phase: 'advanced',
             category: 'elite-achievements',
             order: 57
@@ -692,7 +692,7 @@ export const roadmapData: Phase[] = [
             id: 'waf-bypass-framework',
             title: 'Universal WAF Bypass',
             description: 'Create techniques that bypass all major WAFs',
-            xp: 3000,
+            xp: 50000,
             phase: 'advanced',
             category: 'elite-achievements',
             order: 58
@@ -701,7 +701,7 @@ export const roadmapData: Phase[] = [
             id: 'bug-bounty-millionaire',
             title: 'Bug Bounty Millionaire',
             description: 'Earn over $1,000,000 from bug bounties',
-            xp: 10000,
+            xp: 100000,
             phase: 'advanced',
             category: 'elite-achievements',
             order: 59
@@ -710,7 +710,7 @@ export const roadmapData: Phase[] = [
             id: 'security-legend',
             title: 'Industry Legend',
             description: 'Become recognized as a leading expert in web security',
-            xp: 10000,
+            xp: 200000,
             phase: 'advanced',
             category: 'elite-achievements',
             order: 60
