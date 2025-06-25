@@ -164,8 +164,8 @@
             >
               <div class="flex flex-col items-center text-center">
                 <div class="text-2xl mb-2">
-                  {#if phase.id === 'beginner'}🌱
-                  {:else if phase.id === 'intermediate'}🚀
+                  {#if phase.id === 'foundation'}🌱
+                  {:else if phase.id === 'pentesting'}🚀
                   {:else}👑{/if}
                 </div>
                 <div class="text-lg font-bold mb-1">{phase.title}</div>
@@ -201,8 +201,8 @@
               <div class="flex items-center gap-3 mb-4">
                 <div class={`p-3 bg-gradient-to-r ${phaseColor.bg} rounded-xl text-white`}>
                   <div class="text-2xl">
-                    {#if currentPhase.id === 'beginner'}🌱
-                    {:else if currentPhase.id === 'intermediate'}🚀
+                    {#if currentPhase.id === 'foundation'}🌱
+                    {:else if currentPhase.id === 'pentesting'}🚀
                     {:else}👑{/if}
                   </div>
                 </div>
@@ -503,8 +503,8 @@
             <div class="flex items-center gap-3 mb-4">
               <div class={`p-2 bg-gradient-to-r ${colors.bg} rounded-lg text-white`}>
                 <div class="text-xl">
-                  {#if phase.id === 'beginner'}🌱
-                  {:else if phase.id === 'intermediate'}🚀
+                  {#if phase.id === 'foundation'}🌱
+                  {:else if phase.id === 'pentesting'}🚀
                   {:else}👑{/if}
                 </div>
               </div>
