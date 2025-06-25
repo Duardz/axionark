@@ -710,7 +710,7 @@ export const roadmapData: Phase[] = [
             id: 'security-legend',
             title: 'Industry Legend',
             description: 'Become recognized as a leading expert in web security',
-            xp: 20000,
+            xp: 10000,
             phase: 'advanced',
             category: 'elite-achievements',
             order: 60
