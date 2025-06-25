@@ -25,166 +25,259 @@ export interface Category {
 export const roadmapData: Phase[] = [
   {
     id: 'beginner',
-    title: 'Beginner Phase',
-    description: 'Learning the Basics and Finding First Bugs',
+    title: 'Web Hacking Foundation',
+    description: 'Master Fundamentals, HTTP, Web Technologies, and Core Vulnerabilities',
     duration: 'Months 1-6',
     categories: [
       {
-        id: 'foundations',
-        title: 'Foundations',
+        id: 'core-fundamentals',
+        title: 'Core IT Fundamentals',
         tasks: [
           {
-            id: 'web-basics',
-            title: 'Web Basics',
-            description: 'Learn HTTP/HTTPS, URLs, Browser DevTools, HTML, Cookies & Sessions',
-            xp: 50,
+            id: 'networking-basics',
+            title: 'Networking Fundamentals',
+            description: 'TCP/IP, OSI model, DNS, ports/protocols, subnetting, packet analysis with Wireshark',
+            xp: 150,
             phase: 'beginner',
-            category: 'foundations',
+            category: 'core-fundamentals',
             order: 1
           },
           {
-            id: 'security-intro',
-            title: 'Introduction to Security',
-            description: 'Understand vulnerabilities, OWASP Top 10, Security mindset, Impact vs Severity',
-            xp: 50,
+            id: 'linux-mastery',
+            title: 'Linux Command Line Mastery',
+            description: 'File system, permissions, processes, services, bash scripting, grep/sed/awk',
+            xp: 200,
             phase: 'beginner',
-            category: 'foundations',
+            category: 'core-fundamentals',
             order: 2
           },
           {
-            id: 'tools-setup',
-            title: 'Tools Setup',
-            description: 'Install Burp Suite Community, Configure browsers, Set up note-taking',
-            xp: 30,
+            id: 'windows-basics',
+            title: 'Windows Fundamentals',
+            description: 'PowerShell basics, services, registry, file system, user management',
+            xp: 100,
             phase: 'beginner',
-            category: 'foundations',
+            category: 'core-fundamentals',
             order: 3
+          },
+          {
+            id: 'virtualization',
+            title: 'Virtualization & Lab Setup',
+            description: 'VMware/VirtualBox, create hacking lab, snapshot management, networking between VMs',
+            xp: 80,
+            phase: 'beginner',
+            category: 'core-fundamentals',
+            order: 4
           }
         ]
       },
       {
-        id: 'practice-platforms',
-        title: 'Practice Platforms',
+        id: 'http-mastery',
+        title: 'HTTP & Web Foundations',
         tasks: [
           {
-            id: 'portswigger-academy',
-            title: 'PortSwigger Web Security Academy',
-            description: 'Complete Server-side topics basics and Apprentice level labs',
+            id: 'http-deep-dive',
+            title: 'HTTP Protocol Mastery',
+            description: 'Master HTTP methods, headers, status codes, request smuggling, HTTP/2 differences',
             xp: 100,
             phase: 'beginner',
-            category: 'practice-platforms',
-            order: 4
-          },
-          {
-            id: 'juice-shop',
-            title: 'OWASP Juice Shop',
-            description: 'Install locally and find 10 vulnerabilities',
-            xp: 80,
-            phase: 'beginner',
-            category: 'practice-platforms',
+            category: 'http-mastery',
             order: 5
           },
           {
-            id: 'pentesterlab-free',
-            title: 'PentesterLab Free Exercises',
-            description: 'Complete introduction and basic web exercises',
-            xp: 60,
+            id: 'web-tech-stack',
+            title: 'Web Technology Stack',
+            description: 'Understand frontend (JS, DOM, AJAX), backend (PHP, Python, Node.js), and databases',
+            xp: 150,
             phase: 'beginner',
-            category: 'practice-platforms',
+            category: 'http-mastery',
             order: 6
-          }
-        ]
-      },
-      {
-        id: 'core-vulnerabilities',
-        title: 'Core Vulnerabilities',
-        tasks: [
+          },
           {
-            id: 'idor',
-            title: 'IDOR (Insecure Direct Object Reference)',
-            description: 'Master identifying ID parameters, testing authorization, privilege escalation',
+            id: 'burp-mastery',
+            title: 'Burp Suite Complete Mastery',
+            description: 'Master proxy, repeater, intruder, decoder, comparer, and extensions',
             xp: 100,
             phase: 'beginner',
-            category: 'core-vulnerabilities',
+            category: 'http-mastery',
             order: 7
           },
           {
-            id: 'info-disclosure',
-            title: 'Information Disclosure',
-            description: 'Find exposed directories, backup files, config files, API keys',
+            id: 'browser-devtools',
+            title: 'Browser Developer Tools',
+            description: 'Master Chrome/Firefox DevTools, network tab, console, debugger, storage inspection',
             xp: 80,
             phase: 'beginner',
-            category: 'core-vulnerabilities',
+            category: 'http-mastery',
             order: 8
-          },
-          {
-            id: 'basic-xss',
-            title: 'Basic XSS',
-            description: 'Master basic payloads and test in search boxes, comments, profiles',
-            xp: 100,
-            phase: 'beginner',
-            category: 'core-vulnerabilities',
-            order: 9
-          },
-          {
-            id: 'business-logic',
-            title: 'Business Logic Flaws',
-            description: 'Find pricing bugs, transfer issues, restriction bypasses',
-            xp: 120,
-            phase: 'beginner',
-            category: 'core-vulnerabilities',
-            order: 10
-          },
-          {
-            id: 'auth-issues',
-            title: 'Authentication Issues',
-            description: 'Test password reset, user enumeration, session issues, rate limiting',
-            xp: 100,
-            phase: 'beginner',
-            category: 'core-vulnerabilities',
-            order: 11
           }
         ]
       },
       {
-        id: 'first-hunting',
-        title: 'First Real Hunting',
+        id: 'programming-foundations',
+        title: 'Essential Programming',
         tasks: [
           {
-            id: 'choose-vdp',
-            title: 'Choose VDP Programs',
-            description: 'Select and join vulnerability disclosure programs',
-            xp: 30,
+            id: 'python-web',
+            title: 'Python for Web Hacking',
+            description: 'Master requests library, BeautifulSoup, urllib, regex, and asyncio for web automation',
+            xp: 200,
             phase: 'beginner',
-            category: 'first-hunting',
-            order: 12
+            category: 'programming-foundations',
+            order: 9
           },
           {
-            id: 'first-report',
-            title: 'Submit First Report',
-            description: 'Submit your first vulnerability report (even if duplicate)',
+            id: 'javascript-security',
+            title: 'JavaScript Security',
+            description: 'Understand JS execution, DOM manipulation, prototype pollution, and XSS crafting',
             xp: 150,
             phase: 'beginner',
-            category: 'first-hunting',
+            category: 'programming-foundations',
+            order: 10
+          },
+          {
+            id: 'sql-basics',
+            title: 'SQL All Dialects',
+            description: 'Learn MySQL, PostgreSQL, MSSQL, Oracle differences for injection attacks',
+            xp: 100,
+            phase: 'beginner',
+            category: 'programming-foundations',
+            order: 11
+          },
+          {
+            id: 'bash-automation',
+            title: 'Bash One-Liners',
+            description: 'Create recon scripts, automation tools, and quick exploitation commands',
+            xp: 80,
+            phase: 'beginner',
+            category: 'programming-foundations',
+            order: 12
+          }
+        ]
+      },
+      {
+        id: 'injection-attacks',
+        title: 'Injection Attack Mastery',
+        tasks: [
+          {
+            id: 'sqli-mastery',
+            title: 'SQL Injection Expert',
+            description: 'Union, blind, time-based, second-order, out-of-band SQLi with WAF bypass',
+            xp: 300,
+            phase: 'beginner',
+            category: 'injection-attacks',
             order: 13
           },
           {
-            id: 'first-valid',
-            title: 'First Valid Bug',
-            description: 'Get your first valid/accepted vulnerability',
-            xp: 300,
+            id: 'command-injection',
+            title: 'OS Command Injection',
+            description: 'Find and exploit command injection in all contexts, bypass filters',
+            xp: 200,
             phase: 'beginner',
-            category: 'first-hunting',
+            category: 'injection-attacks',
             order: 14
           },
           {
-            id: 'first-bounty',
-            title: 'First $100',
-            description: 'Earn your first $100 from bug bounty',
+            id: 'nosql-injection',
+            title: 'NoSQL Injection',
+            description: 'MongoDB, CouchDB, Redis injection techniques and data extraction',
+            xp: 150,
+            phase: 'beginner',
+            category: 'injection-attacks',
+            order: 15
+          },
+          {
+            id: 'ldap-xpath',
+            title: 'LDAP & XPath Injection',
+            description: 'Exploit directory services and XML path language injections',
+            xp: 100,
+            phase: 'beginner',
+            category: 'injection-attacks',
+            order: 16
+          }
+        ]
+      },
+      {
+        id: 'xss-csrf',
+        title: 'Client-Side Attacks',
+        tasks: [
+          {
+            id: 'xss-contexts',
+            title: 'XSS All Contexts',
+            description: 'HTML, attribute, JavaScript, DOM-based XSS with filter bypasses',
+            xp: 250,
+            phase: 'beginner',
+            category: 'xss-csrf',
+            order: 13
+          },
+          {
+            id: 'csrf-mastery',
+            title: 'CSRF Advanced',
+            description: 'CSRF with JSON, multipart, SameSite bypass, and token prediction',
+            xp: 150,
+            phase: 'beginner',
+            category: 'xss-csrf',
+            order: 14
+          },
+          {
+            id: 'cors-misconfig',
+            title: 'CORS Exploitation',
+            description: 'Find and exploit CORS misconfigurations for data theft',
+            xp: 100,
+            phase: 'beginner',
+            category: 'xss-csrf',
+            order: 15
+          },
+          {
+            id: 'clickjacking',
+            title: 'Clickjacking & UI Redress',
+            description: 'Create PoCs for clickjacking vulnerabilities',
+            xp: 80,
+            phase: 'beginner',
+            category: 'xss-csrf',
+            order: 16
+          }
+        ]
+      },
+      {
+        id: 'practice-labs',
+        title: 'Hands-On Practice',
+        tasks: [
+          {
+            id: 'portswigger-all',
+            title: 'PortSwigger Academy Complete',
+            description: 'Finish ALL free labs, understand every vulnerability deeply',
             xp: 500,
             phase: 'beginner',
-            category: 'first-hunting',
-            order: 15
+            category: 'practice-labs',
+            order: 17
+          },
+          {
+            id: 'pentesterlab-essential',
+            title: 'PentesterLab Essential Badge',
+            description: 'Complete essential exercises and understand exploitation basics',
+            xp: 300,
+            phase: 'beginner',
+            category: 'practice-labs',
+            order: 18
+          },
+          {
+            id: 'dvwa-juice',
+            title: 'DVWA & Juice Shop',
+            description: 'Complete all challenges in both platforms locally',
+            xp: 200,
+            phase: 'beginner',
+            category: 'practice-labs',
+            order: 19
+          },
+          {
+            id: 'first-ctf',
+            title: 'First CTF Web Challenges',
+            description: 'Solve 20 web challenges from various CTF platforms',
+            xp: 150,
+            phase: 'beginner',
+            category: 'practice-labs',
+            order: 20
           }
         ]
       }
@@ -192,181 +285,217 @@ export const roadmapData: Phase[] = [
   },
   {
     id: 'intermediate',
-    title: 'Intermediate Phase',
-    description: 'Developing Skills and Consistent Earnings',
-    duration: 'Months 7-18',
+    title: 'Modern Web & Advanced Techniques',
+    description: 'APIs, Modern Frameworks, Server-Side Attacks, and Automation',
+    duration: 'Months 7-12',
     categories: [
       {
-        id: 'programming',
-        title: 'Programming Skills',
+        id: 'auth-session',
+        title: 'Authentication & Sessions',
         tasks: [
           {
-            id: 'python-basics',
-            title: 'Python for Automation',
-            description: 'Learn Python scripting for bug hunting automation',
-            xp: 150,
+            id: 'jwt-attacks',
+            title: 'JWT Complete Attacks',
+            description: 'None algorithm, weak secrets, key confusion, kid injection, jku/x5u spoofing',
+            xp: 300,
             phase: 'intermediate',
-            category: 'programming',
-            order: 16
-          },
-          {
-            id: 'javascript-xss',
-            title: 'JavaScript for XSS',
-            description: 'Master JavaScript for advanced XSS exploitation',
-            xp: 150,
-            phase: 'intermediate',
-            category: 'programming',
-            order: 17
-          },
-          {
-            id: 'bash-efficiency',
-            title: 'Bash Scripting',
-            description: 'Learn bash for recon and automation',
-            xp: 100,
-            phase: 'intermediate',
-            category: 'programming',
-            order: 18
-          }
-        ]
-      },
-      {
-        id: 'advanced-vulns',
-        title: 'Advanced Vulnerabilities',
-        tasks: [
-          {
-            id: 'sql-injection',
-            title: 'SQL Injection',
-            description: 'Master manual and automated SQL injection techniques',
-            xp: 200,
-            phase: 'intermediate',
-            category: 'advanced-vulns',
-            order: 19
-          },
-          {
-            id: 'ssrf',
-            title: 'SSRF (Server-Side Request Forgery)',
-            description: 'Find and exploit SSRF vulnerabilities',
-            xp: 200,
-            phase: 'intermediate',
-            category: 'advanced-vulns',
-            order: 20
-          },
-          {
-            id: 'xxe',
-            title: 'XXE (XML External Entity)',
-            description: 'Understand and exploit XXE vulnerabilities',
-            xp: 180,
-            phase: 'intermediate',
-            category: 'advanced-vulns',
+            category: 'auth-session',
             order: 21
           },
           {
-            id: 'advanced-auth',
-            title: 'Advanced Authentication',
-            description: 'JWT, OAuth, SAML attacks, 2FA bypasses',
+            id: 'oauth-exploitation',
+            title: 'OAuth 2.0 & OpenID',
+            description: 'Authorization flaws, redirect attacks, CSRF, token leakage, state attacks',
             xp: 250,
             phase: 'intermediate',
-            category: 'advanced-vulns',
+            category: 'auth-session',
             order: 22
-          }
-        ]
-      },
-      {
-        id: 'automation',
-        title: 'Automation & Tools',
-        tasks: [
+          },
           {
-            id: 'recon-automation',
-            title: 'Reconnaissance Automation',
-            description: 'Build automated recon workflows',
+            id: 'saml-attacks',
+            title: 'SAML Exploitation',
+            description: 'XML signature wrapping, assertion replay, recipient confusion',
             xp: 200,
             phase: 'intermediate',
-            category: 'automation',
+            category: 'auth-session',
             order: 23
           },
           {
-            id: 'burp-mastery',
-            title: 'Burp Suite Mastery',
-            description: 'Master extensions, macros, and advanced features',
+            id: 'session-advanced',
+            title: 'Advanced Session Attacks',
+            description: 'Session puzzling, fixation, donation, race conditions in sessions',
             xp: 150,
             phase: 'intermediate',
-            category: 'automation',
+            category: 'auth-session',
             order: 24
-          },
-          {
-            id: 'custom-tools',
-            title: 'Build Custom Tools',
-            description: 'Create your own bug hunting tools',
-            xp: 300,
-            phase: 'intermediate',
-            category: 'automation',
-            order: 25
           }
         ]
       },
       {
-        id: 'specialization',
-        title: 'Choose Specialization',
+        id: 'api-security',
+        title: 'API Security Testing',
         tasks: [
           {
-            id: 'api-security',
-            title: 'API Security Specialist',
-            description: 'Master REST, GraphQL, and API testing',
+            id: 'rest-api',
+            title: 'REST API Complete Testing',
+            description: 'Mass assignment, IDOR, method tampering, versioning attacks',
+            xp: 250,
+            phase: 'intermediate',
+            category: 'api-security',
+            order: 25
+          },
+          {
+            id: 'graphql-expert',
+            title: 'GraphQL Exploitation',
+            description: 'Introspection, query depth attacks, batching, field suggestions abuse',
             xp: 300,
             phase: 'intermediate',
-            category: 'specialization',
+            category: 'api-security',
             order: 26
           },
           {
-            id: 'mobile-security',
-            title: 'Mobile App Security',
-            description: 'Learn Android/iOS app analysis',
-            xp: 300,
+            id: 'websocket-security',
+            title: 'WebSocket Attacks',
+            description: 'CSWSH, message tampering, auth bypass, injection in WebSockets',
+            xp: 200,
             phase: 'intermediate',
-            category: 'specialization',
+            category: 'api-security',
             order: 27
           },
           {
-            id: 'cloud-security',
-            title: 'Cloud Security',
-            description: 'AWS, Azure, GCP misconfigurations',
-            xp: 300,
+            id: 'api-fuzzing',
+            title: 'API Fuzzing & Automation',
+            description: 'Build custom API fuzzers, automate testing, discover hidden endpoints',
+            xp: 250,
             phase: 'intermediate',
-            category: 'specialization',
+            category: 'api-security',
             order: 28
           }
         ]
       },
       {
-        id: 'consistency',
-        title: 'Professional Growth',
+        id: 'server-side',
+        title: 'Server-Side Attacks',
         tasks: [
           {
-            id: 'thousand-month',
-            title: 'Earn $1000/month',
-            description: 'Achieve consistent $1000 monthly earnings',
-            xp: 500,
+            id: 'ssrf-advanced',
+            title: 'SSRF Complete Mastery',
+            description: 'Cloud metadata, blind SSRF, protocol smuggling, DNS rebinding',
+            xp: 400,
             phase: 'intermediate',
-            category: 'consistency',
+            category: 'server-side',
             order: 29
           },
           {
-            id: 'critical-vuln',
-            title: 'Find Critical Vulnerability',
-            description: 'Discover and report a critical severity bug',
-            xp: 800,
+            id: 'xxe-mastery',
+            title: 'XXE All Contexts',
+            description: 'File disclosure, SSRF via XXE, blind XXE, XXE in formats (XLSX, SVG)',
+            xp: 300,
             phase: 'intermediate',
-            category: 'consistency',
+            category: 'server-side',
             order: 30
           },
           {
-            id: 'private-invite',
-            title: 'Private Program Invite',
-            description: 'Get invited to a private bug bounty program',
-            xp: 600,
+            id: 'ssti-rce',
+            title: 'Template Injection to RCE',
+            description: 'Jinja2, Twig, Freemarker, Velocity exploitation for code execution',
+            xp: 350,
             phase: 'intermediate',
-            category: 'consistency',
+            category: 'server-side',
             order: 31
+          },
+          {
+            id: 'file-upload',
+            title: 'File Upload to RCE',
+            description: 'Bypass filters, polyglot files, race conditions, zip slip attacks',
+            xp: 300,
+            phase: 'intermediate',
+            category: 'server-side',
+            order: 32
+          }
+        ]
+      },
+      {
+        id: 'tool-development',
+        title: 'Custom Tool Building',
+        tasks: [
+          {
+            id: 'scanner-dev',
+            title: 'Build Web Scanner',
+            description: 'Create modular scanner better than existing tools for specific cases',
+            xp: 500,
+            phase: 'intermediate',
+            category: 'tool-development',
+            order: 33
+          },
+          {
+            id: 'fuzzer-go',
+            title: 'High-Performance Fuzzer',
+            description: 'Build fuzzer in Go with smart wordlist generation and response analysis',
+            xp: 400,
+            phase: 'intermediate',
+            category: 'tool-development',
+            order: 34
+          },
+          {
+            id: 'payload-generator',
+            title: 'Payload Generation Framework',
+            description: 'Context-aware XSS/SQLi payload generator with encoding and evasion',
+            xp: 350,
+            phase: 'intermediate',
+            category: 'tool-development',
+            order: 35
+          },
+          {
+            id: 'recon-automation',
+            title: 'Recon Automation Suite',
+            description: 'Subdomain enum, port scan, content discovery, vulnerability correlation',
+            xp: 300,
+            phase: 'intermediate',
+            category: 'tool-development',
+            order: 36
+          }
+        ]
+      },
+      {
+        id: 'real-hunting',
+        title: 'Bug Bounty Success',
+        tasks: [
+          {
+            id: 'methodology',
+            title: 'Develop Personal Methodology',
+            description: 'Create and refine your unique approach to finding bugs',
+            xp: 200,
+            phase: 'intermediate',
+            category: 'real-hunting',
+            order: 37
+          },
+          {
+            id: 'automation-workflow',
+            title: 'Automated Hunting Workflow',
+            description: 'Build complete automation from recon to reporting',
+            xp: 300,
+            phase: 'intermediate',
+            category: 'real-hunting',
+            order: 38
+          },
+          {
+            id: 'high-impact',
+            title: 'Find High/Critical Bugs',
+            description: 'Discover and report 5 high or critical severity vulnerabilities',
+            xp: 500,
+            phase: 'intermediate',
+            category: 'real-hunting',
+            order: 39
+          },
+          {
+            id: 'bug-chains',
+            title: 'Vulnerability Chains',
+            description: 'Chain multiple bugs for maximum impact demonstrations',
+            xp: 400,
+            phase: 'intermediate',
+            category: 'real-hunting',
+            order: 40
           }
         ]
       }
@@ -374,157 +503,217 @@ export const roadmapData: Phase[] = [
   },
   {
     id: 'advanced',
-    title: 'Advanced Phase',
-    description: 'Elite Hunter: Specialization and High-Value Bugs',
-    duration: 'Months 19-24+',
+    title: 'Elite Web Hacker',
+    description: 'Research, Advanced Exploitation, and Industry Leadership',
+    duration: 'Year 2+',
     categories: [
       {
-        id: 'elite-techniques',
-        title: 'Elite Techniques',
+        id: 'advanced-exploitation',
+        title: 'Elite Exploitation',
         tasks: [
-          {
-            id: 'vuln-chains',
-            title: 'Complex Vulnerability Chains',
-            description: 'Chain multiple vulnerabilities for maximum impact',
-            xp: 500,
-            phase: 'advanced',
-            category: 'elite-techniques',
-            order: 32
-          },
-          {
-            id: 'filter-bypass',
-            title: 'Advanced Filter Bypass',
-            description: 'Master WAF and filter bypass techniques',
-            xp: 400,
-            phase: 'advanced',
-            category: 'elite-techniques',
-            order: 33
-          },
           {
             id: 'deserialization',
-            title: 'Deserialization Attacks',
-            description: 'Exploit deserialization vulnerabilities',
-            xp: 600,
-            phase: 'advanced',
-            category: 'elite-techniques',
-            order: 34
-          },
-          {
-            id: 'advanced-ssrf',
-            title: 'Advanced SSRF Techniques',
-            description: 'DNS rebinding, protocol smuggling, cloud metadata',
-            xp: 500,
-            phase: 'advanced',
-            category: 'elite-techniques',
-            order: 35
-          }
-        ]
-      },
-      {
-        id: 'research',
-        title: 'Research & Innovation',
-        tasks: [
-          {
-            id: 'vuln-research',
-            title: 'Vulnerability Research',
-            description: 'Discover new bug classes and techniques',
-            xp: 1000,
-            phase: 'advanced',
-            category: 'research',
-            order: 36
-          },
-          {
-            id: 'tool-development',
-            title: 'Advanced Tool Development',
-            description: 'Create and release popular security tools',
+            title: 'Deserialization Mastery',
+            description: 'Java, PHP, Python, .NET deserialization with gadget chain construction',
             xp: 800,
             phase: 'advanced',
-            category: 'research',
-            order: 37
-          },
-          {
-            id: 'community-contrib',
-            title: 'Community Leadership',
-            description: 'Blog posts, talks, mentoring, tool releases',
-            xp: 600,
-            phase: 'advanced',
-            category: 'research',
-            order: 38
-          }
-        ]
-      },
-      {
-        id: 'business',
-        title: 'Business Development',
-        tasks: [
-          {
-            id: 'consulting',
-            title: 'Security Consulting',
-            description: 'Start offering consulting services',
-            xp: 800,
-            phase: 'advanced',
-            category: 'business',
-            order: 39
-          },
-          {
-            id: 'brand-building',
-            title: 'Build Personal Brand',
-            description: 'Establish presence on social media and conferences',
-            xp: 600,
-            phase: 'advanced',
-            category: 'business',
-            order: 40
-          },
-          {
-            id: 'ten-k-month',
-            title: 'Earn $10,000/month',
-            description: 'Achieve $10,000 monthly earnings',
-            xp: 2000,
-            phase: 'advanced',
-            category: 'business',
+            category: 'advanced-exploitation',
             order: 41
-          }
-        ]
-      },
-      {
-        id: 'mastery',
-        title: 'Elite Status',
-        tasks: [
+          },
           {
-            id: 'zero-day',
-            title: 'Find 0-day Vulnerability',
-            description: 'Discover a zero-day vulnerability',
-            xp: 3000,
+            id: 'race-conditions',
+            title: 'Race Condition Exploitation',
+            description: 'Time-of-check time-of-use, payment races, async vulnerabilities',
+            xp: 700,
             phase: 'advanced',
-            category: 'mastery',
+            category: 'advanced-exploitation',
             order: 42
           },
           {
-            id: 'hall-fame',
-            title: 'Hall of Fame Recognition',
-            description: 'Achieve hall of fame status in major programs',
-            xp: 1500,
+            id: 'cache-attacks',
+            title: 'Cache Poisoning & Deception',
+            description: 'Web cache poisoning, deception, key injection, DoS via cache',
+            xp: 600,
             phase: 'advanced',
-            category: 'mastery',
+            category: 'cache-attacks',
             order: 43
           },
           {
-            id: 'conference-speaker',
-            title: 'Major Conference Speaker',
-            description: 'Speak at a major security conference',
-            xp: 2000,
+            id: 'proto-pollution',
+            title: 'Prototype Pollution to RCE',
+            description: 'Client and server-side prototype pollution leading to code execution',
+            xp: 900,
             phase: 'advanced',
-            category: 'mastery',
+            category: 'advanced-exploitation',
             order: 44
+          }
+        ]
+      },
+      {
+        id: 'cloud-container',
+        title: 'Cloud & Container Security',
+        tasks: [
+          {
+            id: 'cloud-ssrf',
+            title: 'Cloud Metadata Exploitation',
+            description: 'AWS, Azure, GCP metadata endpoints, IAM privilege escalation',
+            xp: 800,
+            phase: 'advanced',
+            category: 'cloud-container',
+            order: 45
           },
           {
-            id: 'recognized-expert',
-            title: 'Industry Recognition',
-            description: 'Become a recognized expert in the field',
+            id: 'k8s-attacks',
+            title: 'Kubernetes Exploitation',
+            description: 'API abuse, RBAC bypass, container escape, service mesh attacks',
+            xp: 900,
+            phase: 'advanced',
+            category: 'cloud-container',
+            order: 46
+          },
+          {
+            id: 'serverless',
+            title: 'Serverless Security',
+            description: 'Lambda/Functions injection, event injection, cold start attacks',
+            xp: 700,
+            phase: 'advanced',
+            category: 'cloud-container',
+            order: 47
+          },
+          {
+            id: 'cicd-compromise',
+            title: 'CI/CD Pipeline Attacks',
+            description: 'Pipeline poisoning, secret extraction, supply chain compromise',
+            xp: 1000,
+            phase: 'advanced',
+            category: 'cloud-container',
+            order: 48
+          }
+        ]
+      },
+      {
+        id: 'research-development',
+        title: 'Security Research',
+        tasks: [
+          {
+            id: 'new-techniques',
+            title: 'Develop New Techniques',
+            description: 'Create novel attack methods, discover new vulnerability classes',
+            xp: 1500,
+            phase: 'advanced',
+            category: 'research-development',
+            order: 49
+          },
+          {
+            id: 'framework-vulns',
+            title: 'Framework 0-days',
+            description: 'Find vulnerabilities in popular frameworks (React, Angular, Django)',
+            xp: 2000,
+            phase: 'advanced',
+            category: 'research-development',
+            order: 50
+          },
+          {
+            id: 'tool-release',
+            title: 'Release Popular Tools',
+            description: 'Create and maintain tools used by the security community',
+            xp: 1200,
+            phase: 'advanced',
+            category: 'research-development',
+            order: 51
+          },
+          {
+            id: 'cve-research',
+            title: 'CVE Discoveries',
+            description: 'Discover and responsibly disclose 10+ CVEs',
+            xp: 1800,
+            phase: 'advanced',
+            category: 'research-development',
+            order: 52
+          }
+        ]
+      },
+      {
+        id: 'community-leadership',
+        title: 'Industry Leadership',
+        tasks: [
+          {
+            id: 'conference-talks',
+            title: 'Conference Speaker',
+            description: 'Present at major security conferences (Black Hat, DEF CON)',
+            xp: 1500,
+            phase: 'advanced',
+            category: 'community-leadership',
+            order: 53
+          },
+          {
+            id: 'training-creation',
+            title: 'Create Training Content',
+            description: 'Develop comprehensive training courses or materials',
+            xp: 1000,
+            phase: 'advanced',
+            category: 'community-leadership',
+            order: 54
+          },
+          {
+            id: 'blog-influence',
+            title: 'Influential Blog/Channel',
+            description: 'Build following with technical writeups and tutorials',
+            xp: 800,
+            phase: 'advanced',
+            category: 'community-leadership',
+            order: 55
+          },
+          {
+            id: 'mentor-hackers',
+            title: 'Mentor Next Generation',
+            description: 'Help train and guide new security researchers',
+            xp: 600,
+            phase: 'advanced',
+            category: 'community-leadership',
+            order: 56
+          }
+        ]
+      },
+      {
+        id: 'elite-achievements',
+        title: 'Elite Status',
+        tasks: [
+          {
+            id: 'browser-rce',
+            title: 'Browser RCE',
+            description: 'Find and exploit browser vulnerability for code execution',
             xp: 5000,
             phase: 'advanced',
-            category: 'mastery',
-            order: 45
+            category: 'elite-achievements',
+            order: 57
+          },
+          {
+            id: 'waf-bypass-framework',
+            title: 'Universal WAF Bypass',
+            description: 'Create techniques that bypass all major WAFs',
+            xp: 3000,
+            phase: 'advanced',
+            category: 'elite-achievements',
+            order: 58
+          },
+          {
+            id: 'bug-bounty-millionaire',
+            title: 'Bug Bounty Millionaire',
+            description: 'Earn over $1,000,000 from bug bounties',
+            xp: 10000,
+            phase: 'advanced',
+            category: 'elite-achievements',
+            order: 59
+          },
+          {
+            id: 'security-legend',
+            title: 'Industry Legend',
+            description: 'Become recognized as a leading expert in web security',
+            xp: 20000,
+            phase: 'advanced',
+            category: 'elite-achievements',
+            order: 60
           }
         ]
       }
