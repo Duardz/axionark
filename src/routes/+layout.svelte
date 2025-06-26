@@ -1,19 +1,36 @@
-<!-- // src/routes/+layout.svelte -->
+<!-- src/routes/+layout.svelte -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { authStore } from '$lib/stores/auth';
   import { userStore, journalStore, bugStore } from '$lib/stores/user';
   import { browser } from '$app/environment';
+  import { page } from '$app/stores';
+  import Footer from '$lib/components/Footer.svelte';
   import '../app.css';
 
   let darkMode = false;
   let activityTimer: NodeJS.Timeout | null = null;
   let lastActivity = Date.now();
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  let scrollProgress = 0;
+  let showScrollTop = false;
+
+  // Check if we're on a page that should show footer
+  $: showFooter = !$page.url.pathname.includes('/') || $page.url.pathname === '/';
 
   onMount(() => {
     // Initialize auth store
     authStore.initialize();
+    
+    // Scroll progress indicator
+    const updateScrollProgress = () => {
+      const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      scrollProgress = (winScroll / height) * 100;
+      showScrollTop = winScroll > 300;
+    };
+    
+    window.addEventListener('scroll', updateScrollProgress);
     
     // Check for saved theme preference or default to light mode
     if (browser) {
@@ -56,6 +73,7 @@
       
       // Cleanup function
       return () => {
+        window.removeEventListener('scroll', updateScrollProgress);
         mediaQuery.removeEventListener('change', handleChange);
         document.removeEventListener('mousedown', updateActivity);
         document.removeEventListener('keydown', updateActivity);
@@ -92,32 +110,80 @@
       console.error('Error saving theme preference:', error);
     }
   }
+  
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 </script>
 
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors flex flex-col">
+  <!-- Scroll Progress Bar -->
+  <div class="fixed top-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-800 z-[60]">
+    <div 
+      class="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300"
+      style="width: {scrollProgress}%"
+    ></div>
+  </div>
+
   <!-- Theme toggle button -->
   <button
     on:click={toggleDarkMode}
-    class="fixed bottom-4 right-4 z-50 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-shadow focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+    class="fixed bottom-4 right-4 z-50 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 group"
     aria-label="Toggle dark mode"
   >
     {#if darkMode}
-      <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-6 h-6 text-yellow-500 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
     {:else}
-      <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="w-6 h-6 text-gray-700 group-hover:rotate-12 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
       </svg>
     {/if}
   </button>
   
+  <!-- Scroll to Top Button -->
+  {#if showScrollTop}
+    <button
+      on:click={scrollToTop}
+      class="fixed bottom-20 right-4 z-50 p-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 animate-fade-in-up"
+      aria-label="Scroll to top"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+      </svg>
+    </button>
+  {/if}
+  
   <!-- Skip to main content for accessibility -->
-  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-indigo-600 text-white px-4 py-2 rounded-md">
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-indigo-600 text-white px-4 py-2 rounded-md z-50">
     Skip to main content
   </a>
   
-  <main id="main-content">
+  <main id="main-content" class="flex-grow">
     <slot />
   </main>
+  
+  <!-- Footer - Only show on authenticated pages -->
+  {#if $page.url.pathname !== '/'}
+    <Footer />
+  {/if}
 </div>
+
+<style>
+  /* Add fade in animation for scroll button */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in-up {
+    animation: fade-in-up 0.3s ease-out;
+  }
+</style>
