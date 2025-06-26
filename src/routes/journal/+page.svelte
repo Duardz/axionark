@@ -5,6 +5,7 @@
   import { authStore } from '$lib/stores/auth';
   import { journalStore, userStore } from '$lib/stores/user';
   import Navbar from '$lib/components/Navbar.svelte';
+  import Footer from '$lib/components/Footer.svelte';
   import type { JournalEntry } from '$lib/stores/user';
   import { firebaseTimestampToDate } from '$lib/utils/security';
 
@@ -15,6 +16,7 @@
   let showSuccessToast = false;
   let successMessage = '';
   let processingEntries = new Set<string>();
+  let expandedEntries = new Set<string>();
   
   // Form fields
   let title = '';
@@ -34,6 +36,7 @@
   let thisWeekEntries = 0;
   let averageMood = 'good';
   let mostUsedTags: { tag: string; count: number }[] = [];
+  let currentStreak = 0;
 
   // Store unsubscribe function
   let authUnsubscribe: (() => void) | null = null;
@@ -116,7 +119,39 @@
     mostUsedTags = Array.from(tagCounts.entries())
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
+      .slice(0, 10);
+    
+    // Calculate streak
+    currentStreak = calculateStreak();
+  }
+
+  function calculateStreak() {
+    if ($journalStore.length === 0) return 0;
+    
+    const sortedEntries = [...$journalStore].sort((a, b) => {
+      const dateA = firebaseTimestampToDate(a.date).getTime();
+      const dateB = firebaseTimestampToDate(b.date).getTime();
+      return dateB - dateA;
+    });
+    
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let i = 0; i < sortedEntries.length; i++) {
+      const entryDate = firebaseTimestampToDate(sortedEntries[i].date);
+      entryDate.setHours(0, 0, 0, 0);
+      
+      const daysDiff = Math.floor((today.getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysDiff === streak) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
   }
 
   function getFilteredEntries() {
@@ -279,6 +314,7 @@
     mood = entry.mood || 'good';
     tags = entry.tags ? entry.tags.join(', ') : '';
     showForm = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function resetForm() {
@@ -298,41 +334,65 @@
     dateRange = 'all';
   }
 
-  function getMoodEmoji(mood: string) {
-    switch (mood) {
-      case 'great': return '😄';
-      case 'good': return '🙂';
-      case 'okay': return '😐';
-      case 'bad': return '😔';
-      default: return '🙂';
+  function toggleEntryExpansion(entryId: string) {
+    if (expandedEntries.has(entryId)) {
+      expandedEntries.delete(entryId);
+    } else {
+      expandedEntries.add(entryId);
     }
+    expandedEntries = expandedEntries;
   }
 
-  function getMoodColor(mood: string) {
-    switch (mood) {
-      case 'great': return 'text-green-600 dark:text-green-400';
-      case 'good': return 'text-blue-600 dark:text-blue-400';
-      case 'okay': return 'text-yellow-600 dark:text-yellow-400';
-      case 'bad': return 'text-red-600 dark:text-red-400';
-      default: return 'text-gray-600 dark:text-gray-400';
-    }
-  }
-
-  function getMoodBg(mood: string) {
-    switch (mood) {
-      case 'great': return 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400';
-      case 'good': return 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400';
-      case 'okay': return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400';
-      case 'bad': return 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400';
-      default: return 'bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400';
-    }
+  function getMoodConfig(mood: string) {
+    const configs: Record<string, {
+      emoji: string;
+      label: string;
+      color: string;
+      bg: string;
+      gradient: string;
+    }> = {
+      great: {
+        emoji: '😄',
+        label: 'Great',
+        color: 'text-emerald-600 dark:text-emerald-400',
+        bg: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+        gradient: 'from-emerald-500 to-green-600'
+      },
+      good: {
+        emoji: '🙂',
+        label: 'Good',
+        color: 'text-blue-600 dark:text-blue-400',
+        bg: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+        gradient: 'from-blue-500 to-indigo-600'
+      },
+      okay: {
+        emoji: '😐',
+        label: 'Okay',
+        color: 'text-amber-600 dark:text-amber-400',
+        bg: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+        gradient: 'from-amber-500 to-orange-600'
+      },
+      bad: {
+        emoji: '😔',
+        label: 'Challenging',
+        color: 'text-red-600 dark:text-red-400',
+        bg: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+        gradient: 'from-red-500 to-pink-600'
+      }
+    };
+    return configs[mood] || configs.good;
   }
 
   function formatDate(date: any) {
     return firebaseTimestampToDate(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric',
+      day: 'numeric'
+    });
+  }
+
+  function formatTime(date: any) {
+    return firebaseTimestampToDate(date).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -342,43 +402,39 @@
     const entryDate = firebaseTimestampToDate(date);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - entryDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     if (diffDays <= 7) return `${diffDays} days ago`;
-    if (diffDays <= 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
-    return `${Math.ceil(diffDays / 30)} months ago`;
+    if (diffDays <= 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays <= 365) return `${Math.floor(diffDays / 30)} months ago`;
+    return `${Math.floor(diffDays / 365)} years ago`;
   }
 
   function isProcessing(entryId?: string) {
     return entryId ? processingEntries.has(entryId) : false;
   }
 
-  // Force filter update
-  function applyFilters() {
-    // Force recalculation by reassigning
-    filteredEntries = $journalStore ? getFilteredEntries() : [];
-  }
-
   // Reactive statements
   $: filteredEntries = $journalStore ? getFilteredEntries() : [];
   $: hasActiveFilters = searchQuery || filterMood !== 'all' || sortBy !== 'newest' || filterTags || dateRange !== 'all';
   
-  // Manual trigger for filters when values change
-  $: if ($journalStore) {
-    searchQuery, filterMood, sortBy, filterTags, dateRange;
-    applyFilters();
-  }
+  // Force reactivity on filter changes
+  $: searchQuery, filterMood, sortBy, filterTags, dateRange, filteredEntries = $journalStore ? getFilteredEntries() : [];
 </script>
 
 <Navbar />
 
 <!-- Success Toast -->
 {#if showSuccessToast}
-  <div class="toast {successMessage.includes('Error') || successMessage.includes('fill') ? 'toast-error' : 'toast-success'} animate-slide-up">
-    <div class="flex items-center">
-      <svg class="w-5 h-5 {successMessage.includes('Error') || successMessage.includes('fill') ? 'text-red-600' : 'text-green-600'} mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="fixed top-20 right-4 z-50 animate-slide-in">
+    <div class={`flex items-center p-4 rounded-xl shadow-2xl backdrop-blur-sm ${
+      successMessage.includes('Error') || successMessage.includes('fill') 
+        ? 'bg-red-500/90 text-white' 
+        : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+    }`}>
+      <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         {#if successMessage.includes('Error') || successMessage.includes('fill')}
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         {:else}
@@ -390,115 +446,123 @@
   </div>
 {/if}
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
-    <div class="animate-fade-in">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+  <!-- Hero Section -->
+  <div class="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-900/10 dark:via-purple-900/10 dark:to-pink-900/10 border-b border-gray-200 dark:border-gray-700">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <!-- Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-        <div>
-          <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 flex items-center">
-            📔 Learning Journal
-          </h1>
-          <p class="text-lg text-gray-600 dark:text-gray-400">
-            Document your bug bounty learning journey and reflections
-          </p>
-        </div>
-        <button
-          on:click={() => showForm = !showForm}
-          class="mt-4 sm:mt-0 btn btn-primary btn-lg shadow-lg hover:shadow-xl"
-        >
-          {#if showForm}
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Cancel
-          {:else}
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            New Entry
-          {/if}
-        </button>
+      <div class="text-center mb-8">
+        <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+          <span class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            Learning Journal
+          </span>
+        </h1>
+        <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          Document your journey, track your progress, and reflect on your growth
+        </p>
       </div>
 
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Total Entries -->
-        <div class="stat-card hover:scale-105 transition-transform duration-300">
-          <div class="flex items-center justify-between mb-4">
-            <div class="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl text-white">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
+      <!-- Stats Dashboard -->
+      <div class="max-w-6xl mx-auto">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <!-- Total Entries -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div class="flex items-center justify-between mb-2">
+              <div class="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <div class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                {totalEntries}
+              </div>
             </div>
-            <div class="text-right">
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white update-indicator">{totalEntries}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">total entries</div>
-            </div>
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Entries</h3>
           </div>
-          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Journal Entries</h3>
+
+          <!-- Current Streak -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div class="flex items-center justify-between mb-2">
+              <div class="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+                </svg>
+              </div>
+              <div class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                {currentStreak}
+              </div>
+            </div>
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Day Streak</h3>
+          </div>
+
+          <!-- This Week -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div class="flex items-center justify-between mb-2">
+              <div class="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div class="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                {thisWeekEntries}
+              </div>
+            </div>
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">This Week</h3>
+          </div>
+
+          <!-- Average Mood -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div class="flex items-center justify-between mb-2">
+              <div class="p-3 bg-gradient-to-br {getMoodConfig(averageMood).gradient} rounded-xl text-white">
+                <div class="text-2xl">{getMoodConfig(averageMood).emoji}</div>
+              </div>
+              <div class="text-xl font-bold {getMoodConfig(averageMood).color} capitalize">
+                {getMoodConfig(averageMood).label}
+              </div>
+            </div>
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Average Mood</h3>
+          </div>
         </div>
 
-        <!-- This Week -->
-        <div class="stat-card hover:scale-105 transition-transform duration-300">
-          <div class="flex items-center justify-between mb-4">
-            <div class="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl text-white">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <!-- Action Button -->
+        <div class="text-center mt-8">
+          <button
+            on:click={() => showForm = !showForm}
+            class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+          >
+            {#if showForm}
+              <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </div>
-            <div class="text-right">
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white update-indicator">{thisWeekEntries}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">this week</div>
-            </div>
-          </div>
-          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Recent Activity</h3>
-        </div>
-
-        <!-- Average Mood -->
-        <div class="stat-card hover:scale-105 transition-transform duration-300">
-          <div class="flex items-center justify-between mb-4">
-            <div class="p-3 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-xl text-white">
-              <div class="text-2xl">{getMoodEmoji(averageMood)}</div>
-            </div>
-            <div class="text-right">
-              <div class="text-lg font-bold text-gray-900 dark:text-white capitalize">{averageMood}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">avg mood</div>
-            </div>
-          </div>
-          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Overall Mood</h3>
-        </div>
-
-        <!-- Most Used Tags -->
-        <div class="stat-card hover:scale-105 transition-transform duration-300">
-          <div class="flex items-center justify-between mb-4">
-            <div class="p-3 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl text-white">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              Close Editor
+            {:else}
+              <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-            </div>
-            <div class="text-right">
-              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{mostUsedTags.length}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">unique tags</div>
-            </div>
-          </div>
-          <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Tags Used</h3>
+              Write New Entry
+            {/if}
+          </button>
         </div>
       </div>
+    </div>
+  </div>
 
-      <!-- Entry Form -->
-      {#if showForm}
-        <div class="card p-6 mb-8 animate-slide-up shadow-xl bg-white dark:bg-gray-800">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
-            <div class="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg text-white mr-3">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+    <!-- Entry Form -->
+    {#if showForm}
+      <div class="mb-8 animate-slide-down">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
+          <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+              <svg class="w-7 h-7 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
-            </div>
-            {editingEntry ? 'Edit Journal Entry' : 'New Journal Entry'}
-          </h2>
+              {editingEntry ? 'Edit Journal Entry' : 'New Journal Entry'}
+            </h2>
+          </div>
           
-          <form on:submit|preventDefault={handleSubmit} class="space-y-6">
+          <form on:submit|preventDefault={handleSubmit} class="p-8 space-y-6">
             <!-- Title -->
             <div>
               <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -508,8 +572,8 @@
                 id="title"
                 type="text"
                 bind:value={title}
-                placeholder="What did you learn today?"
-                class="input"
+                placeholder="What's the highlight of today's learning?"
+                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 required
               />
             </div>
@@ -517,14 +581,14 @@
             <!-- Content -->
             <div>
               <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Content *
+                Your Thoughts *
               </label>
               <textarea
                 id="content"
                 bind:value={content}
                 rows="8"
-                placeholder="Describe your learning experience, challenges, insights, and breakthroughs..."
-                class="input"
+                placeholder="Share your learning experience, challenges overcome, insights gained, and breakthroughs achieved..."
+                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
                 required
               ></textarea>
             </div>
@@ -532,15 +596,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <!-- Mood -->
               <div>
-                <label for="mood" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <p class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   How was your learning session?
-                </label>
-                <div class="grid grid-cols-2 gap-2">
+                </p>
+                <div class="grid grid-cols-2 gap-3">
                   {#each [
-                    { value: 'great', emoji: '😄', label: 'Great' },
-                    { value: 'good', emoji: '🙂', label: 'Good' },
-                    { value: 'okay', emoji: '😐', label: 'Okay' },
-                    { value: 'bad', emoji: '😔', label: 'Challenging' }
+                    { value: 'great', emoji: '😄', label: 'Great', gradient: 'from-emerald-500 to-green-600' },
+                    { value: 'good', emoji: '🙂', label: 'Good', gradient: 'from-blue-500 to-indigo-600' },
+                    { value: 'okay', emoji: '😐', label: 'Okay', gradient: 'from-amber-500 to-orange-600' },
+                    { value: 'bad', emoji: '😔', label: 'Challenging', gradient: 'from-red-500 to-pink-600' }
                   ] as moodOption}
                     <label class="cursor-pointer">
                       <input
@@ -549,13 +613,13 @@
                         value={moodOption.value}
                         class="sr-only"
                       />
-                      <div class={`p-3 rounded-lg border-2 transition-all text-center ${
+                      <div class={`p-4 rounded-xl border-2 transition-all text-center ${
                         mood === moodOption.value 
-                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' 
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                          ? `border-transparent bg-gradient-to-r ${moodOption.gradient} text-white shadow-lg scale-105` 
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-gray-50 dark:bg-gray-700'
                       }`}>
-                        <div class="text-2xl mb-1">{moodOption.emoji}</div>
-                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300">{moodOption.label}</div>
+                        <div class="text-3xl mb-2">{moodOption.emoji}</div>
+                        <div class="text-sm font-medium">{moodOption.label}</div>
                       </div>
                     </label>
                   {/each}
@@ -571,34 +635,34 @@
                   id="tags"
                   type="text"
                   bind:value={tags}
-                  placeholder="XSS, SQL Injection, Recon, OWASP"
-                  class="input"
+                  placeholder="XSS, SQLi, Recon, Web Security..."
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Help categorize your learning for easier searching
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  Add tags to organize and search your entries easily
                 </p>
               </div>
             </div>
 
             <!-- Submit Buttons -->
-            <div class="flex flex-col sm:flex-row justify-end gap-3">
+            <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4">
               <button
                 type="button"
                 on:click={resetForm}
-                class="btn btn-secondary"
+                class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                class="btn btn-primary"
+                class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {#if loading}
-                  <div class="spinner w-4 h-4 mr-2"></div>
+                  <div class="spinner w-5 h-5 mr-2"></div>
                   Saving...
                 {:else}
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                   </svg>
                   {editingEntry ? 'Update Entry' : 'Save Entry'}
@@ -607,313 +671,316 @@
             </div>
           </form>
         </div>
-      {/if}
+      </div>
+    {/if}
 
-      <!-- Filters & Search -->
-      <div class="card p-6 mb-8 bg-white dark:bg-gray-800 shadow-lg">
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-            <svg class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
-            </svg>
-            Search & Filter
-          </h3>
-          
-          {#if hasActiveFilters}
-            <button
-              on:click={clearFilters}
-              class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center"
-            >
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Clear all
-            </button>
-          {/if}
-        </div>
+    <!-- Filters & Search -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Search & Filter
+        </h3>
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-          <!-- Search -->
-          <div class="lg:col-span-2 xl:col-span-2">
-            <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Search Entries
-            </label>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                id="search"
-                type="text"
-                bind:value={searchQuery}
-                placeholder="Search by title, content, or tags..."
-                class="input pl-10 bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
-              />
+        {#if hasActiveFilters}
+          <button
+            on:click={clearFilters}
+            class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
+          >
+            Clear all filters
+          </button>
+        {/if}
+      </div>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Search -->
+        <div class="sm:col-span-2">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
-          </div>
-
-          <!-- Mood Filter -->
-          <div>
-            <label for="mood-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Mood
-            </label>
-            <select
-              id="mood-filter"
-              bind:value={filterMood}
-              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
-            >
-              <option value="all">All Moods</option>
-              <option value="great">😄 Great</option>
-              <option value="good">🙂 Good</option>
-              <option value="okay">😐 Okay</option>
-              <option value="bad">😔 Challenging</option>
-            </select>
-          </div>
-
-          <!-- Sort -->
-          <div>
-            <label for="sort" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Sort By
-            </label>
-            <select
-              id="sort"
-              bind:value={sortBy}
-              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="title">Title A-Z</option>
-              <option value="mood">Mood</option>
-            </select>
-          </div>
-
-          <!-- Date Range -->
-          <div>
-            <label for="date-range" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Date Range
-            </label>
-            <select
-              id="date-range"
-              bind:value={dateRange}
-              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
-            >
-              <option value="all">All Time</option>
-              <option value="today">Today</option>
-              <option value="week">Last 7 Days</option>
-              <option value="month">Last 30 Days</option>
-              <option value="year">Last Year</option>
-            </select>
-          </div>
-
-          <!-- Tag Filter -->
-          <div class="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-            <label for="tag-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Filter by Tag
-            </label>
             <input
-              id="tag-filter"
               type="text"
-              bind:value={filterTags}
-              placeholder="Enter tag to filter..."
-              class="input bg-gray-50 dark:bg-gray-700 focus:bg-white dark:focus:bg-gray-600"
+              bind:value={searchQuery}
+              placeholder="Search entries..."
+              class="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             />
           </div>
         </div>
 
-        <!-- Results Summary & Popular Tags -->
-        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div class="flex items-center gap-3">
-              <div class="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg inline-flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                Showing <span class="font-medium text-gray-900 dark:text-white">{filteredEntries.length}</span> of <span class="font-medium">{$journalStore.length}</span> entries
-              </div>
-              
-              <!-- Apply Filters Button -->
-              <button
-                on:click={applyFilters}
-                class="btn btn-primary btn-sm"
-              >
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                Apply Filters
-              </button>
-            </div>
-            
-            {#if mostUsedTags.length > 0}
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-xs text-gray-500 dark:text-gray-400">Popular tags:</span>
-                {#each mostUsedTags as tagInfo}
-                  <button
-                    on:click={() => { filterTags = tagInfo.tag; applyFilters(); }}
-                    class="badge bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-200 dark:hover:bg-blue-900/30 cursor-pointer transition-colors"
-                  >
-                    #{tagInfo.tag} ({tagInfo.count})
-                  </button>
-                {/each}
-              </div>
-            {/if}
-          </div>
+        <!-- Date Range -->
+        <div>
+          <select
+            bind:value={dateRange}
+            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+          >
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">Last 7 Days</option>
+            <option value="month">Last 30 Days</option>
+            <option value="year">Last Year</option>
+          </select>
+        </div>
+
+        <!-- Mood Filter -->
+        <div>
+          <select
+            bind:value={filterMood}
+            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+          >
+            <option value="all">All Moods</option>
+            <option value="great">😄 Great</option>
+            <option value="good">🙂 Good</option>
+            <option value="okay">😐 Okay</option>
+            <option value="bad">😔 Challenging</option>
+          </select>
         </div>
       </div>
 
-      <!-- Journal Entries -->
-      {#if loading && !showForm}
-        <div class="flex justify-center items-center h-64">
-          <div class="spinner"></div>
+      <!-- Results & Tags -->
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          Showing <span class="font-semibold text-gray-900 dark:text-white">{filteredEntries.length}</span> entries
         </div>
-      {:else if filteredEntries.length === 0}
-        <div class="card p-12 text-center bg-white dark:bg-gray-800">
-          <div class="w-20 h-20 mx-auto mb-6 p-4 bg-gray-100 dark:bg-gray-700 rounded-full">
-            <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
+        
+        {#if mostUsedTags.length > 0}
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs text-gray-500 dark:text-gray-400">Popular:</span>
+            {#each mostUsedTags.slice(0, 5) as tagInfo}
+              <button
+                on:click={() => filterTags = tagInfo.tag}
+                class="px-3 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 text-indigo-700 dark:text-indigo-400 rounded-full text-xs font-medium hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 transition-all"
+              >
+                #{tagInfo.tag} ({tagInfo.count})
+              </button>
+            {/each}
           </div>
-          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            {$journalStore.length === 0 ? 'No journal entries yet' : 'No entries match your filters'}
-          </h3>
-          <p class="text-gray-500 dark:text-gray-400 mb-6">
-            {$journalStore.length === 0 
-              ? 'Start documenting your learning journey today!' 
-              : 'Try adjusting your search terms or filters.'}
-          </p>
-          {#if $journalStore.length === 0}
-            <button
-              on:click={() => showForm = true}
-              class="btn btn-primary"
-            >
-              Write First Entry
-            </button>
-          {:else}
-            <button
-              on:click={clearFilters}
-              class="btn btn-primary"
-            >
-              Clear Filters
-            </button>
-          {/if}
+        {/if}
+      </div>
+    </div>
+
+    <!-- Journal Entries -->
+    {#if loading && !showForm}
+      <div class="flex justify-center items-center h-64">
+        <div class="spinner w-12 h-12"></div>
+      </div>
+    {:else if filteredEntries.length === 0}
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center shadow-lg">
+        <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-full flex items-center justify-center">
+          <svg class="w-12 h-12 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
         </div>
-      {:else}
-        <div class="space-y-6">
-          {#each filteredEntries as entry, index (entry.id)}
-            <article class="card p-6 hover:shadow-xl transition-all duration-300 group bg-white dark:bg-gray-800 {isProcessing(entry.id) ? 'opacity-50' : ''}" style="animation-delay: {index * 100}ms;">
-              <!-- Entry Header -->
-              <header class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
-                <div class="flex-1 min-w-0">
-                  <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-2">
+        <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+          {$journalStore.length === 0 ? 'Start Your Journal' : 'No Matching Entries'}
+        </h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+          {$journalStore.length === 0 
+            ? 'Begin documenting your bug bounty journey. Every expert started with their first entry!' 
+            : 'Try adjusting your filters or search terms.'}
+        </p>
+        {#if $journalStore.length === 0}
+          <button
+            on:click={() => showForm = true}
+            class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all"
+          >
+            Write Your First Entry
+          </button>
+        {:else}
+          <button
+            on:click={clearFilters}
+            class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all"
+          >
+            Clear Filters
+          </button>
+        {/if}
+      </div>
+    {:else}
+      <div class="space-y-6">
+        {#each filteredEntries as entry, index (entry.id)}
+          {@const isExpanded = expandedEntries.has(entry.id || '')}
+          {@const moodConfig = getMoodConfig(entry.mood || 'good')}
+          
+          <article 
+            class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden {isProcessing(entry.id) ? 'opacity-50' : ''}" 
+            style="animation-delay: {Math.min(index * 50, 300)}ms;"
+          >
+            <!-- Entry Header -->
+            <div class="p-6">
+              <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div class="flex-1">
+                  <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3">
                     {entry.title}
                   </h2>
-                  <div class="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                    <div class="flex items-center">
-                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  
+                  <div class="flex flex-wrap items-center gap-4 text-sm">
+                    <div class="flex items-center text-gray-500 dark:text-gray-400">
+                      <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      {getRelativeDate(entry.date)}
-                    </div>
-                    <div class="text-xs text-gray-400">
                       {formatDate(entry.date)}
                     </div>
+                    
+                    <div class="flex items-center text-gray-500 dark:text-gray-400">
+                      <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {formatTime(entry.date)}
+                    </div>
+                    
+                    {#if entry.mood}
+                      <span class={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${moodConfig.bg} border`}>
+                        <span class="mr-1">{moodConfig.emoji}</span>
+                        {moodConfig.label}
+                      </span>
+                    {/if}
                   </div>
                 </div>
                 
-                <div class="flex items-center gap-3 flex-shrink-0">
-                  {#if entry.mood}
-                    <span class={`badge ${getMoodBg(entry.mood)} flex items-center`}>
-                      <span class="mr-1">{getMoodEmoji(entry.mood)}</span>
-                      {entry.mood}
-                    </span>
-                  {/if}
-                  
-                  <!-- Actions -->
-                  <div class="flex items-center gap-1">
-                    <button
-                      on:click={() => editEntry(entry)}
-                      disabled={isProcessing(entry.id)}
-                      class="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                      title="Edit entry"
-                      aria-label="Edit journal entry"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                <!-- Actions -->
+                <div class="flex items-center gap-2">
+                  <button
+                    on:click={() => editEntry(entry)}
+                    disabled={isProcessing(entry.id)}
+                    class="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
+                    aria-label="Edit entry"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    on:click={() => entry.id && deleteEntry(entry.id)}
+                    disabled={isProcessing(entry.id)}
+                    class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                    aria-label="Delete entry"
+                  >
+                    {#if isProcessing(entry.id)}
+                      <div class="spinner w-5 h-5"></div>
+                    {:else}
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                    </button>
-                    <button
-                      on:click={() => entry.id && deleteEntry(entry.id)}
-                      disabled={isProcessing(entry.id)}
-                      class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                      title="Delete entry"
-                      aria-label="Delete journal entry"
-                    >
-                      {#if isProcessing(entry.id)}
-                        <div class="spinner w-4 h-4"></div>
-                      {:else}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      {/if}
-                    </button>
-                  </div>
+                    {/if}
+                  </button>
                 </div>
-              </header>
+              </div>
               
               <!-- Entry Content -->
-              <div class="prose prose-gray dark:prose-invert max-w-none mb-4">
-                <p class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+              <div class="mt-4">
+                <p class={`text-gray-700 dark:text-gray-300 leading-relaxed ${isExpanded ? '' : 'line-clamp-3'}`}>
                   {entry.content}
                 </p>
+                
+                {#if entry.content.length > 200}
+                  <button
+                    on:click={() => toggleEntryExpansion(entry.id || '')}
+                    class="mt-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
+                  >
+                    {isExpanded ? 'Show less' : 'Read more'}
+                  </button>
+                {/if}
               </div>
               
               <!-- Tags -->
               {#if entry.tags && entry.tags.length > 0}
-                <footer class="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex flex-wrap gap-2 mt-4">
                   {#each entry.tags as tag}
                     <button
-                      on:click={() => { filterTags = tag; applyFilters(); }}
-                      class="badge bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors"
+                      on:click={() => filterTags = tag}
+                      class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
                     >
                       #{tag}
                     </button>
                   {/each}
-                </footer>
+                </div>
               {/if}
-            </article>
-          {/each}
-        </div>
-      {/if}
+            </div>
+            
+            <!-- Entry Footer -->
+            <div class="px-6 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                {getRelativeDate(entry.date)}
+              </div>
+            </div>
+          </article>
+        {/each}
+      </div>
+    {/if}
 
-      <!-- Motivational Footer -->
-      {#if filteredEntries.length > 0}
-        <div class="text-center py-12">
-          <div class="max-w-2xl mx-auto">
-            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              🌟 Keep Documenting Your Journey!
-            </h3>
-            <p class="text-gray-600 dark:text-gray-400 text-lg mb-6">
-              Every entry is a step forward in your learning journey. 
-              Reflection leads to deeper understanding and faster growth.
-            </p>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div class="text-center">
-                <div class="text-3xl font-bold text-blue-600 dark:text-blue-400">{totalEntries}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">Total Entries</div>
-              </div>
-              <div class="text-center">
-                <div class="text-3xl font-bold text-green-600 dark:text-green-400">{thisWeekEntries}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">This Week</div>
-              </div>
-              <div class="text-center">
-                <div class="text-3xl">{getMoodEmoji(averageMood)}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400 capitalize">{averageMood} Mood</div>
-              </div>
+    <!-- Motivation Section -->
+    {#if filteredEntries.length > 0}
+      <div class="mt-16 text-center">
+        <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/10 dark:to-purple-900/10 rounded-3xl p-8 border border-indigo-200 dark:border-indigo-800">
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Keep Writing, Keep Growing! 📝
+          </h3>
+          <p class="text-gray-600 dark:text-gray-400 text-lg mb-6 max-w-2xl mx-auto">
+            Your journal is a powerful tool for reflection and growth. 
+            Every entry helps you understand your journey better.
+          </p>
+          <div class="flex justify-center">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+              <div class="text-5xl mb-2">{getMoodConfig(averageMood).emoji}</div>
+              <div class="text-gray-600 dark:text-gray-400">Keep up the great work!</div>
             </div>
           </div>
         </div>
-      {/if}
-    </div>
+      </div>
+    {/if}
   </div>
 </div>
+
+<style>
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 1000px;
+    }
+  }
+  
+  .animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+  }
+  
+  .animate-slide-down {
+    animation: slide-down 0.4s ease-out;
+  }
+  
+  .spinner {
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-clamp: 3;
+  }
+</style>

@@ -141,7 +141,7 @@
       <!-- Header -->
       <div class="mb-8">
         <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 flex items-center">
-          🗺️ Bug Bounty Roadmap
+          🗺️ Ethical Hacking Roadmap
         </h1>
         <p class="text-lg text-gray-600 dark:text-gray-400">
           Your structured path from beginner to elite bug hunter
