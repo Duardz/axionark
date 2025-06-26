@@ -33,49 +33,73 @@
   }
 </script>
 
-<footer class="bg-gray-900 dark:bg-black text-gray-300 mt-auto relative overflow-hidden">
+<footer class="relative mt-auto overflow-hidden bg-gradient-to-b from-gray-900 via-gray-950 to-black">
+  <!-- Futuristic Grid Pattern -->
+  <div class="absolute inset-0 opacity-10">
+    <div class="absolute inset-0" style="background-image: url(&quot;data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E&quot;);"></div>
+  </div>
+  
   <!-- Animated Background Elements -->
   <div class="absolute inset-0 overflow-hidden pointer-events-none">
-    <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl animate-pulse"></div>
+    <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
     <div class="absolute -bottom-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 2s;"></div>
+    <div class="absolute top-20 left-1/2 transform -translate-x-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-float"></div>
   </div>
 
   <div class="relative">
+    <!-- Top Gradient Line -->
+    <div class="h-[2px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
+    
     <!-- Main Footer Content -->
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
         <!-- Brand Section -->
         <div class="lg:col-span-2">
-          <div class="flex items-center space-x-3 mb-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center transform rotate-3 hover:rotate-6 transition-transform duration-300">
-              <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+          <!-- Futuristic Logo -->
+          <div class="flex items-center space-x-4 mb-6">
+            <div class="relative w-16 h-16">
+              <!-- Rotating Ring -->
+              <div class="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 rounded-2xl opacity-20 animate-spin-slow"></div>
+              
+              <!-- Main Logo -->
+              <div class="relative w-16 h-16 bg-gradient-to-br from-cyan-500 via-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-cyan-500/30">
+                <!-- Hexagon Shape -->
+                <svg class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L21.5 7.5V16.5L12 22L2.5 16.5V7.5L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 7L16 10V14L12 17L8 14V10L12 7Z" fill="currentColor" opacity="0.8"/>
+                  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
+              </div>
+              
+              <!-- Glow Effect -->
+              <div class="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-2xl blur-xl opacity-50 animate-pulse"></div>
             </div>
+            
             <div>
-              <h3 class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              <h3 class="text-3xl font-black tracking-wider bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
                 AXIONARK
               </h3>
-              <p class="text-xs text-gray-500">Elite Bug Bounty Training</p>
+              <p class="text-xs font-medium tracking-[0.3em] text-gray-500 uppercase">Cyber Elite Training</p>
             </div>
           </div>
           
-          <p class="text-gray-400 text-sm leading-relaxed mb-6 max-w-md">
-            Master the art of bug bounty hunting with our comprehensive roadmap, 
-            track your progress, and join the ranks of elite security researchers.
+          <p class="text-gray-400 text-sm leading-relaxed mb-8 max-w-md">
+            Master the art of cybersecurity with our cutting-edge training platform. 
+            Join the next generation of elite security researchers and bug bounty hunters.
           </p>
           
           <!-- Social Links -->
-          <div class="flex space-x-4">
+          <div class="flex space-x-3">
             {#each socialLinks as social}
               <a 
                 href={social.href}
-                class="w-10 h-10 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 group"
+                class="relative w-12 h-12 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:border-cyan-500/50 group"
                 aria-label={social.icon}
               >
-                <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors relative z-10" fill="currentColor" viewBox="0 0 24 24">
                   <path d={social.path} />
                 </svg>
+                <div class="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-xl opacity-0 group-hover:opacity-20 blur-xl transition-opacity"></div>
               </a>
             {/each}
           </div>
@@ -83,8 +107,10 @@
         
         <!-- Learning Links -->
         <div>
-          <h4 class="text-white font-semibold mb-4 flex items-center">
-            <span class="text-lg mr-2">📚</span>
+          <h4 class="text-white font-bold mb-6 flex items-center">
+            <div class="w-8 h-8 bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg flex items-center justify-center mr-3">
+              <span class="text-sm">📚</span>
+            </div>
             Learning
           </h4>
           <ul class="space-y-3">
@@ -92,14 +118,16 @@
               <li>
                 <a 
                   href={link.href}
-                  class={`text-sm hover:text-white transition-colors flex items-center group ${
-                    isActive(link.href) ? 'text-indigo-400' : ''
+                  class={`group flex items-center text-sm transition-all duration-300 ${
+                    isActive(link.href) 
+                      ? 'text-cyan-400' 
+                      : 'text-gray-400 hover:text-white hover:translate-x-1'
                   }`}
                 >
                   <span class="mr-2 opacity-70 group-hover:opacity-100 transition-opacity">{link.icon}</span>
                   {link.label}
                   {#if isActive(link.href)}
-                    <span class="ml-2 w-1.5 h-1.5 bg-indigo-400 rounded-full"></span>
+                    <span class="ml-2 w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
                   {/if}
                 </a>
               </li>
@@ -109,8 +137,10 @@
         
         <!-- Tracking Links -->
         <div>
-          <h4 class="text-white font-semibold mb-4 flex items-center">
-            <span class="text-lg mr-2">📊</span>
+          <h4 class="text-white font-bold mb-6 flex items-center">
+            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+              <span class="text-sm">📊</span>
+            </div>
             Tracking
           </h4>
           <ul class="space-y-3">
@@ -118,14 +148,16 @@
               <li>
                 <a 
                   href={link.href}
-                  class={`text-sm hover:text-white transition-colors flex items-center group ${
-                    isActive(link.href) ? 'text-indigo-400' : ''
+                  class={`group flex items-center text-sm transition-all duration-300 ${
+                    isActive(link.href) 
+                      ? 'text-cyan-400' 
+                      : 'text-gray-400 hover:text-white hover:translate-x-1'
                   }`}
                 >
                   <span class="mr-2 opacity-70 group-hover:opacity-100 transition-opacity">{link.icon}</span>
                   {link.label}
                   {#if isActive(link.href)}
-                    <span class="ml-2 w-1.5 h-1.5 bg-indigo-400 rounded-full"></span>
+                    <span class="ml-2 w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
                   {/if}
                 </a>
               </li>
@@ -135,8 +167,10 @@
         
         <!-- Resources Links -->
         <div>
-          <h4 class="text-white font-semibold mb-4 flex items-center">
-            <span class="text-lg mr-2">🔧</span>
+          <h4 class="text-white font-bold mb-6 flex items-center">
+            <div class="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mr-3">
+              <span class="text-sm">🔧</span>
+            </div>
             Resources
           </h4>
           <ul class="space-y-3">
@@ -144,11 +178,11 @@
               <li>
                 <a 
                   href={link.href}
-                  class="text-sm hover:text-white transition-colors flex items-center group"
+                  class="group flex items-center text-sm text-gray-400 hover:text-white transition-all duration-300 hover:translate-x-1"
                 >
                   <span class="mr-2 opacity-70 group-hover:opacity-100 transition-opacity">{link.icon}</span>
                   {link.label}
-                  <svg class="w-3 h-3 ml-1 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-3 h-3 ml-1 opacity-50 group-hover:opacity-100 transition-all transform group-hover:translate-x-1 group-hover:-translate-y-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                 </a>
@@ -158,55 +192,94 @@
         </div>
       </div>
       
-      <!-- Stats Section -->
-      <div class="mt-12 pt-8 border-t border-gray-800">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-white mb-1">500K+</div>
-            <div class="text-xs text-gray-500">XP Earned</div>
+      <!-- Futuristic Stats Section -->
+      <div class="mt-16 pt-8 border-t border-gray-800/50">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+          <div class="relative group">
+            <div class="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-2xl opacity-0 group-hover:opacity-10 blur-xl transition-all duration-500"></div>
+            <div class="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 text-center hover:border-gray-700 transition-all duration-300 group-hover:transform group-hover:scale-105">
+              <div class="text-3xl mb-2">⚡</div>
+              <div class="text-3xl font-bold bg-gradient-to-r from-yellow-500 to-orange-600 bg-clip-text text-transparent mb-1">
+                500K+
+              </div>
+              <div class="text-xs text-gray-500 uppercase tracking-wider">XP Earned</div>
+            </div>
           </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-white mb-1">10K+</div>
-            <div class="text-xs text-gray-500">Tasks Completed</div>
+          
+          <div class="relative group">
+            <div class="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl opacity-0 group-hover:opacity-10 blur-xl transition-all duration-500"></div>
+            <div class="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 text-center hover:border-gray-700 transition-all duration-300 group-hover:transform group-hover:scale-105">
+              <div class="text-3xl mb-2">🎯</div>
+              <div class="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-green-600 bg-clip-text text-transparent mb-1">
+                10K+
+              </div>
+              <div class="text-xs text-gray-500 uppercase tracking-wider">Tasks Completed</div>
+            </div>
           </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-white mb-1">$1M+</div>
-            <div class="text-xs text-gray-500">Bounties Earned</div>
+          
+          <div class="relative group">
+            <div class="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl opacity-0 group-hover:opacity-10 blur-xl transition-all duration-500"></div>
+            <div class="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 text-center hover:border-gray-700 transition-all duration-300 group-hover:transform group-hover:scale-105">
+              <div class="text-3xl mb-2">💰</div>
+              <div class="text-3xl font-bold bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent mb-1">
+                $1M+
+              </div>
+              <div class="text-xs text-gray-500 uppercase tracking-wider">Bounties Earned</div>
+            </div>
           </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-white mb-1">1K+</div>
-            <div class="text-xs text-gray-500">Active Hunters</div>
+          
+          <div class="relative group">
+            <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl opacity-0 group-hover:opacity-10 blur-xl transition-all duration-500"></div>
+            <div class="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 text-center hover:border-gray-700 transition-all duration-300 group-hover:transform group-hover:scale-105">
+              <div class="text-3xl mb-2">🛡️</div>
+              <div class="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-600 bg-clip-text text-transparent mb-1">
+                1K+
+              </div>
+              <div class="text-xs text-gray-500 uppercase tracking-wider">Active Hunters</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
     
-    <!-- Bottom Bar -->
-    <div class="bg-black/30 backdrop-blur-sm border-t border-gray-800">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div class="text-sm text-gray-500">
-            © {currentYear} AXIONARK. All rights reserved.
-          </div>
-          
-          <div class="flex flex-wrap items-center gap-4 sm:gap-6 text-sm">
-            <a href="#" class="text-gray-500 hover:text-gray-300 transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" class="text-gray-500 hover:text-gray-300 transition-colors">
-              Terms of Service
-            </a>
-            <a href="#" class="text-gray-500 hover:text-gray-300 transition-colors">
-              Cookie Policy
-            </a>
-          </div>
-          
+    <!-- Futuristic Bottom Bar -->
+    <div class="relative bg-black/50 backdrop-blur-xl border-t border-gray-800/50">
+      <!-- Animated Line -->
+      <div class="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent animate-slide"></div>
+      
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+          <!-- Copyright -->
           <div class="flex items-center gap-2 text-sm text-gray-500">
-            <span>Made with</span>
-            <svg class="w-4 h-4 text-red-500 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
-            </svg>
-            <span>for hackers</span>
+            <div class="w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
+            <span>© {currentYear} AXIONARK</span>
+            <span class="text-gray-700">|</span>
+            <span>All rights reserved</span>
+          </div>
+          
+          <!-- Legal Links -->
+          <div class="flex flex-wrap items-center gap-6 text-sm">
+            {#each ['Privacy Policy', 'Terms of Service', 'Cookie Policy'] as legal}
+              <a 
+                href="#" 
+                class="text-gray-500 hover:text-cyan-400 transition-colors relative group"
+              >
+                {legal}
+                <span class="absolute bottom-0 left-0 w-0 h-[1px] bg-gradient-to-r from-cyan-400 to-blue-500 group-hover:w-full transition-all duration-300"></span>
+              </a>
+            {/each}
+          </div>
+          
+          <!-- Made with Love -->
+          <div class="flex items-center gap-2 text-sm text-gray-500">
+            <span>Crafted with</span>
+            <div class="relative">
+              <svg class="w-4 h-4 text-red-500 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+              </svg>
+              <div class="absolute inset-0 bg-red-500 blur-xl opacity-50 animate-pulse"></div>
+            </div>
+            <span>for cyber warriors</span>
           </div>
         </div>
       </div>
@@ -215,7 +288,42 @@
 </footer>
 
 <style>
-  footer {
-    background: linear-gradient(to bottom, #111827, #000000);
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) translateX(-50%);
+    }
+    50% {
+      transform: translateY(-20px) translateX(-50%);
+    }
+  }
+  
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  @keyframes slide {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-spin-slow {
+    animation: spin-slow 20s linear infinite;
+  }
+  
+  .animate-slide {
+    animation: slide 3s linear infinite;
   }
 </style>
