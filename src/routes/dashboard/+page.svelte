@@ -709,8 +709,6 @@
   {/if}
 </div>
 
-<Footer />
-
 <style>
   @keyframes float {
     0%, 100% {
