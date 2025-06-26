@@ -491,63 +491,6 @@
         </div>
       </div>
 
-      <!-- Phase Overview Cards -->
-      <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {#each roadmapData as phase}
-          {@const stats = getPhaseStats(phase.id)}
-          {@const colors = getPhaseColor(phase.id)}
-          
-          <div class={`card p-6 border-l-4 ${colors.border} hover:shadow-xl transition-all duration-300 ${
-            selectedPhase === phase.id ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-offset-gray-900' : ''
-          }`}>
-            <div class="flex items-center gap-3 mb-4">
-              <div class={`p-2 bg-gradient-to-r ${colors.bg} rounded-lg text-white`}>
-                <div class="text-xl">
-                  {#if phase.id === 'foundation'}🌱
-                  {:else if phase.id === 'pentesting'}🚀
-                  {:else}👑{/if}
-                </div>
-              </div>
-              <div>
-                <h3 class="font-bold text-gray-900 dark:text-white">{phase.title}</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{phase.duration}</p>
-              </div>
-            </div>
-            
-            <p class="text-gray-700 dark:text-gray-300 text-sm mb-4 leading-relaxed">
-              {phase.description}
-            </p>
-            
-            {#if $userStore}
-              <div class="space-y-2">
-                <div class="flex justify-between text-sm">
-                  <span class="text-gray-600 dark:text-gray-400">Progress</span>
-                  <span class={`font-medium ${colors.text}`}>{stats.completed}/{stats.total} tasks</span>
-                </div>
-                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    class={`h-2 rounded-full bg-gradient-to-r ${colors.bg} transition-all duration-500`}
-                    style="width: {stats.percentage}%"
-                  ></div>
-                </div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 text-center">
-                  {stats.percentage}% Complete
-                </div>
-              </div>
-            {/if}
-            
-            {#if selectedPhase !== phase.id}
-              <button
-                on:click={() => selectedPhase = phase.id}
-                class="mt-4 w-full btn btn-secondary btn-sm"
-              >
-                View Phase
-              </button>
-            {/if}
-          </div>
-        {/each}
-      </div>
-
       <!-- Tips Section -->
       <div class="mt-12 card p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800">
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">

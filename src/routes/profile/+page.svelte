@@ -27,7 +27,8 @@
   // Profile stats
   let totalTasks = 0;
   let completedTasks = 0;
-  let phaseProgress = { beginner: 0, intermediate: 0, advanced: 0 };
+  // Use an index signature to allow any string key for phaseProgress
+  let phaseProgress: { [key: string]: number } = {};
   let achievements: Achievement[] = [];
   let memberSince = '';
   let learningStreak = 0;
