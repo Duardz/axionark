@@ -6,7 +6,6 @@
   import { userStore, userProgress } from '$lib/stores/user';
   import { roadmapData } from '$lib/data/roadmap';
   import Navbar from '$lib/components/Navbar.svelte';
-  import Footer from '$lib/components/Footer.svelte';
   import type { Task } from '$lib/data/roadmap';
 
   let loading = false;

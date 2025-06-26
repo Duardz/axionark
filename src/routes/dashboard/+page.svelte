@@ -5,7 +5,6 @@
   import { userStore, userProgress, journalStore, bugStore } from '$lib/stores/user';
   import { roadmapData } from '$lib/data/roadmap';
   import Navbar from '$lib/components/Navbar.svelte';
-  import Footer from '$lib/components/Footer.svelte';
   import type { User } from 'firebase/auth';
 
   let user: User | null = null;

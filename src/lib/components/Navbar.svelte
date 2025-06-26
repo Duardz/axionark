@@ -118,7 +118,7 @@
               AXIONARK
             </span>
             <div class="text-[10px] font-medium tracking-[0.3em] text-gray-500 dark:text-gray-400 uppercase">
-              Cyber Elite Training
+              Study. Hack. Repeat.
             </div>
             <!-- Underline Effect -->
             <div class="absolute -bottom-1 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>

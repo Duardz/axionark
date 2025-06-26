@@ -5,7 +5,6 @@
   import { authStore } from '$lib/stores/auth';
   import { journalStore, userStore } from '$lib/stores/user';
   import Navbar from '$lib/components/Navbar.svelte';
-  import Footer from '$lib/components/Footer.svelte';
   import type { JournalEntry } from '$lib/stores/user';
   import { firebaseTimestampToDate } from '$lib/utils/security';
 
