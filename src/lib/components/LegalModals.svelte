@@ -63,6 +63,7 @@
       transition:fade={{ duration: 200 }}
     >
       <div class="flex min-h-full items-center justify-center p-4">
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div 
           class="relative w-full max-w-4xl bg-white dark:bg-gray-900 rounded-3xl shadow-2xl"
           transition:fly={{ y: 50, duration: 300 }}
@@ -207,6 +208,7 @@
       transition:fade={{ duration: 200 }}
     >
       <div class="flex min-h-full items-center justify-center p-4">
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div 
           class="relative w-full max-w-4xl bg-white dark:bg-gray-900 rounded-3xl shadow-2xl"
           transition:fly={{ y: 50, duration: 300 }}
@@ -392,6 +394,7 @@
       transition:fade={{ duration: 200 }}
     >
       <div class="flex min-h-full items-center justify-center p-4">
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div 
           class="relative w-full max-w-4xl bg-white dark:bg-gray-900 rounded-3xl shadow-2xl"
           transition:fly={{ y: 50, duration: 300 }}

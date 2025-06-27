@@ -1,4 +1,4 @@
-<!-- src/lib/components/LandingNavbar.svelte -->
+<!-- src/lib/components/LandingNav.svelte -->
 <script lang="ts">
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -37,9 +37,9 @@
   ];
 </script>
 
-<nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-500 {scrolled ? 'bg-gray-900/95 backdrop-blur-xl shadow-lg border-b border-gray-800' : 'bg-transparent'}">
+<nav class="fixed top-0 left-0 right-0 z-50 transition-all duration-500 {scrolled ? 'bg-gray-900/95 backdrop-blur-2xl shadow-lg border-b border-gray-800' : 'bg-gray-900/50 backdrop-blur-md border-b border-gray-800/50'}">
   <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-center h-16">
+    <div class="flex justify-between items-center h-20">
       <!-- Logo -->
       <a href="/" class="flex items-center space-x-2 sm:space-x-4 group">
         <div class="relative">
@@ -69,79 +69,104 @@
               AXIONARK
             </span>
             <div class="text-[10px] font-medium tracking-[0.3em] text-gray-500 uppercase">
-              Cyber Elite Training
+              Ethical Hacking Journal
             </div>
           </div>
         </div>
       </a>
       
       <!-- Desktop Navigation -->
-      <div class="hidden md:flex items-center space-x-8">
+      <div class="hidden md:flex items-center space-x-2">
         {#each navLinks as link}
           <a 
             href={link.href} 
-            class="relative text-gray-400 hover:text-white transition-colors duration-300 text-sm font-medium {isActive(link.href) ? 'text-white' : ''}"
+            class="relative px-5 py-2.5 text-gray-300 hover:text-white transition-all duration-300 text-sm font-medium rounded-xl hover:bg-white/5 {isActive(link.href) ? 'text-white bg-white/10' : ''}"
           >
             {link.label}
             {#if isActive(link.href)}
-              <span class="absolute -bottom-1 left-0 right-0 h-0.5 bg-cyan-500"></span>
+              <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-cyan-500 rounded-full"></div>
             {/if}
           </a>
         {/each}
+        
+        <div class="ml-4 h-8 w-px bg-gray-800"></div>
         
         <!-- Ko-fi Support Button -->
         <a 
           href="https://ko-fi.com/duardz" 
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center space-x-2 px-4 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-700 hover:text-white hover:border-gray-600 transition-all duration-300"
+          class="ml-4 flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/25"
         >
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.189-.096-.323-.378-.323-.378s-.045-4.906-.025-7.602c.02-2.696-.516-3.227-.516-3.227l7.838.023s2.657.334 2.657 3.556c0 3.222-5.31 3.629-5.31 3.629z"/>
           </svg>
           <span>Support</span>
         </a>
+        
+        <!-- Sign In Button -->
+        <a 
+          href="/signin" 
+          class="ml-2 flex items-center space-x-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-xl text-sm font-medium transition-all duration-300 border border-gray-700/50 hover:border-gray-600/50"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+          </svg>
+          <span>Sign In</span>
+        </a>
       </div>
       
       <!-- Mobile menu button -->
       <button
-        class="md:hidden relative w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 flex items-center justify-center hover:bg-gray-700 transition-all duration-300"
+        class="md:hidden relative w-12 h-12 rounded-xl bg-gray-900/50 backdrop-blur-sm border border-gray-800 flex items-center justify-center hover:bg-gray-800/50 transition-all duration-300"
         on:click={toggleMobileMenu}
         aria-label="Toggle mobile menu"
       >
-        <div class="relative w-5 h-4 flex flex-col justify-between">
-          <span class="block h-0.5 bg-gray-400 rounded-full transition-all duration-300 {mobileMenuOpen ? 'rotate-45 translate-y-1.5' : ''}"></span>
-          <span class="block h-0.5 bg-gray-400 rounded-full transition-all duration-300 {mobileMenuOpen ? 'opacity-0' : ''}"></span>
-          <span class="block h-0.5 bg-gray-400 rounded-full transition-all duration-300 {mobileMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}"></span>
+        <div class="relative w-6 h-5 flex flex-col justify-between">
+          <span class="block h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-300 {mobileMenuOpen ? 'rotate-45 translate-y-2' : ''}"></span>
+          <span class="block h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-300 {mobileMenuOpen ? 'opacity-0 scale-0' : ''}"></span>
+          <span class="block h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-300 {mobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}"></span>
         </div>
       </button>
     </div>
     
     <!-- Mobile Navigation -->
     {#if mobileMenuOpen}
-      <div class="md:hidden border-t border-gray-800 bg-gray-900/95 backdrop-blur-xl py-4">
-        <div class="space-y-1">
-          {#each navLinks as link}
-            <a 
-              href={link.href} 
-              class="block px-4 py-3 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-300 text-sm font-medium {isActive(link.href) ? 'bg-gray-800 text-white' : ''}"
-            >
-              {link.label}
-            </a>
-          {/each}
-          
-          <div class="pt-4 mt-4 border-t border-gray-800">
-            <a 
-              href="https://ko-fi.com/duardz" 
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex items-center justify-center space-x-2 w-full px-4 py-3 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-700 hover:text-white"
-            >
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.189-.096-.323-.378-.323-.378s-.045-4.906-.025-7.602c.02-2.696-.516-3.227-.516-3.227l7.838.023s2.657.334 2.657 3.556c0 3.222-5.31 3.629-5.31 3.629z"/>
-              </svg>
-              <span>Support the Developer</span>
-            </a>
+      <div class="md:hidden absolute top-full left-0 right-0 bg-black/95 backdrop-blur-2xl border-b border-gray-800/50 animate-slide-down">
+        <div class="container mx-auto px-4 py-6">
+          <div class="space-y-2">
+            {#each navLinks as link}
+              <a 
+                href={link.href} 
+                class="block px-5 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-all duration-300 text-sm font-medium {isActive(link.href) ? 'bg-white/10 text-white' : ''}"
+              >
+                {link.label}
+              </a>
+            {/each}
+            
+            <div class="pt-4 mt-4 border-t border-gray-800/50 space-y-2">
+              <a 
+                href="https://ko-fi.com/duardz" 
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center justify-center space-x-2 w-full px-5 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl text-sm font-medium"
+              >
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.189-.096-.323-.378-.323-.378s-.045-4.906-.025-7.602c.02-2.696-.516-3.227-.516-3.227l7.838.023s2.657.334 2.657 3.556c0 3.222-5.31 3.629-5.31 3.629z"/>
+                </svg>
+                <span>Support the Developer</span>
+              </a>
+              
+              <a 
+                href="/signin" 
+                class="flex items-center justify-center space-x-2 w-full px-5 py-3 bg-white/10 backdrop-blur-sm text-white rounded-xl text-sm font-medium border border-gray-700/50"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                <span>Sign In</span>
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -150,7 +175,7 @@
 </nav>
 
 <!-- Spacer for fixed navbar -->
-<div class="h-16"></div>
+<div class="h-20"></div>
 
 <style>
   @keyframes spin-slow {
@@ -164,5 +189,20 @@
   
   .animate-spin-slow {
     animation: spin-slow 20s linear infinite;
+  }
+  
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slide-down {
+    animation: slide-down 0.3s ease-out;
   }
 </style>

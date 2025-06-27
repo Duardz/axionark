@@ -1,4 +1,13 @@
 <!-- src/routes/+page.svelte -->
+<script context="module" lang="ts">
+  // TypeScript declaration for Ko-fi widget
+  declare global {
+    interface Window {
+      kofiWidgetOverlay: any;
+    }
+  }
+</script>
+
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { authStore, isAuthenticated } from '$lib/stores/auth';
@@ -36,6 +45,24 @@
         goto('/dashboard');
       }
     });
+    
+    // Load Ko-fi widget
+    if (typeof window !== 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://storage.ko-fi.com/cdn/scripts/overlay-widget.js';
+      script.async = true;
+      script.onload = () => {
+        if (window.kofiWidgetOverlay) {
+          window.kofiWidgetOverlay.draw('duardz', {
+            'type': 'floating-chat',
+            'floating-chat.donateButton.text': 'Support me',
+            'floating-chat.donateButton.background-color': '#794bc4',
+            'floating-chat.donateButton.text-color': '#fff'
+          });
+        }
+      };
+      document.body.appendChild(script);
+    }
   });
   
   onDestroy(() => {
@@ -201,375 +228,406 @@
     }
   }
 </script>
-
 <LandingNav />
 
-<div class="min-h-screen bg-black cyber-grid overflow-hidden">
-  <!-- Animated background elements -->
-  <div class="absolute inset-0 overflow-hidden">
-    <div class="absolute -top-40 -right-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-screen filter blur-xl opacity-20 animate-float"></div>
-    <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-screen filter blur-xl opacity-20 animate-float" style="animation-delay: 2s;"></div>
-    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500 rounded-full mix-blend-screen filter blur-xl opacity-10 animate-pulse-glow"></div>
+<div class="min-h-screen bg-black overflow-hidden relative">
+  <!-- Animated background -->
+  <div class="absolute inset-0">
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-float"></div>
+    <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-float" style="animation-delay: 2s;"></div>
+    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-blue-500 rounded-full mix-blend-screen filter blur-3xl opacity-10 animate-float" style="animation-delay: 4s;"></div>
   </div>
 
-  <div class="relative min-h-screen flex items-center justify-center px-4 py-12">
-    <div class="max-w-md w-full space-y-8 animate-slide-up">
-      <!-- Logo and Title -->
-      <div class="text-center">
-        <div class="flex justify-center mb-6">
-          <div class="relative">
-            <div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center transform rotate-45 neon-glow">
-              <svg class="w-14 h-14 text-white transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div class="absolute -bottom-2 -right-2 w-6 h-6 bg-pink-500 rounded-full animate-pulse-glow"></div>
-          </div>
+  <!-- Grid pattern overlay -->
+  <div class="absolute inset-0 opacity-50" style="background-image: url(&quot;data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='grid' width='100' height='100' patternUnits='userSpaceOnUse'%3E%3Cpath d='M 100 0 L 0 0 0 100' fill='none' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23grid)'/%3E%3C/svg%3E&quot;);"></div>
+
+  <div class="relative min-h-screen flex">
+    <!-- Left Side - Form -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
+      <div class="w-full max-w-md space-y-8 animate-fade-in">
+        <!-- Header -->
+        <div class="text-center">
+          <h1 class="text-4xl font-black bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-3">
+            AXIONARK
+          </h1>
+          <p class="text-gray-400 text-sm">Ethical Hacking Journey Companion</p>
         </div>
-        <h1 class="text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-gradient">
-          AXIONARK
-        </h1>
-        <p class="mt-2 text-gray-400">Elite Bug Bounty Training Platform</p>
-      </div>
 
-      <!-- Auth Form -->
-      <div class="glass rounded-2xl p-8 space-y-6 card-hover">
-        <h2 class="text-2xl font-semibold text-white text-center neon-text">
-          {#if mode === 'signin'}
-            Access Terminal
-          {:else if mode === 'signup'}
-            Initialize Profile
-          {:else}
-            Reset Password
-          {/if}
-        </h2>
-        
-        {#if error}
-          <div class="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm animate-slide-up" role="alert">
-            <div class="flex items-center">
-              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {error}
-            </div>
-          </div>
-        {/if}
-
-        {#if mode === 'reset'}
-          <!-- Password Reset Form -->
-          {#if resetSuccess}
-            <div class="p-4 bg-green-500/20 border border-green-500/50 rounded-lg animate-slide-up">
-              <div class="flex items-start">
-                <svg class="w-5 h-5 text-green-400 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <!-- Form Container -->
+        <div class="bg-gray-900/50 backdrop-blur-xl rounded-3xl p-8 border border-gray-800/50 shadow-2xl">
+          <h2 class="text-2xl font-bold text-white mb-8">
+            {#if mode === 'signin'}
+              Welcome back
+            {:else if mode === 'signup'}
+              Create your account
+            {:else}
+              Reset your password
+            {/if}
+          </h2>
+          
+          {#if error}
+            <div class="p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm mb-6 animate-slide-up" role="alert">
+              <div class="flex items-center">
+                <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <div>
-                  <p class="text-green-400 font-medium">Password reset email sent!</p>
-                  <p class="text-sm text-gray-400 mt-1">Check your inbox for instructions to reset your password.</p>
-                  <p class="text-xs text-gray-500 mt-2">Redirecting to login in 5 seconds...</p>
-                </div>
+                <span>{error}</span>
               </div>
             </div>
-          {:else}
-            <form on:submit|preventDefault={handlePasswordReset} class="space-y-5" novalidate>
-              {#if resetError}
-                <div class="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-400 text-sm" role="alert">
-                  <div class="flex items-center">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {resetError}
+          {/if}
+
+          {#if mode === 'reset'}
+            <!-- Password Reset Form -->
+            {#if resetSuccess}
+              <div class="p-4 bg-green-500/10 border border-green-500/50 rounded-xl animate-slide-up">
+                <div class="flex items-start">
+                  <svg class="w-5 h-5 text-green-400 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p class="text-green-400 font-medium">Password reset email sent!</p>
+                    <p class="text-sm text-gray-400 mt-1">Check your inbox for instructions to reset your password.</p>
+                    <p class="text-xs text-gray-500 mt-2">Redirecting to login in 5 seconds...</p>
                   </div>
                 </div>
-              {/if}
-              
-              <div>
-                <label for="reset-email" class="block text-sm font-medium text-gray-400 mb-2">
-                  Email Address
-                </label>
-                <div class="relative">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+              </div>
+            {:else}
+              <form on:submit|preventDefault={handlePasswordReset} class="space-y-6" novalidate>
+                {#if resetError}
+                  <div class="p-3 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 text-sm" role="alert">
+                    <div class="flex items-center">
+                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {resetError}
+                    </div>
                   </div>
+                {/if}
+                
+                <div>
+                  <label for="reset-email" class="block text-sm font-medium text-gray-300 mb-2">
+                    Email Address
+                  </label>
                   <input
                     id="reset-email"
                     type="email"
                     bind:value={resetEmail}
                     on:keydown={handleKeydown}
-                    class="block w-full pl-10 pr-3 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                    class="block w-full px-4 py-3 bg-black/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                     placeholder="Enter your email address"
                     disabled={resetLoading}
                     autocomplete="email"
                   />
+                  <p class="mt-2 text-xs text-gray-500">
+                    We'll send you instructions to reset your password
+                  </p>
                 </div>
-                <p class="mt-2 text-xs text-gray-500">
-                  We'll send you instructions to reset your password
-                </p>
-              </div>
 
-              <button
-                type="submit"
-                disabled={resetLoading}
-                class="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 btn-cyber neon-glow"
-              >
-                {#if resetLoading}
-                  <div class="flex items-center justify-center">
-                    <div class="spinner w-5 h-5 mr-2"></div>
-                    Sending...
-                  </div>
-                {:else}
-                  Send Reset Email
-                {/if}
-              </button>
-              
-              <div class="text-center">
                 <button
-                  type="button"
-                  on:click={() => switchMode('signin')}
-                  class="text-sm text-gray-400 hover:text-white transition-colors"
+                  type="submit"
+                  disabled={resetLoading}
+                  class="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02]"
                 >
-                  Back to login
+                  {#if resetLoading}
+                    <div class="flex items-center justify-center">
+                      <div class="spinner w-5 h-5 mr-2"></div>
+                      Sending...
+                    </div>
+                  {:else}
+                    Send Reset Email
+                  {/if}
                 </button>
-              </div>
-            </form>
-          {/if}
-        {:else}
-          <!-- Sign In / Sign Up Form -->
-          <form on:submit|preventDefault={handleSubmit} class="space-y-5" novalidate>
-            {#if mode === 'signup'}
-              <div>
-                <label for="username" class="block text-sm font-medium text-gray-400 mb-2">
-                  Hacker Handle
-                </label>
-                <div class="relative">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
+                
+                <div class="text-center">
+                  <button
+                    type="button"
+                    on:click={() => switchMode('signin')}
+                    class="text-sm text-gray-400 hover:text-white transition-colors"
+                  >
+                    Back to login
+                  </button>
+                </div>
+              </form>
+            {/if}
+          {:else}
+            <!-- Sign In / Sign Up Form -->
+            <form on:submit|preventDefault={handleSubmit} class="space-y-6" novalidate>
+              {#if mode === 'signup'}
+                <div>
+                  <label for="username" class="block text-sm font-medium text-gray-300 mb-2">
+                    Username
+                  </label>
                   <input
                     id="username"
                     type="text"
                     bind:value={username}
                     on:keydown={handleKeydown}
-                    class="block w-full pl-10 pr-3 py-3 bg-gray-900/50 border {formErrors.username ? 'border-red-500' : 'border-gray-700'} rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                    placeholder="Enter your username"
+                    class="block w-full px-4 py-3 bg-black/50 border {formErrors.username ? 'border-red-500' : 'border-gray-700'} rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                    placeholder="Choose your username"
                     disabled={loading}
                     autocomplete="username"
                     maxlength="50"
                   />
+                  {#if formErrors.username}
+                    <p class="mt-1 text-xs text-red-400">{formErrors.username}</p>
+                  {/if}
                 </div>
-                {#if formErrors.username}
-                  <p class="mt-1 text-xs text-red-400">{formErrors.username}</p>
-                {/if}
-              </div>
-            {/if}
+              {/if}
 
-            <div>
-              <label for="email" class="block text-sm font-medium text-gray-400 mb-2">
-                Email Interface
-              </label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
+              <div>
+                <label for="email" class="block text-sm font-medium text-gray-300 mb-2">
+                  Email
+                </label>
                 <input
                   id="email"
                   type="email"
                   bind:value={email}
                   on:keydown={handleKeydown}
-                  class="block w-full pl-10 pr-3 py-3 bg-gray-900/50 border {formErrors.email ? 'border-red-500' : 'border-gray-700'} rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                  placeholder="hacker@example.com"
+                  class="block w-full px-4 py-3 bg-black/50 border {formErrors.email ? 'border-red-500' : 'border-gray-700'} rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                  placeholder="you@example.com"
                   disabled={loading}
                   autocomplete="email"
                   maxlength="254"
                 />
-              </div>
-              {#if formErrors.email}
-                <p class="mt-1 text-xs text-red-400">{formErrors.email}</p>
-              {/if}
-            </div>
-
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <label for="password" class="block text-sm font-medium text-gray-400">
-                  Access Code
-                </label>
-                {#if mode === 'signin'}
-                  <button
-                    type="button"
-                    on:click={() => switchMode('reset')}
-                    class="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                  >
-                    Forgot password?
-                  </button>
+                {#if formErrors.email}
+                  <p class="mt-1 text-xs text-red-400">{formErrors.email}</p>
                 {/if}
               </div>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label for="password" class="block text-sm font-medium text-gray-300">
+                    Password
+                  </label>
+                  {#if mode === 'signin'}
+                    <button
+                      type="button"
+                      on:click={() => switchMode('reset')}
+                      class="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  {/if}
                 </div>
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  bind:value={password}
-                  on:keydown={handleKeydown}
-                  class="block w-full pl-10 pr-10 py-3 bg-gray-900/50 border {formErrors.password ? 'border-red-500' : 'border-gray-700'} rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                  placeholder={mode === 'signin' ? '••••••••' : 'Min 8 characters'}
-                  disabled={loading}
-                  autocomplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                  maxlength="128"
-                />
-                <button
-                  type="button"
-                  on:click={() => showPassword = !showPassword}
-                  class="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  tabindex="-1"
-                >
-                  <svg class="h-5 w-5 text-gray-500 hover:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {#if showPassword}
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    {:else}
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    {/if}
-                  </svg>
-                </button>
-              </div>
-              {#if formErrors.password}
-                <p class="mt-1 text-xs text-red-400">{formErrors.password}</p>
-              {/if}
-              {#if mode === 'signup' && passwordErrors.length > 0}
-                <div class="mt-2 text-xs text-gray-400">
-                  <p class="font-medium mb-1">Password must contain:</p>
-                  <ul class="space-y-1">
+                <div class="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    bind:value={password}
+                    on:keydown={handleKeydown}
+                    class="block w-full px-4 py-3 pr-10 bg-black/50 border {formErrors.password ? 'border-red-500' : 'border-gray-700'} rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                    placeholder={mode === 'signin' ? '••••••••' : 'Min 8 characters'}
+                    disabled={loading}
+                    autocomplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                    maxlength="128"
+                  />
+                  <button
+                    type="button"
+                    on:click={() => showPassword = !showPassword}
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    tabindex="-1"
+                  >
+                    <svg class="h-5 w-5 text-gray-500 hover:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {#if showPassword}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      {:else}
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      {/if}
+                    </svg>
+                  </button>
+                </div>
+                {#if formErrors.password}
+                  <p class="mt-1 text-xs text-red-400">{formErrors.password}</p>
+                {/if}
+                {#if mode === 'signup' && passwordErrors.length > 0}
+                  <div class="mt-3 space-y-1">
                     {#each passwordErrors as error}
-                      <li class="flex items-center text-red-400">
-                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <p class="flex items-center text-xs text-gray-400">
+                        <svg class="w-3 h-3 mr-1 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                         {error}
-                      </li>
+                      </p>
                     {/each}
-                  </ul>
-                </div>
-              {/if}
-            </div>
-
-            {#if mode === 'signup'}
-              <div>
-                <label for="passwordConfirm" class="block text-sm font-medium text-gray-400 mb-2">
-                  Confirm Access Code
-                </label>
-                <div class="relative">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
                   </div>
+                {/if}
+              </div>
+
+              {#if mode === 'signup'}
+                <div>
+                  <label for="passwordConfirm" class="block text-sm font-medium text-gray-300 mb-2">
+                    Confirm Password
+                  </label>
                   <input
                     id="passwordConfirm"
                     type={showPassword ? 'text' : 'password'}
                     bind:value={passwordConfirm}
                     on:keydown={handleKeydown}
-                    class="block w-full pl-10 pr-3 py-3 bg-gray-900/50 border {formErrors.passwordConfirm ? 'border-red-500' : 'border-gray-700'} rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                    class="block w-full px-4 py-3 bg-black/50 border {formErrors.passwordConfirm ? 'border-red-500' : 'border-gray-700'} rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                     placeholder="Confirm your password"
                     disabled={loading}
                     autocomplete="new-password"
                     maxlength="128"
                   />
+                  {#if formErrors.passwordConfirm}
+                    <p class="mt-1 text-xs text-red-400">{formErrors.passwordConfirm}</p>
+                  {/if}
                 </div>
-                {#if formErrors.passwordConfirm}
-                  <p class="mt-1 text-xs text-red-400">{formErrors.passwordConfirm}</p>
+              {/if}
+
+              <button
+                type="submit"
+                disabled={loading}
+                class="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02]"
+              >
+                {#if loading}
+                  <div class="flex items-center justify-center">
+                    <div class="spinner w-5 h-5 mr-2"></div>
+                    Processing...
+                  </div>
+                {:else}
+                  {mode === 'signin' ? 'Sign In' : 'Create Account'}
                 {/if}
+              </button>
+            </form>
+          {/if}
+
+          <div class="mt-8">
+            <div class="relative">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-gray-800"></div>
               </div>
-            {/if}
+              <div class="relative flex justify-center text-sm">
+                <span class="px-2 bg-gray-900/50 text-gray-400">
+                  {mode === 'signin' ? "Don't have an account?" : mode === 'signup' ? 'Already have an account?' : 'Remember your password?'}
+                </span>
+              </div>
+            </div>
 
             <button
-              type="submit"
-              disabled={loading}
-              class="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 btn-cyber neon-glow"
+              on:click={() => switchMode(mode === 'signin' ? 'signup' : 'signin')}
+              class="w-full mt-4 text-center text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
             >
-              {#if loading}
-                <div class="flex items-center justify-center">
-                  <div class="spinner w-5 h-5 mr-2"></div>
-                  Processing...
-                </div>
-              {:else}
-                {mode === 'signin' ? 'Access System' : 'Create Profile'}
-              {/if}
+              {mode === 'signin' ? 'Create an account' : 'Sign in instead'}
             </button>
-          </form>
-        {/if}
-
-        <div class="relative">
-          <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-700"></div>
-          </div>
-          <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-gray-900/50 text-gray-400">
-              {mode === 'signin' ? "New to AXIONARK?" : mode === 'signup' ? 'Already initialized?' : 'Remember your password?'}
-            </span>
           </div>
         </div>
 
-        <button
-          on:click={() => switchMode(mode === 'signin' ? 'signup' : 'signin')}
-          class="w-full text-center text-sm text-blue-400 hover:text-blue-300 font-medium transition-colors"
-        >
-          {mode === 'signin' ? 'Initialize New Profile' : 'Access Existing Profile'}
-        </button>
-      </div>
-
-      <!-- Features -->
-      <div class="grid grid-cols-3 gap-4 mt-8">
-        <div class="text-center group">
-          <div class="glass rounded-xl p-4 card-hover">
-            <div class="w-10 h-10 mx-auto mb-2 text-blue-400 group-hover:text-blue-300 transition-colors">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h3 class="text-xs font-medium text-gray-300">XP System</h3>
-          </div>
-        </div>
-        
-        <div class="text-center group">
-          <div class="glass rounded-xl p-4 card-hover">
-            <div class="w-10 h-10 mx-auto mb-2 text-purple-400 group-hover:text-purple-300 transition-colors">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <h3 class="text-xs font-medium text-gray-300">Progress Tracking</h3>
-          </div>
-        </div>
-        
-        <div class="text-center group">
-          <div class="glass rounded-xl p-4 card-hover">
-            <div class="w-10 h-10 mx-auto mb-2 text-pink-400 group-hover:text-pink-300 transition-colors">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 class="text-xs font-medium text-gray-300">Bounty Tracker</h3>
+        <!-- Security Notice -->
+        <div class="text-center">
+          <div class="inline-flex items-center text-xs text-gray-500">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            AES-256-GCM encrypted storage
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Security Notice -->
-      <div class="text-center text-xs text-gray-500">
-        <p>🔒 Secured with AES-256-GCM encryption</p>
-        <p class="mt-1">Your data is encrypted with your password - only you can decrypt it</p>
+    <!-- Right Side - Feature Showcase -->
+    <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-gray-900 to-black p-12 items-center justify-center relative">
+      <div class="absolute inset-0 bg-gradient-to-br from-cyan-600/20 via-blue-600/20 to-purple-600/20"></div>
+      
+      <div class="relative z-10 max-w-lg">
+        <h2 class="text-5xl font-bold text-white mb-6">
+          Level up your <span class="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">bug hunting</span> skills
+        </h2>
+        
+        <p class="text-xl text-gray-300 mb-12">
+          Document your ethical hacking journey, track findings, and organize your bug bounty progress with our secure journaling companion.
+        </p>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+            <div class="text-3xl mb-3">📔</div>
+            <h3 class="font-semibold text-white mb-2">Journal Progress</h3>
+            <p class="text-sm text-gray-400">Document your ethical hacking journey</p>
+          </div>
+          
+          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+            <div class="text-3xl mb-3">🔒</div>
+            <h3 class="font-semibold text-white mb-2">Your Data Only</h3>
+            <p class="text-sm text-gray-400">Encrypted storage - only you can access</p>
+          </div>
+          
+          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+            <div class="text-3xl mb-3">📊</div>
+            <h3 class="font-semibold text-white mb-2">Track Findings</h3>
+            <p class="text-sm text-gray-400">Organize bugs and vulnerabilities</p>
+          </div>
+          
+          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+            <div class="text-3xl mb-3">⚖️</div>
+            <h3 class="font-semibold text-white mb-2">Stay Ethical</h3>
+            <p class="text-sm text-gray-400">Responsible disclosure tracking</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 <LandingFooter />
+
+<style>
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) translateX(0) scale(1);
+    }
+    33% {
+      transform: translateY(-30px) translateX(20px) scale(1.05);
+    }
+    66% {
+      transform: translateY(20px) translateX(-20px) scale(0.95);
+    }
+  }
+  
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-float {
+    animation: float 20s ease-in-out infinite;
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+  
+  .spinner {
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
