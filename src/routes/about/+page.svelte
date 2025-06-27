@@ -1,15 +1,5 @@
 <!-- src/routes/about/+page.svelte -->
-<script context="module" lang="ts">
-  // TypeScript declaration for Ko-fi widget
-  declare global {
-    interface Window {
-      kofiWidgetOverlay: any;
-    }
-  }
-</script>
-
 <script lang="ts">
-  import { onMount } from 'svelte';
   import LandingNav from '$lib/components/LandingNav.svelte';
   import LandingFooter from '$lib/components/LandingFooter.svelte';
   
@@ -45,31 +35,24 @@
     { year: '2025', event: 'AXIONARK launched - A secure journal for ethical hackers' },
     { year: 'Future', event: 'Growing community of responsible security researchers' }
   ];
-  
-  onMount(() => {
-    // Load Ko-fi widget
-    if (typeof window !== 'undefined') {
-      const script = document.createElement('script');
-      script.src = 'https://storage.ko-fi.com/cdn/scripts/overlay-widget.js';
-      script.async = true;
-      script.onload = () => {
-        if (window.kofiWidgetOverlay) {
-          window.kofiWidgetOverlay.draw('duardz', {
-            'type': 'floating-chat',
-            'floating-chat.donateButton.text': 'Support me',
-            'floating-chat.donateButton.background-color': '#794bc4',
-            'floating-chat.donateButton.text-color': '#fff'
-          });
-        }
-      };
-      document.body.appendChild(script);
-    }
-  });
 </script>
 
 <LandingNav />
 
 <div class="min-h-screen bg-black text-white relative overflow-hidden">
+  <!-- Ko-fi Support Button -->
+  <a 
+    href="https://ko-fi.com/duardz" 
+    target="_blank"
+    rel="noopener noreferrer"
+    class="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 font-medium"
+  >
+    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.189-.096-.323-.378-.323-.378s-.045-4.906-.025-7.602c.02-2.696-.516-3.227-.516-3.227l7.838.023s2.657.334 2.657 3.556c0 3.222-5.31 3.629-5.31 3.629z"/>
+    </svg>
+    Support me
+  </a>
+
   <!-- Background elements -->
   <div class="absolute inset-0">
     <div class="absolute top-0 right-0 w-96 h-96 bg-cyan-500 rounded-full mix-blend-screen filter blur-3xl opacity-10"></div>

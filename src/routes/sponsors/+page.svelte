@@ -1,15 +1,5 @@
 <!-- src/routes/sponsors/+page.svelte -->
-<script context="module" lang="ts">
-  // TypeScript declaration for Ko-fi widget
-  declare global {
-    interface Window {
-      kofiWidgetOverlay: any;
-    }
-  }
-</script>
-
 <script lang="ts">
-  import { onMount } from 'svelte';
   import LandingNav from '$lib/components/LandingNav.svelte';
   import LandingFooter from '$lib/components/LandingFooter.svelte';
   
@@ -45,56 +35,24 @@
     kofi: [],
     github: []
   };
-  
-  const tiers = [
-    {
-      name: 'Coffee Supporter',
-      price: '$5',
-      period: 'one-time',
-      features: ['Show your support', 'Get a shoutout', 'Feel awesome'],
-      color: 'from-yellow-500 to-orange-600'
-    },
-    {
-      name: 'Monthly Supporter',
-      price: '$10',
-      period: 'per month',
-      features: ['All Coffee benefits', 'Priority feature requests', 'Exclusive updates'],
-      color: 'from-cyan-500 to-blue-600',
-      popular: true
-    },
-    {
-      name: 'Elite Supporter',
-      price: '$25+',
-      period: 'per month',
-      features: ['All Monthly benefits', 'Direct developer access', 'Custom feature development'],
-      color: 'from-purple-500 to-pink-600'
-    }
-  ];
-  
-  onMount(() => {
-    // Load Ko-fi widget
-    if (typeof window !== 'undefined') {
-      const script = document.createElement('script');
-      script.src = 'https://storage.ko-fi.com/cdn/scripts/overlay-widget.js';
-      script.async = true;
-      script.onload = () => {
-        if (window.kofiWidgetOverlay) {
-          window.kofiWidgetOverlay.draw('duardz', {
-            'type': 'floating-chat',
-            'floating-chat.donateButton.text': 'Support me',
-            'floating-chat.donateButton.background-color': '#794bc4',
-            'floating-chat.donateButton.text-color': '#fff'
-          });
-        }
-      };
-      document.body.appendChild(script);
-    }
-  });
 </script>
 
 <LandingNav />
 
 <div class="min-h-screen bg-black text-white relative overflow-hidden">
+  <!-- Ko-fi Support Button -->
+  <a 
+    href="https://ko-fi.com/duardz" 
+    target="_blank"
+    rel="noopener noreferrer"
+    class="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 font-medium"
+  >
+    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.189-.096-.323-.378-.323-.378s-.045-4.906-.025-7.602c.02-2.696-.516-3.227-.516-3.227l7.838.023s2.657.334 2.657 3.556c0 3.222-5.31 3.629-5.31 3.629z"/>
+    </svg>
+    Support me
+  </a>
+
   <!-- Background elements -->
   <div class="absolute inset-0">
     <div class="absolute top-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-screen filter blur-3xl opacity-10 animate-float"></div>
@@ -246,55 +204,6 @@
     </div>
   </section>
   
-  <!-- Support Tiers -->
-  <section class="py-20 relative">
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="text-4xl font-bold text-center mb-16">
-        Support <span class="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Tiers</span>
-      </h2>
-      
-      <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        {#each tiers as tier, i}
-          <div class="relative group animate-fade-in" style="animation-delay: {i * 150}ms">
-            {#if tier.popular}
-              <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full text-sm font-medium">
-                Most Popular
-              </div>
-            {/if}
-            
-            <div class="h-full bg-gray-900 rounded-2xl p-8 border {tier.popular ? 'border-cyan-600' : 'border-gray-800'} hover:border-gray-700 transition-all duration-300">
-              <h3 class="text-2xl font-bold mb-2">{tier.name}</h3>
-              <div class="mb-6">
-                <span class="text-4xl font-bold bg-gradient-to-r {tier.color} bg-clip-text text-transparent">{tier.price}</span>
-                <span class="text-gray-400 ml-2">{tier.period}</span>
-              </div>
-              
-              <ul class="space-y-3 mb-8">
-                {#each tier.features as feature}
-                  <li class="flex items-start">
-                    <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span class="text-gray-300">{feature}</span>
-                  </li>
-                {/each}
-              </ul>
-              
-              <a 
-                href="https://ko-fi.com/duardz"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="block w-full py-3 px-4 bg-gradient-to-r {tier.color} hover:opacity-90 text-white text-center rounded-xl font-medium transition-all duration-300 transform hover:scale-105"
-              >
-                Choose {tier.name}
-              </a>
-            </div>
-          </div>
-        {/each}
-      </div>
-    </div>
-  </section>
-  
   <!-- Why Support Section -->
   <section class="py-20 relative">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -404,14 +313,6 @@
             "Building tools for hackers, by a hacker, with the support of hackers."
           </p>
           <p class="text-gray-400">- Duardz, Solo Developer</p>
-        </div>
-        
-        <div class="mt-12 inline-flex items-center space-x-2 text-gray-500">
-          <span>Made with</span>
-          <svg class="w-5 h-5 text-red-500 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
-          </svg>
-          <span>for the security community</span>
         </div>
       </div>
     </div>
