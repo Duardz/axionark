@@ -1,3 +1,4 @@
+<!-- src/routes/profile/+page.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -5,6 +6,7 @@
   import { userStore, userProgress } from '$lib/stores/user';
   import { roadmapData } from '$lib/data/roadmap';
   import Navbar from '$lib/components/Navbar.svelte';
+  import ProfileSettings from './ProfileSettings.svelte';
   import type { User } from 'firebase/auth';
 
   interface Achievement {
@@ -29,12 +31,6 @@
   }
 
   let user: User | null = null;
-  let loading = false;
-  let editingUsername = false;
-  let newUsername = '';
-  let error = '';
-  let success = '';
-  let showSuccessToast = false;
   let activeTab: 'overview' | 'skills' | 'achievements' | 'leaderboard' | 'settings' = 'overview';
   let showLevelUpAnimation = false;
   let unlockedAchievement: Achievement | null = null;
@@ -58,7 +54,6 @@
       await userStore.loadProfile(authUser.uid);
       
       if ($userStore) {
-        newUsername = $userStore.username;
         calculateStats();
       }
     });
@@ -255,39 +250,6 @@
     return achievementsList;
   }
 
-  async function updateUsername() {
-    if (!user || !newUsername.trim()) return;
-    
-    error = '';
-    success = '';
-    
-    if (newUsername.length < 3) {
-      error = 'Username must be at least 3 characters';
-      return;
-    }
-    
-    loading = true;
-    try {
-      await userStore.updateUsername(user.uid, newUsername.trim());
-      success = 'Username updated successfully!';
-      editingUsername = false;
-      showSuccessToast = true;
-      setTimeout(() => showSuccessToast = false, 3000);
-    } catch (err: any) {
-      error = err.message || 'Failed to update username';
-    } finally {
-      loading = false;
-    }
-  }
-
-  function cancelEdit() {
-    editingUsername = false;
-    if ($userStore) {
-      newUsername = $userStore.username;
-    }
-    error = '';
-  }
-
   function getPlayerTitle(level: number) {
     if (level >= 50) return '🏆 Legendary Hacker';
     if (level >= 30) return '⚔️ Elite Hunter';
@@ -324,18 +286,6 @@
   </div>
 {/if}
 
-<!-- Success Toast -->
-{#if showSuccessToast}
-  <div class="fixed top-20 right-4 z-50 animate-slide-in">
-    <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-      </svg>
-      {success}
-    </div>
-  </div>
-{/if}
-
 <div class="min-h-screen bg-gray-900">
   {#if $userStore}
     <!-- Gamified Header with Parallax Effect -->
@@ -347,7 +297,7 @@
         <div class="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-float" style="animation-delay: 4s;"></div>
       </div>
       
-      <div class="relative container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div class="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div class="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-8">
           <!-- Avatar with Level Ring -->
           <div class="relative group">
@@ -750,97 +700,7 @@
 
       {#if activeTab === 'settings'}
         <!-- Settings Tab -->
-        <div class="max-w-2xl mx-auto">
-          <div class="bg-gray-800 rounded-2xl border border-gray-700 p-6">
-            <h3 class="text-xl font-bold text-white mb-6">⚙️ Account Settings</h3>
-            
-            {#if error}
-              <div class="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg">
-                <p class="text-sm text-red-400">{error}</p>
-              </div>
-            {/if}
-            
-            <div class="space-y-6">
-              <!-- Email Field -->
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  value={$userStore.email}
-                  disabled
-                  class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-gray-400"
-                />
-              </div>
-              
-              <!-- Username Field -->
-              <div>
-                <label class="block text-sm font-medium text-gray-400 mb-2">
-                  Username
-                </label>
-                {#if editingUsername}
-                  <div class="flex gap-2">
-                    <input
-                      type="text"
-                      bind:value={newUsername}
-                      class="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-cyan-500 focus:outline-none"
-                      placeholder="Enter new username"
-                      maxlength="50"
-                    />
-                    <button
-                      on:click={updateUsername}
-                      disabled={loading}
-                      class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 transition-all"
-                    >
-                      {loading ? '...' : 'Save'}
-                    </button>
-                    <button
-                      on:click={cancelEdit}
-                      class="px-6 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                {:else}
-                  <div class="flex gap-2">
-                    <input
-                      type="text"
-                      value={$userStore.username}
-                      disabled
-                      class="flex-1 px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white"
-                    />
-                    <button
-                      on:click={() => editingUsername = true}
-                      class="px-6 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                {/if}
-              </div>
-              
-              <!-- Game Settings -->
-              <div class="pt-6 border-t border-gray-700">
-                <h4 class="font-medium text-white mb-4">🎮 Game Preferences</h4>
-                <div class="space-y-3">
-                  <div class="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer">
-                    <label for="show-achievements" class="text-sm text-gray-300 cursor-pointer">Show achievements in profile</label>
-                    <input id="show-achievements" type="checkbox" checked class="w-5 h-5 text-cyan-500 rounded focus:ring-cyan-500" />
-                  </div>
-                  <div class="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer">
-                    <label for="enable-sounds" class="text-sm text-gray-300 cursor-pointer">Enable sound effects</label>
-                    <input id="enable-sounds" type="checkbox" class="w-5 h-5 text-cyan-500 rounded focus:ring-cyan-500" />
-                  </div>
-                  <div class="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer">
-                    <label for="show-leaderboard" class="text-sm text-gray-300 cursor-pointer">Show on leaderboard</label>
-                    <input id="show-leaderboard" type="checkbox" checked class="w-5 h-5 text-cyan-500 rounded focus:ring-cyan-500" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ProfileSettings userStoreData={$userStore} />
       {/if}
     </div>
   {/if}
@@ -865,11 +725,6 @@
     100% { transform: scale(1) translateX(-50%); opacity: 1; }
   }
   
-  @keyframes slide-in {
-    from { opacity: 0; transform: translateX(100%); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  
   @keyframes spin-slow {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
@@ -890,10 +745,6 @@
   
   .animate-bounce-in {
     animation: bounce-in 0.5s ease-out;
-  }
-  
-  .animate-slide-in {
-    animation: slide-in 0.3s ease-out;
   }
   
   .animate-spin-slow {

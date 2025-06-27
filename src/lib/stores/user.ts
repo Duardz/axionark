@@ -1,4 +1,4 @@
-// src/lib/stores/user.ts - Real-time version with working undo and update methods
+// src/lib/stores/user.ts - Updated version with deletion handling
 import { writable, derived, get } from 'svelte/store';
 import { db } from '$lib/firebase';
 import { 
@@ -89,6 +89,7 @@ async function handleFirestoreOperation<T>(
 function createUserStore() {
   const { subscribe, set, update } = writable<UserProfile | null>(null);
   let unsubscribe: Unsubscribe | null = null;
+  let isDeleting = false; // Flag to prevent re-creation during deletion
 
   return {
     subscribe,
@@ -106,31 +107,51 @@ function createUserStore() {
         const docRef = doc(db!, 'users', uid);
         
         // Set up real-time listener
-        unsubscribe = onSnapshot(docRef, (docSnap) => {
+        unsubscribe = onSnapshot(docRef, async (docSnap) => {
+          // Don't create a profile if we're in the process of deleting
+          if (isDeleting) {
+            console.log('Skipping profile creation during deletion');
+            return;
+          }
+          
           if (docSnap.exists()) {
             const data = docSnap.data() as UserProfile;
             set(data);
           } else {
-            // Create default profile if doesn't exist
-            const defaultProfile = {
-              uid,
-              email: '',
-              username: 'Anonymous',
-              totalXP: 0,
-              completedTasks: [],
-              currentPhase: 'beginner' as const,
-              totalBounty: 0,
-              bugsFound: 0,
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp()
-            };
+            // Check if the auth user still exists before creating a default profile
+            const { auth } = await import('$lib/firebase');
+            const { getAuth } = await import('firebase/auth');
             
-            setDoc(docRef, defaultProfile).then(() => {
+            const currentAuth = getAuth();
+            const currentUser = currentAuth?.currentUser;
+            
+            if (auth && currentUser && currentUser.uid === uid) {
+              // Only create default profile if auth user exists
+              console.log('Creating default profile for authenticated user');
+              const defaultProfile = {
+                uid,
+                email: currentUser.email || '',
+                username: 'Anonymous',
+                totalXP: 0,
+                completedTasks: [],
+                currentPhase: 'beginner' as const,
+                totalBounty: 0,
+                bugsFound: 0,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+              };
+              
+              await setDoc(docRef, defaultProfile);
               set(defaultProfile as UserProfile);
-            });
+            } else {
+              // No auth user, so don't create a profile
+              console.log('No authenticated user found, not creating profile');
+              set(null);
+            }
           }
         }, (error) => {
           console.error('Error listening to user profile:', error);
+          set(null);
         });
         
         // Initial load
@@ -143,12 +164,19 @@ function createUserStore() {
       }, 'Error loading user profile');
     },
     
+    // Set deletion flag
+    setDeleting: (value: boolean) => {
+      isDeleting = value;
+    },
+    
     // Cleanup listener
     cleanup: () => {
       if (unsubscribe) {
         unsubscribe();
         unsubscribe = null;
       }
+      isDeleting = false;
+      set(null);
     },
     
     completeTask: async (uid: string, taskId: string, xp: number) => {
@@ -341,6 +369,7 @@ function createJournalStore() {
         unsubscribe();
         unsubscribe = null;
       }
+      set([]);
     },
     
     addEntry: async (entry: JournalEntry) => {
@@ -507,6 +536,7 @@ function createBugStore() {
         userStatsUnsubscribe();
         userStatsUnsubscribe = null;
       }
+      set([]);
     },
     
     addBug: async (bug: Bug) => {
