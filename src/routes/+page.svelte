@@ -6,6 +6,8 @@
   import { validateEmail, validatePassword, sanitizeUsername } from '$lib/utils/security';
   import { auth } from '$lib/firebase';
   import { sendPasswordResetEmail } from 'firebase/auth';
+  import LandingNav from '$lib/components/LandingNav.svelte';
+  import LandingFooter from '$lib/components/LandingFooter.svelte';
   
   let loading = false;
   let error = '';
@@ -199,6 +201,8 @@
     }
   }
 </script>
+
+<LandingNav />
 
 <div class="min-h-screen bg-black cyber-grid overflow-hidden">
   <!-- Animated background elements -->
@@ -567,3 +571,5 @@
     </div>
   </div>
 </div>
+
+<LandingFooter />

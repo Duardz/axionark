@@ -15,8 +15,14 @@
   let scrollProgress = 0;
   let showScrollTop = false;
 
-  // Check if we're on a page that should show footer
-  $: showFooter = !$page.url.pathname.includes('/') || $page.url.pathname === '/';
+  // Check if we're on a public page (landing, about, sponsors)
+  $: isPublicPage = $page.url.pathname === '/' || 
+                    $page.url.pathname === '/about' || 
+                    $page.url.pathname === '/sponsors' ||
+                    $page.url.pathname === '/signin';
+  
+  // Show authenticated footer only on authenticated pages
+  $: showAuthenticatedFooter = !isPublicPage && $page.url.pathname !== '/';
 
   onMount(() => {
     // Initialize auth store
@@ -147,8 +153,8 @@
     <slot />
   </main>
   
-  <!-- Footer - Only show on authenticated pages -->
-  {#if $page.url.pathname !== '/'}
+  <!-- Footer - Only show authenticated footer on authenticated pages -->
+  {#if showAuthenticatedFooter}
     <Footer />
   {/if}
 </div>
