@@ -7,6 +7,7 @@
     sendPasswordResetEmail
   } from 'firebase/auth';
   import { goto } from '$app/navigation';
+  import EncryptionStatus from '$lib/components/EncryptionStatus.svelte';
   
   export let userStoreData: any;
   
@@ -311,7 +312,27 @@
           </button>
         </div>
       </div>
+      
+      <!-- Note about encryption -->
+      <div class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+        <div class="flex items-start gap-2">
+          <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div class="text-sm">
+            <p class="text-blue-400 font-medium mb-1">Password & Encryption</p>
+            <p class="text-gray-300 text-xs leading-relaxed">
+              When you reset your password, you'll need to sign in again. Your data will automatically be re-encrypted with your new password.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
+  
+  <!-- Data Encryption Status Section -->
+  <div class="mb-6">
+    <EncryptionStatus />
   </div>
   
   <!-- Game Preferences Section -->

@@ -1,4 +1,4 @@
-// src/lib/stores/user.ts - Updated version with deletion handling
+// src/lib/stores/user.ts - Updated version with encryption
 import { writable, derived, get } from 'svelte/store';
 import { db } from '$lib/firebase';
 import { 
@@ -32,6 +32,14 @@ import {
   checkRateLimit,
   firebaseTimestampToDate
 } from '$lib/utils/security';
+import {
+  encryptData,
+  decryptData,
+  encryptFields,
+  decryptFields,
+  isEncryptionAvailable,
+  batchDecrypt
+} from '$lib/utils/encryption';
 
 export interface JournalEntry {
   id?: string;
@@ -43,6 +51,7 @@ export interface JournalEntry {
   tags?: string[];
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
+  encrypted?: boolean; // Flag to indicate if entry is encrypted
 }
 
 export interface Bug {
@@ -57,6 +66,7 @@ export interface Bug {
   description?: string;
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
+  encrypted?: boolean; // Flag to indicate if bug is encrypted
 }
 
 export interface UserProfile {
@@ -70,7 +80,15 @@ export interface UserProfile {
   bugsFound?: number;
   createdAt: any;
   updatedAt?: Timestamp | FieldValue;
+  encryptionEnabled?: boolean;
+  encryptedFields?: string[];
 }
+
+// Fields to encrypt for journal entries
+const JOURNAL_ENCRYPTED_FIELDS: (keyof JournalEntry)[] = ['title', 'content', 'tags'];
+
+// Fields to encrypt for bug reports
+const BUG_ENCRYPTED_FIELDS: (keyof Bug)[] = ['description', 'program'];
 
 // Error handling wrapper
 async function handleFirestoreOperation<T>(
@@ -89,7 +107,7 @@ async function handleFirestoreOperation<T>(
 function createUserStore() {
   const { subscribe, set, update } = writable<UserProfile | null>(null);
   let unsubscribe: Unsubscribe | null = null;
-  let isDeleting = false; // Flag to prevent re-creation during deletion
+  let isDeleting = false;
 
   return {
     subscribe,
@@ -138,7 +156,9 @@ function createUserStore() {
                 totalBounty: 0,
                 bugsFound: 0,
                 createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
+                updatedAt: serverTimestamp(),
+                encryptionEnabled: true,
+                encryptedFields: []
               };
               
               await setDoc(docRef, defaultProfile);
@@ -307,7 +327,7 @@ function createUserStore() {
   };
 }
 
-// Journal Store with real-time updates
+// Journal Store with encryption support
 function createJournalStore() {
   const { subscribe, set, update } = writable<JournalEntry[]>([]);
   let unsubscribe: Unsubscribe | null = null;
@@ -332,16 +352,30 @@ function createJournalStore() {
         );
         
         // Set up real-time listener
-        unsubscribe = onSnapshot(q, (querySnapshot) => {
+        unsubscribe = onSnapshot(q, async (querySnapshot) => {
           const entries: JournalEntry[] = [];
-          querySnapshot.forEach((doc) => {
+          
+          for (const doc of querySnapshot.docs) {
             const data = doc.data();
-            entries.push({ 
+            let entry: JournalEntry = { 
               id: doc.id, 
               ...data,
               date: firebaseTimestampToDate(data.date)
-            } as JournalEntry);
-          });
+            } as JournalEntry;
+            
+            // Decrypt if encrypted and encryption is available
+            if (data.encrypted && isEncryptionAvailable()) {
+              try {
+                entry = await decryptFields(entry, JOURNAL_ENCRYPTED_FIELDS);
+              } catch (error) {
+                console.error('Failed to decrypt journal entry:', error);
+                // Keep encrypted data if decryption fails
+              }
+            }
+            
+            entries.push(entry);
+          }
+          
           set(entries);
         }, (error) => {
           console.error('Error listening to journal entries:', error);
@@ -350,14 +384,26 @@ function createJournalStore() {
         // Initial load
         const querySnapshot = await getDocs(q);
         const entries: JournalEntry[] = [];
-        querySnapshot.forEach((doc) => {
+        
+        for (const doc of querySnapshot.docs) {
           const data = doc.data();
-          entries.push({ 
+          let entry: JournalEntry = { 
             id: doc.id, 
             ...data,
             date: firebaseTimestampToDate(data.date)
-          } as JournalEntry);
-        });
+          } as JournalEntry;
+          
+          // Decrypt if encrypted and encryption is available
+          if (data.encrypted && isEncryptionAvailable()) {
+            try {
+              entry = await decryptFields(entry, JOURNAL_ENCRYPTED_FIELDS);
+            } catch (error) {
+              console.error('Failed to decrypt journal entry:', error);
+            }
+          }
+          
+          entries.push(entry);
+        }
         
         set(entries);
         return entries;
@@ -381,7 +427,7 @@ function createJournalStore() {
       }
       
       // Sanitize input
-      const sanitizedEntry = {
+      let sanitizedEntry: any = {
         uid: entry.uid,
         title: sanitizeText(entry.title).slice(0, 200),
         content: sanitizeHtml(entry.content).slice(0, 5000),
@@ -389,8 +435,20 @@ function createJournalStore() {
         ...(entry.mood && validateMood(entry.mood) ? { mood: entry.mood } : {}),
         ...(entry.tags ? { tags: entry.tags.map(tag => sanitizeText(tag).slice(0, 50)).slice(0, 10) } : {}),
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        encrypted: false
       };
+      
+      // Encrypt sensitive fields if encryption is available
+      if (isEncryptionAvailable()) {
+        try {
+          sanitizedEntry = await encryptFields(sanitizedEntry, JOURNAL_ENCRYPTED_FIELDS);
+          sanitizedEntry.encrypted = true;
+        } catch (error) {
+          console.error('Failed to encrypt journal entry:', error);
+          // Continue without encryption
+        }
+      }
       
       return handleFirestoreOperation(async () => {
         const docRef = await addDoc(collection(db!, 'journal'), sanitizedEntry);
@@ -433,6 +491,22 @@ function createJournalStore() {
           Timestamp.fromDate(updates.date) : updates.date;
       }
       
+      // Encrypt updated fields if encryption is available
+      if (isEncryptionAvailable()) {
+        try {
+          const fieldsToEncrypt = Object.keys(sanitizedUpdates)
+            .filter(key => JOURNAL_ENCRYPTED_FIELDS.includes(key as keyof JournalEntry)) as (keyof JournalEntry)[];
+          
+          if (fieldsToEncrypt.length > 0) {
+            const encrypted = await encryptFields(sanitizedUpdates, fieldsToEncrypt);
+            Object.assign(sanitizedUpdates, encrypted);
+            sanitizedUpdates.encrypted = true;
+          }
+        } catch (error) {
+          console.error('Failed to encrypt journal update:', error);
+        }
+      }
+      
       return handleFirestoreOperation(async () => {
         await updateDoc(doc(db!, 'journal', entryId), sanitizedUpdates);
         // Real-time listener will automatically update the store
@@ -455,7 +529,7 @@ function createJournalStore() {
   };
 }
 
-// Bug Store with real-time updates
+// Bug Store with encryption support
 function createBugStore() {
   const { subscribe, set, update } = writable<Bug[]>([]);
   let unsubscribe: Unsubscribe | null = null;
@@ -486,14 +560,27 @@ function createBugStore() {
         // Set up real-time listener for bugs
         unsubscribe = onSnapshot(q, async (querySnapshot) => {
           const bugs: Bug[] = [];
-          querySnapshot.forEach((doc) => {
+          
+          for (const doc of querySnapshot.docs) {
             const data = doc.data();
-            bugs.push({ 
+            let bug: Bug = { 
               id: doc.id, 
               ...data,
               dateFound: firebaseTimestampToDate(data.dateFound)
-            } as Bug);
-          });
+            } as Bug;
+            
+            // Decrypt if encrypted and encryption is available
+            if (data.encrypted && isEncryptionAvailable()) {
+              try {
+                bug = await decryptFields(bug, BUG_ENCRYPTED_FIELDS);
+              } catch (error) {
+                console.error('Failed to decrypt bug:', error);
+              }
+            }
+            
+            bugs.push(bug);
+          }
+          
           set(bugs);
           
           // Update user stats
@@ -513,14 +600,26 @@ function createBugStore() {
         // Initial load
         const querySnapshot = await getDocs(q);
         const bugs: Bug[] = [];
-        querySnapshot.forEach((doc) => {
+        
+        for (const doc of querySnapshot.docs) {
           const data = doc.data();
-          bugs.push({ 
+          let bug: Bug = { 
             id: doc.id, 
             ...data,
             dateFound: firebaseTimestampToDate(data.dateFound)
-          } as Bug);
-        });
+          } as Bug;
+          
+          // Decrypt if encrypted and encryption is available
+          if (data.encrypted && isEncryptionAvailable()) {
+            try {
+              bug = await decryptFields(bug, BUG_ENCRYPTED_FIELDS);
+            } catch (error) {
+              console.error('Failed to decrypt bug:', error);
+            }
+          }
+          
+          bugs.push(bug);
+        }
         
         set(bugs);
         return bugs;
@@ -561,7 +660,7 @@ function createBugStore() {
       }
       
       // Sanitize input
-      const sanitizedBug = {
+      let sanitizedBug: any = {
         uid: bug.uid,
         type: sanitizeText(bug.type).slice(0, 100),
         severity: bug.severity,
@@ -571,8 +670,19 @@ function createBugStore() {
         dateFound: bug.dateFound instanceof Date ? Timestamp.fromDate(bug.dateFound) : bug.dateFound,
         ...(bug.description ? { description: sanitizeHtml(bug.description).slice(0, 2000) } : {}),
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        encrypted: false
       };
+      
+      // Encrypt sensitive fields if encryption is available
+      if (isEncryptionAvailable()) {
+        try {
+          sanitizedBug = await encryptFields(sanitizedBug, BUG_ENCRYPTED_FIELDS);
+          sanitizedBug.encrypted = true;
+        } catch (error) {
+          console.error('Failed to encrypt bug report:', error);
+        }
+      }
       
       return handleFirestoreOperation(async () => {
         const docRef = await addDoc(collection(db!, 'bugs'), sanitizedBug);
@@ -628,6 +738,22 @@ function createBugStore() {
       if (updates.dateFound !== undefined) {
         sanitizedUpdates.dateFound = updates.dateFound instanceof Date ? 
           Timestamp.fromDate(updates.dateFound) : updates.dateFound;
+      }
+      
+      // Encrypt updated fields if encryption is available
+      if (isEncryptionAvailable()) {
+        try {
+          const fieldsToEncrypt = Object.keys(sanitizedUpdates)
+            .filter(key => BUG_ENCRYPTED_FIELDS.includes(key as keyof Bug)) as (keyof Bug)[];
+          
+          if (fieldsToEncrypt.length > 0) {
+            const encrypted = await encryptFields(sanitizedUpdates, fieldsToEncrypt);
+            Object.assign(sanitizedUpdates, encrypted);
+            sanitizedUpdates.encrypted = true;
+          }
+        } catch (error) {
+          console.error('Failed to encrypt bug update:', error);
+        }
       }
       
       return handleFirestoreOperation(async () => {

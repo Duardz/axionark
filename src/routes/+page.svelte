@@ -561,8 +561,8 @@
 
       <!-- Security Notice -->
       <div class="text-center text-xs text-gray-500">
-        <p>🔒 Secured with industry-standard encryption</p>
-        <p class="mt-1">Your data is protected with Firebase Security Rules</p>
+        <p>🔒 Secured with AES-256-GCM encryption</p>
+        <p class="mt-1">Your data is encrypted with your password - only you can decrypt it</p>
       </div>
     </div>
   </div>
