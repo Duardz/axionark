@@ -1,4 +1,4 @@
-// src/lib/stores/auth.ts - Production version with all console output removed
+// src/lib/stores/auth.ts - Fixed version with proper encryption key timing
 import { writable, derived } from 'svelte/store';
 import { auth, db } from '$lib/firebase';
 import {
@@ -38,7 +38,8 @@ import {
   storeEncryptionKey,
   clearEncryptionKey,
   generateSecurePassword,
-  encryptData
+  encryptData,
+  isEncryptionAvailable
 } from '$lib/utils/encryption';
 
 interface UserData {
@@ -161,8 +162,8 @@ function createAuthStore() {
         // Step 3: Force refresh ID token to ensure Firestore has access to request.auth
         await user.getIdToken(true);
 
-        // Step 4: Wait briefly (optional)
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Step 4: Wait briefly to ensure encryption key is stored
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         // Step 5: Create user document with encryption enabled
         const userData: UserData = {
@@ -240,9 +241,19 @@ function createAuthStore() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
-        // Generate and store encryption key
+        // Generate and store encryption key BEFORE any data loading
         const encryptionKey = await generateUserKey(user.uid, password);
         storeEncryptionKey(encryptionKey);
+        
+        // Wait a moment to ensure the key is properly stored
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verify encryption is available
+        if (!isEncryptionAvailable()) {
+          console.warn('Encryption key not properly stored, retrying...');
+          storeEncryptionKey(encryptionKey);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
         
         // Check if user profile exists
         const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -304,6 +315,12 @@ function createAuthStore() {
           
           // Update user document
           await updateDoc(doc(db, 'users', user.uid), updates);
+        }
+        
+        // Final encryption key verification
+        if (!isEncryptionAvailable()) {
+          console.error('Encryption key still not available after multiple attempts');
+          // Continue anyway - the stores will check periodically
         }
         
         return user;
@@ -419,6 +436,9 @@ function createAuthStore() {
         
         // Store the new key
         storeEncryptionKey(newEncryptionKey);
+        
+        // Wait to ensure it's stored
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Note: In a real implementation, you would need to:
         // 1. Decrypt all encrypted data with the old key

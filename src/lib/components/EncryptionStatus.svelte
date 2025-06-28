@@ -1,8 +1,9 @@
+<!-- src/lib/components/EncryptionStatus.svelte -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { authStore } from '$lib/stores/auth';
-  import { userStore } from '$lib/stores/user';
-  import { isEncryptionAvailable } from '$lib/utils/encryption';
+  import { userStore, journalStore, bugStore } from '$lib/stores/user';
+  import { isEncryptionAvailable, getEncryptionKey } from '$lib/utils/encryption';
   import { 
     checkMigrationStatus, 
     migrateAllUserData,
@@ -10,6 +11,7 @@
   } from '$lib/utils/encryption-migration';
   
   let encryptionEnabled = false;
+  let encryptionKeyPresent = false;
   let migrationStatus = {
     needsMigration: false,
     unencryptedJournalCount: 0,
@@ -22,9 +24,12 @@
   } = {};
   let showDetails = false;
   let checkingStatus = true;
+  let keyCheckInterval: NodeJS.Timeout | null = null;
   
   onMount(async () => {
-    encryptionEnabled = isEncryptionAvailable();
+    // Start monitoring encryption key availability
+    checkEncryptionStatus();
+    keyCheckInterval = setInterval(checkEncryptionStatus, 1000);
     
     if ($authStore && $userStore) {
       try {
@@ -37,6 +42,18 @@
     checkingStatus = false;
   });
   
+  onDestroy(() => {
+    if (keyCheckInterval) {
+      clearInterval(keyCheckInterval);
+      keyCheckInterval = null;
+    }
+  });
+  
+  function checkEncryptionStatus() {
+    encryptionEnabled = isEncryptionAvailable();
+    encryptionKeyPresent = !!getEncryptionKey();
+  }
+  
   async function startMigration() {
     if (!$authStore || migrating) return;
     
@@ -48,6 +65,10 @@
       
       // Refresh migration status
       migrationStatus = await checkMigrationStatus($authStore.uid);
+      
+      // Reload data to show decrypted content
+      await journalStore.loadEntries($authStore.uid);
+      await bugStore.loadBugs($authStore.uid);
       
       // Show success message
       if (results.journal.success && results.bugs.success) {
@@ -63,20 +84,33 @@
     }
   }
   
+  async function refreshData() {
+    if (!$authStore) return;
+    
+    try {
+      await journalStore.loadEntries($authStore.uid);
+      await bugStore.loadBugs($authStore.uid);
+      alert('Data refreshed successfully!');
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      alert('Error refreshing data. Please try again.');
+    }
+  }
+  
   function getStatusColor() {
-    if (!encryptionEnabled) return 'text-red-600 dark:text-red-400';
+    if (!encryptionEnabled || !encryptionKeyPresent) return 'text-red-600 dark:text-red-400';
     if (migrationStatus.needsMigration) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-green-600 dark:text-green-400';
   }
   
   function getStatusIcon() {
-    if (!encryptionEnabled) return 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z';
+    if (!encryptionEnabled || !encryptionKeyPresent) return 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z';
     if (migrationStatus.needsMigration) return 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z';
     return 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z';
   }
   
   function getStatusText() {
-    if (!encryptionEnabled) return 'Encryption Disabled';
+    if (!encryptionEnabled || !encryptionKeyPresent) return 'Encryption Key Missing';
     if (migrationStatus.needsMigration) return 'Migration Available';
     return 'Fully Encrypted';
   }
@@ -111,7 +145,7 @@
     <div class="flex items-center justify-between p-4 bg-gray-700/30 rounded-lg mb-4">
       <div class="flex items-center gap-3">
         <div class={`w-12 h-12 rounded-lg flex items-center justify-center ${
-          encryptionEnabled 
+          encryptionEnabled && encryptionKeyPresent
             ? migrationStatus.needsMigration 
               ? 'bg-yellow-500/20' 
               : 'bg-green-500/20'
@@ -124,8 +158,8 @@
         <div>
           <p class={`font-medium ${getStatusColor()}`}>{getStatusText()}</p>
           <p class="text-sm text-gray-400 mt-0.5">
-            {#if !encryptionEnabled}
-              Sign in to enable encryption
+            {#if !encryptionEnabled || !encryptionKeyPresent}
+              Please sign in again to enable encryption
             {:else if migrationStatus.needsMigration}
               {migrationStatus.unencryptedJournalCount + migrationStatus.unencryptedBugCount} items need encryption
             {:else}
@@ -135,28 +169,66 @@
         </div>
       </div>
       
-      {#if encryptionEnabled && migrationStatus.needsMigration}
+      <div class="flex gap-2">
+        {#if encryptionEnabled && encryptionKeyPresent && migrationStatus.needsMigration}
+          <button
+            on:click={startMigration}
+            disabled={migrating}
+            class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm"
+          >
+            {#if migrating}
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Encrypting...
+              </span>
+            {:else}
+              Encrypt Now
+            {/if}
+          </button>
+        {/if}
+        
         <button
-          on:click={startMigration}
-          disabled={migrating}
-          class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm"
+          on:click={refreshData}
+          class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-all font-medium text-sm"
+          title="Refresh encrypted data"
         >
-          {#if migrating}
-            <span class="flex items-center gap-2">
-              <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Encrypting...
-            </span>
-          {:else}
-            Encrypt Now
-          {/if}
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
         </button>
-      {/if}
+      </div>
     </div>
     
     {#if showDetails}
       <div class="space-y-3">
+        <!-- Encryption Key Status -->
+        <div class="p-4 bg-gray-700/20 rounded-lg">
+          <h4 class="text-sm font-medium text-white mb-3">System Status</h4>
+          
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-400">Encryption Available</span>
+              <span class={`font-medium ${encryptionEnabled ? 'text-green-400' : 'text-red-400'}`}>
+                {encryptionEnabled ? 'Yes' : 'No'}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-400">Encryption Key Present</span>
+              <span class={`font-medium ${encryptionKeyPresent ? 'text-green-400' : 'text-red-400'}`}>
+                {encryptionKeyPresent ? 'Yes' : 'No'}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-gray-400">User Authenticated</span>
+              <span class={`font-medium ${$authStore ? 'text-green-400' : 'text-red-400'}`}>
+                {$authStore ? 'Yes' : 'No'}
+              </span>
+            </div>
+          </div>
+        </div>
+        
         <!-- Encryption Details -->
         <div class="p-4 bg-gray-700/20 rounded-lg">
           <h4 class="text-sm font-medium text-white mb-3">Encryption Details</h4>
@@ -250,6 +322,11 @@
                 Your data is encrypted using your password. Only you can decrypt it. 
                 We never store your password or encryption keys on our servers.
               </p>
+              {#if !encryptionKeyPresent && $authStore}
+                <p class="text-yellow-400 text-xs mt-2">
+                  <strong>Action Required:</strong> Please sign out and sign in again to restore encryption functionality.
+                </p>
+              {/if}
             </div>
           </div>
         </div>

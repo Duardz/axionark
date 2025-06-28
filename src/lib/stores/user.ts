@@ -1,4 +1,4 @@
-// src/lib/stores/user.ts - Production version with all console output removed
+// src/lib/stores/user.ts - Fixed version with proper encryption/decryption handling
 import { writable, derived, get } from 'svelte/store';
 import { db } from '$lib/firebase';
 import { 
@@ -38,7 +38,8 @@ import {
   encryptFields,
   decryptFields,
   isEncryptionAvailable,
-  batchDecrypt
+  batchDecrypt,
+  getEncryptionKey
 } from '$lib/utils/encryption';
 
 export interface JournalEntry {
@@ -100,6 +101,76 @@ async function handleFirestoreOperation<T>(
   } catch (error) {
     throw new Error(errorMessage);
   }
+}
+
+// Helper to decrypt a single entry with error handling
+async function decryptJournalEntry(data: any, docId: string): Promise<JournalEntry> {
+  let entry: JournalEntry = { 
+    id: docId, 
+    ...data,
+    date: firebaseTimestampToDate(data.date)
+  } as JournalEntry;
+  
+  // Only decrypt if marked as encrypted AND we have an encryption key
+  if (data.encrypted && isEncryptionAvailable()) {
+    try {
+      // Decrypt each field individually to handle partial failures
+      const decrypted: any = { ...entry };
+      
+      for (const field of JOURNAL_ENCRYPTED_FIELDS) {
+        if (data[field] && typeof data[field] === 'string' && data[field].length > 0) {
+          try {
+            decrypted[field] = await decryptData(data[field]);
+          } catch (fieldError) {
+            console.warn(`Failed to decrypt journal field ${field}:`, fieldError);
+            // Keep encrypted value if decryption fails
+          }
+        }
+      }
+      
+      entry = decrypted;
+    } catch (error) {
+      console.error('Failed to decrypt journal entry:', error);
+      // Return entry with encrypted data if full decryption fails
+    }
+  }
+  
+  return entry;
+}
+
+// Helper to decrypt a single bug with error handling
+async function decryptBugEntry(data: any, docId: string): Promise<Bug> {
+  let bug: Bug = { 
+    id: docId, 
+    ...data,
+    dateFound: firebaseTimestampToDate(data.dateFound)
+  } as Bug;
+  
+  // Only decrypt if marked as encrypted AND we have an encryption key
+  if (data.encrypted && isEncryptionAvailable()) {
+    try {
+      // Decrypt each field individually to handle partial failures
+      const decrypted: any = { ...bug };
+      
+      for (const field of BUG_ENCRYPTED_FIELDS) {
+        if (data[field] && typeof data[field] === 'string' && data[field].length > 0) {
+          try {
+            decrypted[field] = await decryptData(data[field]);
+          } catch (fieldError) {
+            console.warn(`Failed to decrypt bug field ${field}:`, fieldError);
+            // Keep encrypted value if decryption fails
+          }
+        }
+      }
+      
+      bug = decrypted;
+    } catch (error) {
+      console.error('Failed to decrypt bug entry:', error);
+      // Return bug with encrypted data if full decryption fails
+    }
+  }
+  
+  return bug;
 }
 
 // User Store with real-time updates and persistent state
@@ -349,131 +420,137 @@ function createUserStore() {
   };
 }
 
-// Journal Store with persistent listeners
+// Journal Store with persistent listeners and proper decryption
 function createJournalStore() {
   const { subscribe, set, update } = writable<JournalEntry[]>([]);
   let unsubscribe: Unsubscribe | null = null;
   let currentUid: string | null = null;
   let isInitialized = false;
   let isLoading = false;
+  let encryptionCheckInterval: NodeJS.Timeout | null = null;
+
+  // Function to check for encryption key and re-decrypt if needed
+  async function checkAndReDecrypt() {
+    if (!currentUid || !isEncryptionAvailable()) return;
+    
+    const currentEntries = get({ subscribe });
+    if (currentEntries.length === 0) return;
+    
+    // Check if any entries might need decryption
+    const needsDecryption = currentEntries.some(entry => {
+      // If title or content looks encrypted (base64-like pattern)
+      return entry.title && /^[A-Za-z0-9+/]+=*$/.test(entry.title) && entry.title.length > 50;
+    });
+    
+    if (needsDecryption && currentUid) {
+      // Reload entries to decrypt them
+      await loadEntries(currentUid);
+    }
+  }
+
+  async function loadEntries(uid: string) {
+    if (!db || !uid) return [];
+    
+    // If already loaded for this user and initialized, check if we need to re-decrypt
+    if (currentUid === uid && isInitialized) {
+      await checkAndReDecrypt();
+      return get({ subscribe }) as JournalEntry[];
+    }
+    
+    // If already loading, wait for it to complete
+    if (isLoading && currentUid === uid) {
+      return new Promise<JournalEntry[]>((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (!isLoading) {
+            clearInterval(checkInterval);
+            resolve(get({ subscribe }) as JournalEntry[]);
+          }
+        }, 50);
+      });
+    }
+    
+    isLoading = true;
+    
+    // Clean up previous listener only if uid changed
+    if (unsubscribe && currentUid !== uid) {
+      unsubscribe();
+      unsubscribe = null;
+      isInitialized = false;
+    }
+    
+    // Clear encryption check interval
+    if (encryptionCheckInterval) {
+      clearInterval(encryptionCheckInterval);
+      encryptionCheckInterval = null;
+    }
+    
+    currentUid = uid;
+    
+    return handleFirestoreOperation(async () => {
+      const q = query(
+        collection(db!, 'journal'), 
+        where('uid', '==', uid),
+        orderBy('date', 'desc'),
+        limit(100)
+      );
+      
+      // Set up real-time listener only if not already set
+      if (!unsubscribe) {
+        unsubscribe = onSnapshot(q, async (querySnapshot) => {
+          const entries: JournalEntry[] = [];
+          
+          // Process all entries with proper decryption
+          for (const doc of querySnapshot.docs) {
+            const entry = await decryptJournalEntry(doc.data(), doc.id);
+            entries.push(entry);
+          }
+          
+          set(entries);
+          isInitialized = true;
+          isLoading = false;
+        }, (error) => {
+          console.error('Journal snapshot error:', error);
+          isLoading = false;
+        });
+      }
+      
+      // Initial load
+      const querySnapshot = await getDocs(q);
+      const entries: JournalEntry[] = [];
+      
+      for (const doc of querySnapshot.docs) {
+        const entry = await decryptJournalEntry(doc.data(), doc.id);
+        entries.push(entry);
+      }
+      
+      set(entries);
+      isInitialized = true;
+      isLoading = false;
+      
+      // Set up periodic check for encryption key availability
+      if (!encryptionCheckInterval) {
+        encryptionCheckInterval = setInterval(() => {
+          checkAndReDecrypt();
+        }, 1000); // Check every second
+      }
+      
+      return entries;
+    }, 'Error loading journal entries');
+  }
 
   return {
     subscribe,
     
-    loadEntries: async (uid: string) => {
-      if (!db || !uid) return [];
-      
-      // If already loaded for this user and initialized, don't reload
-      if (currentUid === uid && isInitialized && get({ subscribe }).length >= 0) {
-        return get({ subscribe }) as JournalEntry[];
-      }
-      
-      // If already loading, wait for it to complete
-      if (isLoading && currentUid === uid) {
-        return new Promise<JournalEntry[]>((resolve) => {
-          const checkInterval = setInterval(() => {
-            if (!isLoading) {
-              clearInterval(checkInterval);
-              resolve(get({ subscribe }) as JournalEntry[]);
-            }
-          }, 50);
-        });
-      }
-      
-      isLoading = true;
-      
-      // Clean up previous listener only if uid changed
-      if (unsubscribe && currentUid !== uid) {
-        unsubscribe();
-        unsubscribe = null;
-        isInitialized = false;
-      }
-      
-      currentUid = uid;
-      
-      return handleFirestoreOperation(async () => {
-        const q = query(
-          collection(db!, 'journal'), 
-          where('uid', '==', uid),
-          orderBy('date', 'desc'),
-          limit(100)
-        );
-        
-        // Set up real-time listener only if not already set
-        if (!unsubscribe) {
-          unsubscribe = onSnapshot(q, async (querySnapshot) => {
-            const entries: JournalEntry[] = [];
-            
-            for (const doc of querySnapshot.docs) {
-              const data = doc.data();
-              let entry: JournalEntry = { 
-                id: doc.id, 
-                ...data,
-                date: firebaseTimestampToDate(data.date)
-              } as JournalEntry;
-              
-              // Decrypt if encrypted and encryption is available
-              if (data.encrypted && isEncryptionAvailable()) {
-                try {
-                  entry = await decryptFields(entry, JOURNAL_ENCRYPTED_FIELDS);
-                } catch (error) {
-                  // Silent fail
-                }
-              }
-              
-              entries.push(entry);
-            }
-            
-            set(entries);
-            isInitialized = true;
-            isLoading = false;
-          }, (error) => {
-            isLoading = false;
-          });
-        }
-        
-        // Check if we already have data
-        const currentData = get({ subscribe }) as JournalEntry[];
-        if (currentData.length >= 0 && currentUid === uid) {
-          isLoading = false;
-          return currentData;
-        }
-        
-        // Initial load
-        const querySnapshot = await getDocs(q);
-        const entries: JournalEntry[] = [];
-        
-        for (const doc of querySnapshot.docs) {
-          const data = doc.data();
-          let entry: JournalEntry = { 
-            id: doc.id, 
-            ...data,
-            date: firebaseTimestampToDate(data.date)
-          } as JournalEntry;
-          
-          // Decrypt if encrypted and encryption is available
-          if (data.encrypted && isEncryptionAvailable()) {
-            try {
-              entry = await decryptFields(entry, JOURNAL_ENCRYPTED_FIELDS);
-            } catch (error) {
-              // Silent fail
-            }
-          }
-          
-          entries.push(entry);
-        }
-        
-        set(entries);
-        isInitialized = true;
-        isLoading = false;
-        return entries;
-      }, 'Error loading journal entries');
-    },
+    loadEntries,
     
     cleanup: () => {
       if (unsubscribe) {
         unsubscribe();
         unsubscribe = null;
+      }
+      if (encryptionCheckInterval) {
+        clearInterval(encryptionCheckInterval);
+        encryptionCheckInterval = null;
       }
       currentUid = null;
       isInitialized = false;
@@ -505,10 +582,26 @@ function createJournalStore() {
       // Encrypt sensitive fields if encryption is available
       if (isEncryptionAvailable()) {
         try {
-          sanitizedEntry = await encryptFields(sanitizedEntry, JOURNAL_ENCRYPTED_FIELDS);
-          sanitizedEntry.encrypted = true;
+          // Encrypt each field individually
+          const encryptedData: any = { ...sanitizedEntry };
+          
+          if (sanitizedEntry.title) {
+            encryptedData.title = await encryptData(sanitizedEntry.title);
+          }
+          
+          if (sanitizedEntry.content) {
+            encryptedData.content = await encryptData(sanitizedEntry.content);
+          }
+          
+          if (sanitizedEntry.tags && Array.isArray(sanitizedEntry.tags)) {
+            encryptedData.tags = await encryptData(sanitizedEntry.tags);
+          }
+          
+          encryptedData.encrypted = true;
+          sanitizedEntry = encryptedData;
         } catch (error) {
-          // Silent fail
+          console.error('Encryption failed:', error);
+          // Continue without encryption
         }
       }
       
@@ -555,16 +648,25 @@ function createJournalStore() {
       // Encrypt updated fields if encryption is available
       if (isEncryptionAvailable()) {
         try {
-          const fieldsToEncrypt = Object.keys(sanitizedUpdates)
-            .filter(key => JOURNAL_ENCRYPTED_FIELDS.includes(key as keyof JournalEntry)) as (keyof JournalEntry)[];
+          const encryptedUpdates: any = { ...sanitizedUpdates };
           
-          if (fieldsToEncrypt.length > 0) {
-            const encrypted = await encryptFields(sanitizedUpdates, fieldsToEncrypt);
-            Object.assign(sanitizedUpdates, encrypted);
-            sanitizedUpdates.encrypted = true;
+          if (sanitizedUpdates.title !== undefined) {
+            encryptedUpdates.title = await encryptData(sanitizedUpdates.title);
           }
+          
+          if (sanitizedUpdates.content !== undefined) {
+            encryptedUpdates.content = await encryptData(sanitizedUpdates.content);
+          }
+          
+          if (sanitizedUpdates.tags !== undefined) {
+            encryptedUpdates.tags = await encryptData(sanitizedUpdates.tags);
+          }
+          
+          encryptedUpdates.encrypted = true;
+          Object.assign(sanitizedUpdates, encryptedUpdates);
         } catch (error) {
-          // Silent fail
+          console.error('Encryption failed:', error);
+          // Continue without encryption
         }
       }
       
@@ -588,7 +690,7 @@ function createJournalStore() {
   };
 }
 
-// Bug Store with persistent listeners
+// Bug Store with persistent listeners and proper decryption
 function createBugStore() {
   const { subscribe, set, update } = writable<Bug[]>([]);
   let unsubscribe: Unsubscribe | null = null;
@@ -596,136 +698,139 @@ function createBugStore() {
   let currentUid: string | null = null;
   let isInitialized = false;
   let isLoading = false;
+  let encryptionCheckInterval: NodeJS.Timeout | null = null;
+
+  // Function to check for encryption key and re-decrypt if needed
+  async function checkAndReDecrypt() {
+    if (!currentUid || !isEncryptionAvailable()) return;
+    
+    const currentBugs = get({ subscribe });
+    if (currentBugs.length === 0) return;
+    
+    // Check if any bugs might need decryption
+    const needsDecryption = currentBugs.some(bug => {
+      // If program or description looks encrypted (base64-like pattern)
+      return (bug.program && /^[A-Za-z0-9+/]+=*$/.test(bug.program) && bug.program.length > 50) ||
+             (bug.description && /^[A-Za-z0-9+/]+=*$/.test(bug.description) && bug.description.length > 50);
+    });
+    
+    if (needsDecryption && currentUid) {
+      // Reload bugs to decrypt them
+      await loadBugs(currentUid);
+    }
+  }
+
+  async function loadBugs(uid: string) {
+    if (!db || !uid) return [];
+    
+    // If already loaded for this user and initialized, check if we need to re-decrypt
+    if (currentUid === uid && isInitialized) {
+      await checkAndReDecrypt();
+      return get({ subscribe }) as Bug[];
+    }
+    
+    // If already loading, wait for it to complete
+    if (isLoading && currentUid === uid) {
+      return new Promise<Bug[]>((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (!isLoading) {
+            clearInterval(checkInterval);
+            resolve(get({ subscribe }) as Bug[]);
+          }
+        }, 50);
+      });
+    }
+    
+    isLoading = true;
+    
+    // Clean up previous listeners only if uid changed
+    if (currentUid !== uid) {
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+      if (userStatsUnsubscribe) {
+        userStatsUnsubscribe();
+        userStatsUnsubscribe = null;
+      }
+      isInitialized = false;
+    }
+    
+    // Clear encryption check interval
+    if (encryptionCheckInterval) {
+      clearInterval(encryptionCheckInterval);
+      encryptionCheckInterval = null;
+    }
+    
+    currentUid = uid;
+    
+    return handleFirestoreOperation(async () => {
+      const q = query(
+        collection(db!, 'bugs'), 
+        where('uid', '==', uid),
+        orderBy('dateFound', 'desc'),
+        limit(200)
+      );
+      
+      // Set up real-time listener only if not already set
+      if (!unsubscribe) {
+        unsubscribe = onSnapshot(q, async (querySnapshot) => {
+          const bugs: Bug[] = [];
+          
+          // Process all bugs with proper decryption
+          for (const doc of querySnapshot.docs) {
+            const bug = await decryptBugEntry(doc.data(), doc.id);
+            bugs.push(bug);
+          }
+          
+          set(bugs);
+          isInitialized = true;
+          isLoading = false;
+          
+          // Update user stats
+          const totalBounty = bugs.reduce((sum, bug) => sum + bug.bounty, 0);
+          const bugsFound = bugs.length;
+          
+          const userRef = doc(db!, 'users', uid);
+          await updateDoc(userRef, {
+            totalBounty,
+            bugsFound,
+            updatedAt: serverTimestamp()
+          });
+        }, (error) => {
+          console.error('Bug snapshot error:', error);
+          isLoading = false;
+        });
+      }
+      
+      // Initial load
+      const querySnapshot = await getDocs(q);
+      const bugs: Bug[] = [];
+      
+      for (const doc of querySnapshot.docs) {
+        const bug = await decryptBugEntry(doc.data(), doc.id);
+        bugs.push(bug);
+      }
+      
+      set(bugs);
+      isInitialized = true;
+      isLoading = false;
+      
+      // Set up periodic check for encryption key availability
+      if (!encryptionCheckInterval) {
+        encryptionCheckInterval = setInterval(() => {
+          checkAndReDecrypt();
+        }, 1000); // Check every second
+      }
+      
+      return bugs;
+    }, 'Error loading bugs');
+  }
 
   return {
     subscribe,
     
-    loadBugs: async (uid: string) => {
-      if (!db || !uid) return [];
-      
-      // If already loaded for this user and initialized, don't reload
-      if (currentUid === uid && isInitialized && get({ subscribe }).length >= 0) {
-        return get({ subscribe }) as Bug[];
-      }
-      
-      // If already loading, wait for it to complete
-      if (isLoading && currentUid === uid) {
-        return new Promise<Bug[]>((resolve) => {
-          const checkInterval = setInterval(() => {
-            if (!isLoading) {
-              clearInterval(checkInterval);
-              resolve(get({ subscribe }) as Bug[]);
-            }
-          }, 50);
-        });
-      }
-      
-      isLoading = true;
-      
-      // Clean up previous listeners only if uid changed
-      if (currentUid !== uid) {
-        if (unsubscribe) {
-          unsubscribe();
-          unsubscribe = null;
-        }
-        if (userStatsUnsubscribe) {
-          userStatsUnsubscribe();
-          userStatsUnsubscribe = null;
-        }
-        isInitialized = false;
-      }
-      
-      currentUid = uid;
-      
-      return handleFirestoreOperation(async () => {
-        const q = query(
-          collection(db!, 'bugs'), 
-          where('uid', '==', uid),
-          orderBy('dateFound', 'desc'),
-          limit(200)
-        );
-        
-        // Set up real-time listener only if not already set
-        if (!unsubscribe) {
-          unsubscribe = onSnapshot(q, async (querySnapshot) => {
-            const bugs: Bug[] = [];
-            
-            for (const doc of querySnapshot.docs) {
-              const data = doc.data();
-              let bug: Bug = { 
-                id: doc.id, 
-                ...data,
-                dateFound: firebaseTimestampToDate(data.dateFound)
-              } as Bug;
-              
-              // Decrypt if encrypted and encryption is available
-              if (data.encrypted && isEncryptionAvailable()) {
-                try {
-                  bug = await decryptFields(bug, BUG_ENCRYPTED_FIELDS);
-                } catch (error) {
-                  // Silent fail
-                }
-              }
-              
-              bugs.push(bug);
-            }
-            
-            set(bugs);
-            isInitialized = true;
-            isLoading = false;
-            
-            // Update user stats
-            const totalBounty = bugs.reduce((sum, bug) => sum + bug.bounty, 0);
-            const bugsFound = bugs.length;
-            
-            const userRef = doc(db!, 'users', uid);
-            await updateDoc(userRef, {
-              totalBounty,
-              bugsFound,
-              updatedAt: serverTimestamp()
-            });
-          }, (error) => {
-            isLoading = false;
-          });
-        }
-        
-        // Check if we already have data
-        const currentData = get({ subscribe }) as Bug[];
-        if (currentData.length >= 0 && currentUid === uid) {
-          isLoading = false;
-          return currentData;
-        }
-        
-        // Initial load
-        const querySnapshot = await getDocs(q);
-        const bugs: Bug[] = [];
-        
-        for (const doc of querySnapshot.docs) {
-          const data = doc.data();
-          let bug: Bug = { 
-            id: doc.id, 
-            ...data,
-            dateFound: firebaseTimestampToDate(data.dateFound)
-          } as Bug;
-          
-          // Decrypt if encrypted and encryption is available
-          if (data.encrypted && isEncryptionAvailable()) {
-            try {
-              bug = await decryptFields(bug, BUG_ENCRYPTED_FIELDS);
-            } catch (error) {
-              // Silent fail
-            }
-          }
-          
-          bugs.push(bug);
-        }
-        
-        set(bugs);
-        isInitialized = true;
-        isLoading = false;
-        return bugs;
-      }, 'Error loading bugs');
-    },
+    loadBugs,
     
     cleanup: () => {
       if (unsubscribe) {
@@ -735,6 +840,10 @@ function createBugStore() {
       if (userStatsUnsubscribe) {
         userStatsUnsubscribe();
         userStatsUnsubscribe = null;
+      }
+      if (encryptionCheckInterval) {
+        clearInterval(encryptionCheckInterval);
+        encryptionCheckInterval = null;
       }
       currentUid = null;
       isInitialized = false;
@@ -781,10 +890,22 @@ function createBugStore() {
       // Encrypt sensitive fields if encryption is available
       if (isEncryptionAvailable()) {
         try {
-          sanitizedBug = await encryptFields(sanitizedBug, BUG_ENCRYPTED_FIELDS);
-          sanitizedBug.encrypted = true;
+          // Encrypt each field individually
+          const encryptedData: any = { ...sanitizedBug };
+          
+          if (sanitizedBug.program) {
+            encryptedData.program = await encryptData(sanitizedBug.program);
+          }
+          
+          if (sanitizedBug.description) {
+            encryptedData.description = await encryptData(sanitizedBug.description);
+          }
+          
+          encryptedData.encrypted = true;
+          sanitizedBug = encryptedData;
         } catch (error) {
-          // Silent fail
+          console.error('Encryption failed:', error);
+          // Continue without encryption
         }
       }
       
@@ -846,16 +967,21 @@ function createBugStore() {
       // Encrypt updated fields if encryption is available
       if (isEncryptionAvailable()) {
         try {
-          const fieldsToEncrypt = Object.keys(sanitizedUpdates)
-            .filter(key => BUG_ENCRYPTED_FIELDS.includes(key as keyof Bug)) as (keyof Bug)[];
+          const encryptedUpdates: any = { ...sanitizedUpdates };
           
-          if (fieldsToEncrypt.length > 0) {
-            const encrypted = await encryptFields(sanitizedUpdates, fieldsToEncrypt);
-            Object.assign(sanitizedUpdates, encrypted);
-            sanitizedUpdates.encrypted = true;
+          if (sanitizedUpdates.program !== undefined) {
+            encryptedUpdates.program = await encryptData(sanitizedUpdates.program);
           }
+          
+          if (sanitizedUpdates.description !== undefined) {
+            encryptedUpdates.description = await encryptData(sanitizedUpdates.description);
+          }
+          
+          encryptedUpdates.encrypted = true;
+          Object.assign(sanitizedUpdates, encryptedUpdates);
         } catch (error) {
-          // Silent fail
+          console.error('Encryption failed:', error);
+          // Continue without encryption
         }
       }
       
