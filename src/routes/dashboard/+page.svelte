@@ -591,7 +591,7 @@
                   </p>
                   <div class="flex items-center justify-between text-xs">
                     <span class="text-gray-500 dark:text-gray-400">{formatDate(entry.date)}</span>
-                    {#if entry.tags && entry.tags.length > 0}
+                    {#if entry.tags && Array.isArray(entry.tags) && entry.tags.length > 0}
                       <div class="flex gap-1">
                         {#each entry.tags.slice(0, 2) as tag}
                           <span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded-full">

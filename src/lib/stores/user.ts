@@ -1,4 +1,4 @@
-// src/lib/stores/user.ts - Fixed version with better navigation handling
+// src/lib/stores/user.ts - Production version with all console output removed
 import { writable, derived, get } from 'svelte/store';
 import { db } from '$lib/firebase';
 import { 
@@ -98,7 +98,6 @@ async function handleFirestoreOperation<T>(
   try {
     return await operation();
   } catch (error) {
-    console.error(errorMessage, error);
     throw new Error(errorMessage);
   }
 }
@@ -121,13 +120,11 @@ function createUserStore() {
       
       // If already loaded for this user and initialized, don't reload
       if (currentUid === uid && isInitialized && get({ subscribe })) {
-        console.log('User profile already loaded, skipping reload');
         return get({ subscribe });
       }
       
       // If already loading, wait for it to complete
       if (isLoading && currentUid === uid) {
-        console.log('Profile loading in progress, waiting...');
         return new Promise((resolve) => {
           const checkInterval = setInterval(() => {
             if (!isLoading) {
@@ -156,7 +153,6 @@ function createUserStore() {
         if (!unsubscribe) {
           unsubscribe = onSnapshot(docRef, async (docSnap) => {
             if (isDeleting) {
-              console.log('Skipping profile creation during deletion');
               return;
             }
             
@@ -175,7 +171,6 @@ function createUserStore() {
               
               if (auth && currentUser && currentUser.uid === uid) {
                 // Only create default profile if auth user exists
-                console.log('Creating default profile for authenticated user');
                 const defaultProfile = {
                   uid,
                   email: currentUser.email || '',
@@ -196,13 +191,11 @@ function createUserStore() {
                 isInitialized = true;
                 isLoading = false;
               } else {
-                console.log('No authenticated user found, not creating profile');
                 set(null);
                 isLoading = false;
               }
             }
           }, (error) => {
-            console.error('Error listening to user profile:', error);
             set(null);
             isLoading = false;
           });
@@ -247,11 +240,6 @@ function createUserStore() {
       set(null);
     },
     
-    // Reset without cleanup (for navigation) - REMOVED to prevent blinking
-    // reset: () => {
-    //   // Don't reset anything, keep the data
-    // },
-    
     completeTask: async (uid: string, taskId: string, xp: number) => {
       if (!db || !uid || !taskId) return;
       
@@ -289,13 +277,11 @@ function createUserStore() {
     
     uncompleteTask: async (uid: string, taskId: string, xp: number) => {
       if (!db || !uid || !taskId) {
-        console.error('Missing required parameters:', { db: !!db, uid, taskId });
         throw new Error('Missing required parameters');
       }
       
       // Validate XP
       if (!validateXP(xp)) {
-        console.error('Invalid XP value:', xp);
         throw new Error('Invalid XP value');
       }
       
@@ -309,15 +295,12 @@ function createUserStore() {
         const userDoc = await getDoc(userRef);
         
         if (!userDoc.exists()) {
-          console.error('User document not found:', uid);
           throw new Error('User profile not found');
         }
         
         const userData = userDoc.data() as UserProfile;
-        console.log('Current user data:', userData);
         
         if (!userData.completedTasks || !Array.isArray(userData.completedTasks)) {
-          console.error('Invalid completedTasks:', userData.completedTasks);
           throw new Error('Invalid user data structure');
         }
         
@@ -325,25 +308,13 @@ function createUserStore() {
           const updatedTasks = userData.completedTasks.filter(id => id !== taskId);
           const updatedXP = Math.max(0, (userData.totalXP || 0) - xp);
           
-          console.log('Updating user with:', { 
-            completedTasks: updatedTasks, 
-            totalXP: updatedXP,
-            previousTasks: userData.completedTasks,
-            previousXP: userData.totalXP
-          });
-          
           await updateDoc(userRef, {
             completedTasks: updatedTasks,
             totalXP: updatedXP,
             updatedAt: serverTimestamp()
           });
-          
-          console.log('Task uncompleted successfully');
-        } else {
-          console.warn('Task not in completed list:', taskId);
         }
       } catch (error) {
-        console.error('Error in uncompleteTask:', error);
         throw error;
       }
     },
@@ -394,13 +365,11 @@ function createJournalStore() {
       
       // If already loaded for this user and initialized, don't reload
       if (currentUid === uid && isInitialized && get({ subscribe }).length >= 0) {
-        console.log('Journal entries already loaded, skipping reload');
         return get({ subscribe }) as JournalEntry[];
       }
       
       // If already loading, wait for it to complete
       if (isLoading && currentUid === uid) {
-        console.log('Journal loading in progress, waiting...');
         return new Promise<JournalEntry[]>((resolve) => {
           const checkInterval = setInterval(() => {
             if (!isLoading) {
@@ -448,7 +417,7 @@ function createJournalStore() {
                 try {
                   entry = await decryptFields(entry, JOURNAL_ENCRYPTED_FIELDS);
                 } catch (error) {
-                  console.error('Failed to decrypt journal entry:', error);
+                  // Silent fail
                 }
               }
               
@@ -459,7 +428,6 @@ function createJournalStore() {
             isInitialized = true;
             isLoading = false;
           }, (error) => {
-            console.error('Error listening to journal entries:', error);
             isLoading = false;
           });
         }
@@ -488,7 +456,7 @@ function createJournalStore() {
             try {
               entry = await decryptFields(entry, JOURNAL_ENCRYPTED_FIELDS);
             } catch (error) {
-              console.error('Failed to decrypt journal entry:', error);
+              // Silent fail
             }
           }
           
@@ -512,8 +480,6 @@ function createJournalStore() {
       isLoading = false;
       set([]);
     },
-    
-    // Removed reset method to prevent blinking
     
     addEntry: async (entry: JournalEntry) => {
       if (!db) return;
@@ -542,7 +508,7 @@ function createJournalStore() {
           sanitizedEntry = await encryptFields(sanitizedEntry, JOURNAL_ENCRYPTED_FIELDS);
           sanitizedEntry.encrypted = true;
         } catch (error) {
-          console.error('Failed to encrypt journal entry:', error);
+          // Silent fail
         }
       }
       
@@ -598,7 +564,7 @@ function createJournalStore() {
             sanitizedUpdates.encrypted = true;
           }
         } catch (error) {
-          console.error('Failed to encrypt journal update:', error);
+          // Silent fail
         }
       }
       
@@ -639,13 +605,11 @@ function createBugStore() {
       
       // If already loaded for this user and initialized, don't reload
       if (currentUid === uid && isInitialized && get({ subscribe }).length >= 0) {
-        console.log('Bugs already loaded, skipping reload');
         return get({ subscribe }) as Bug[];
       }
       
       // If already loading, wait for it to complete
       if (isLoading && currentUid === uid) {
-        console.log('Bugs loading in progress, waiting...');
         return new Promise<Bug[]>((resolve) => {
           const checkInterval = setInterval(() => {
             if (!isLoading) {
@@ -699,7 +663,7 @@ function createBugStore() {
                 try {
                   bug = await decryptFields(bug, BUG_ENCRYPTED_FIELDS);
                 } catch (error) {
-                  console.error('Failed to decrypt bug:', error);
+                  // Silent fail
                 }
               }
               
@@ -721,7 +685,6 @@ function createBugStore() {
               updatedAt: serverTimestamp()
             });
           }, (error) => {
-            console.error('Error listening to bugs:', error);
             isLoading = false;
           });
         }
@@ -750,7 +713,7 @@ function createBugStore() {
             try {
               bug = await decryptFields(bug, BUG_ENCRYPTED_FIELDS);
             } catch (error) {
-              console.error('Failed to decrypt bug:', error);
+              // Silent fail
             }
           }
           
@@ -778,8 +741,6 @@ function createBugStore() {
       isLoading = false;
       set([]);
     },
-    
-    // Removed reset method to prevent blinking
     
     addBug: async (bug: Bug) => {
       if (!db) return;
@@ -823,7 +784,7 @@ function createBugStore() {
           sanitizedBug = await encryptFields(sanitizedBug, BUG_ENCRYPTED_FIELDS);
           sanitizedBug.encrypted = true;
         } catch (error) {
-          console.error('Failed to encrypt bug report:', error);
+          // Silent fail
         }
       }
       
@@ -894,7 +855,7 @@ function createBugStore() {
             sanitizedUpdates.encrypted = true;
           }
         } catch (error) {
-          console.error('Failed to encrypt bug update:', error);
+          // Silent fail
         }
       }
       

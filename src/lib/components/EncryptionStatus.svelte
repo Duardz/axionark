@@ -1,4 +1,3 @@
-// src/lib/components/EncryptionStatus.svelte
 <script lang="ts">
   import { onMount } from 'svelte';
   import { authStore } from '$lib/stores/auth';

@@ -106,7 +106,7 @@
     // Calculate most used tags
     const tagCounts = new Map<string, number>();
     $journalStore.forEach(entry => {
-      if (entry.tags) {
+      if (entry.tags && Array.isArray(entry.tags)) {
         entry.tags.forEach(tag => {
           tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
         });
@@ -165,7 +165,7 @@
       filtered = filtered.filter(entry =>
         entry.title.toLowerCase().includes(query) ||
         entry.content.toLowerCase().includes(query) ||
-        (entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(query)))
+        (entry.tags && Array.isArray(entry.tags) && entry.tags.some(tag => tag.toLowerCase().includes(query)))
       );
     }
     
@@ -173,7 +173,7 @@
     if (filterTags.trim()) {
       const tagQuery = filterTags.toLowerCase();
       filtered = filtered.filter(entry =>
-        entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(tagQuery))
+        entry.tags && Array.isArray(entry.tags) && entry.tags.some(tag => tag.toLowerCase().includes(tagQuery))
       );
     }
     
@@ -309,7 +309,7 @@
     title = entry.title;
     content = entry.content;
     mood = entry.mood || 'good';
-    tags = entry.tags ? entry.tags.join(', ') : '';
+    tags = entry.tags && Array.isArray(entry.tags) ? entry.tags.join(', ') : '';
     showForm = true;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -881,7 +881,7 @@
               </div>
               
               <!-- Tags -->
-              {#if entry.tags && entry.tags.length > 0}
+              {#if entry.tags && Array.isArray(entry.tags) && entry.tags.length > 0}
                 <div class="flex flex-wrap gap-2 mt-4">
                   {#each entry.tags as tag}
                     <button

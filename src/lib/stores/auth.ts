@@ -1,4 +1,4 @@
-// src/lib/stores/auth.ts - Enhanced version with encryption
+// src/lib/stores/auth.ts - Production version with all console output removed
 import { writable, derived } from 'svelte/store';
 import { auth, db } from '$lib/firebase';
 import {
@@ -80,18 +80,26 @@ function createAuthStore() {
         unsubscribe = onAuthStateChanged(auth, async (user) => {
           set(user);
           
-          // Update last login time if user is authenticated
+          // Update last login time and ensure email is synced if user is authenticated
           if (user && db) {
             try {
               // Check if user document exists
               const userDoc = await getDoc(doc(db, 'users', user.uid));
               if (userDoc.exists()) {
-                await updateDoc(doc(db, 'users', user.uid), {
+                const userData = userDoc.data();
+                const updates: any = {
                   lastLogin: serverTimestamp()
-                });
+                };
+                
+                // IMPORTANT: Always sync email from auth to user profile
+                if (!userData.email || userData.email !== user.email) {
+                  updates.email = user.email;
+                }
+                
+                await updateDoc(doc(db, 'users', user.uid), updates);
               }
             } catch (error) {
-              console.error('Error updating last login:', error);
+              // Silent fail in production
             }
           }
         });
@@ -159,7 +167,7 @@ function createAuthStore() {
         // Step 5: Create user document with encryption enabled
         const userData: UserData = {
           uid: user.uid,
-          email: user.email!,
+          email: user.email!, // Ensure email is always set
           username: sanitizedUsername,
           createdAt: serverTimestamp(),
           totalXP: 0,
@@ -185,10 +193,8 @@ function createAuthStore() {
             createdAt: serverTimestamp()
           });
 
-          console.log('User profile created successfully with encryption enabled for:', user.uid);
         } catch (profileError) {
           // Rollback if profile creation fails
-          console.error('Error creating user profile:', profileError);
           if (user) {
             await user.delete();
           }
@@ -203,7 +209,7 @@ function createAuthStore() {
           try {
             await user.delete(); // Cleanup
           } catch (deleteError) {
-            console.error('Error deleting user after failed profile creation:', deleteError);
+            // Silent fail
           }
         }
         clearEncryptionKey();
@@ -242,11 +248,10 @@ function createAuthStore() {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         
         if (!userDoc.exists()) {
-          console.log('User profile not found, creating one...');
           // Create profile for users who signed up before profile creation was implemented
           const userData: UserData = {
             uid: user.uid,
-            email: user.email!,
+            email: user.email!, // Ensure email is always set
             username: user.email!.split('@')[0] || 'User',
             createdAt: serverTimestamp(),
             totalXP: 0,
@@ -271,6 +276,11 @@ function createAuthStore() {
             lastLogin: serverTimestamp(),
             loginAttempts: 0
           };
+          
+          // CRITICAL: Always ensure email is synchronized
+          if (!userData.email || userData.email !== user.email) {
+            updates.email = user.email;
+          }
           
           // Add missing fields if they don't exist
           if (userData.totalBounty === undefined) updates.totalBounty = 0;
@@ -417,7 +427,6 @@ function createAuthStore() {
         
         return true;
       } catch (error) {
-        console.error('Error re-encrypting data:', error);
         throw new Error('Failed to re-encrypt data');
       }
     },
@@ -441,8 +450,6 @@ function createAuthStore() {
         const credential = EmailAuthProvider.credential(user.email!, password);
         await reauthenticateWithCredential(user, credential);
         
-        console.log('Starting account deletion for user:', uid);
-        
         // Clean up store listeners first
         userStore.cleanup();
         journalStore.cleanup();
@@ -456,10 +463,8 @@ function createAuthStore() {
         const username = userDoc.exists() ? userDoc.data().username : null;
         
         // Delete all journal entries first
-        console.log('Deleting journal entries...');
         const journalQuery = query(collection(db, 'journal'), where('uid', '==', uid));
         const journalSnapshot = await getDocs(journalQuery);
-        console.log(`Found ${journalSnapshot.size} journal entries to delete`);
         
         // Delete in batches of 500 (Firestore limit)
         let journalBatch = writeBatch(db);
@@ -481,10 +486,8 @@ function createAuthStore() {
         }
         
         // Delete all bugs
-        console.log('Deleting bug reports...');
         const bugsQuery = query(collection(db, 'bugs'), where('uid', '==', uid));
         const bugsSnapshot = await getDocs(bugsQuery);
-        console.log(`Found ${bugsSnapshot.size} bug reports to delete`);
         
         let bugsBatch = writeBatch(db);
         let bugsCount = 0;
@@ -505,7 +508,6 @@ function createAuthStore() {
         }
         
         // Delete user document and username reference
-        console.log('Deleting user profile and username...');
         const finalBatch = writeBatch(db);
         
         // Delete user document
@@ -513,7 +515,6 @@ function createAuthStore() {
         
         // Delete username reference
         if (username) {
-          console.log(`Deleting username reference: ${username.toLowerCase()}`);
           finalBatch.delete(doc(db, 'usernames', username.toLowerCase()));
         }
         
@@ -523,16 +524,10 @@ function createAuthStore() {
         // Commit final batch
         await finalBatch.commit();
         
-        console.log('All Firestore data deleted, now deleting auth user...');
-        
         // Finally, delete the auth user
         await deleteUser(user);
         
-        console.log('Account deletion completed successfully');
-        
       } catch (error: any) {
-        console.error('Error during account deletion:', error);
-        
         // Reset deletion flag on error
         const { userStore } = await import('$lib/stores/user');
         userStore.setDeleting(false);

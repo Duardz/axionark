@@ -264,6 +264,12 @@
     setTimeout(() => unlockedAchievement = null, 5000);
   }
 
+  // Create enhanced user data with auth email fallback
+  $: enhancedUserData = $userStore ? {
+    ...$userStore,
+    email: $userStore.email || user?.email || 'No email available'
+  } : null;
+
   $: totalAchievementPoints = achievements.reduce((sum, a) => a.earned ? sum + a.points : sum, 0);
   $: achievementProgress = achievements.filter(a => a.earned).length / achievements.length * 100;
 </script>
@@ -344,7 +350,7 @@
               <div>
                 <h1 class="text-3xl sm:text-4xl font-bold text-white mb-1">{$userStore.username}</h1>
                 <p class="text-lg text-cyan-400 font-medium mb-2">{getPlayerTitle($userProgress?.level || 1)}</p>
-                <p class="text-gray-400">{$userStore.email}</p>
+                <p class="text-gray-400">{enhancedUserData?.email}</p>
               </div>
               
               <!-- Power Level Display -->
@@ -412,7 +418,7 @@
     <!-- Content Area -->
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {#if activeTab === 'overview'}
-        <!-- Overview Tab -->
+        <!-- Overview Tab Content (keeping same as before) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           <!-- Stats Cards -->
           <div class="lg:col-span-2 space-y-6">
@@ -551,7 +557,7 @@
       {/if}
 
       {#if activeTab === 'skills'}
-        <!-- Skills Tab -->
+        <!-- Skills Tab Content (keeping same as before) -->
         <div class="max-w-4xl mx-auto">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {#each skills as skill}
@@ -608,7 +614,7 @@
       {/if}
 
       {#if activeTab === 'achievements'}
-        <!-- Achievements Tab -->
+        <!-- Achievements Tab Content (keeping same as before) -->
         <div class="max-w-6xl mx-auto">
           <!-- Achievement Stats -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -678,7 +684,7 @@
       {/if}
 
       {#if activeTab === 'leaderboard'}
-        <!-- Leaderboard Tab -->
+        <!-- Leaderboard Tab Content (keeping same as before) -->
         <div class="max-w-4xl mx-auto">
           <div class="bg-gray-800 rounded-2xl border border-gray-700 overflow-hidden">
             <div class="p-8 text-center">
@@ -699,8 +705,8 @@
       {/if}
 
       {#if activeTab === 'settings'}
-        <!-- Settings Tab -->
-        <ProfileSettings userStoreData={$userStore} />
+        <!-- Settings Tab - IMPORTANT: Pass the enhanced user data -->
+        <ProfileSettings userStoreData={enhancedUserData} />
       {/if}
     </div>
   {/if}
