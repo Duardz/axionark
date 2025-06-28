@@ -1,4 +1,4 @@
-<!-- src/routes/+layout.svelte -->
+<!-- src/routes/+layout.svelte - Security Enhanced Version -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { authStore } from '$lib/stores/auth';
@@ -11,7 +11,12 @@
   let darkMode = false;
   let activityTimer: NodeJS.Timeout | null = null;
   let lastActivity = Date.now();
+  let warningTimer: NodeJS.Timeout | null = null;
+  let showInactivityWarning = false;
+  
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  const WARNING_BEFORE_TIMEOUT = 5 * 60 * 1000; // Show warning 5 minutes before timeout
+  
   let scrollProgress = 0;
   let showScrollTop = false;
 
@@ -28,6 +33,19 @@
     // Initialize auth store
     authStore.initialize();
     
+    // Security: Prevent clickjacking
+    if (browser && window.self !== window.top) {
+      console.warn('Potential clickjacking attempt detected');
+      document.body.style.display = 'none';
+    }
+    
+    // Security: Clear sensitive data from console
+    if (browser && import.meta.env.PROD) {
+      console.log = () => {};
+      console.debug = () => {};
+      console.info = () => {};
+    }
+    
     // Scroll progress indicator
     const updateScrollProgress = () => {
       const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
@@ -36,7 +54,7 @@
       showScrollTop = winScroll > 300;
     };
     
-    window.addEventListener('scroll', updateScrollProgress);
+    window.addEventListener('scroll', updateScrollProgress, { passive: true });
     
     // Check for saved theme preference or default to light mode
     if (browser) {
@@ -57,35 +75,106 @@
       
       mediaQuery.addEventListener('change', handleChange);
       
-      // Activity monitoring for auto-logout
+      // Enhanced activity monitoring for auto-logout
       const updateActivity = () => {
         lastActivity = Date.now();
-      };
-      
-      const checkInactivity = () => {
-        if (Date.now() - lastActivity > INACTIVITY_TIMEOUT) {
-          authStore.signOut();
-          alert('You have been logged out due to inactivity.');
+        showInactivityWarning = false;
+        
+        // Clear warning timer if user is active
+        if (warningTimer) {
+          clearTimeout(warningTimer);
+          warningTimer = null;
         }
       };
       
-      // Monitor user activity
-      document.addEventListener('mousedown', updateActivity);
-      document.addEventListener('keydown', updateActivity);
-      document.addEventListener('touchstart', updateActivity);
+      const checkInactivity = () => {
+        const inactiveTime = Date.now() - lastActivity;
+        
+        // Show warning before timeout
+        if (inactiveTime > (INACTIVITY_TIMEOUT - WARNING_BEFORE_TIMEOUT) && !showInactivityWarning && $authStore) {
+          showInactivityWarning = true;
+          
+          // Set timer for actual logout
+          warningTimer = setTimeout(() => {
+            if (Date.now() - lastActivity >= INACTIVITY_TIMEOUT) {
+              handleInactivityLogout();
+            }
+          }, WARNING_BEFORE_TIMEOUT);
+        }
+        
+        // Force logout if timeout exceeded
+        if (inactiveTime > INACTIVITY_TIMEOUT && $authStore) {
+          handleInactivityLogout();
+        }
+      };
+      
+      const handleInactivityLogout = async () => {
+        showInactivityWarning = false;
+        await authStore.signOut();
+        alert('You have been logged out due to inactivity.');
+      };
+      
+      // Monitor user activity with passive listeners for better performance
+      const activityEvents = ['mousedown', 'keydown', 'touchstart', 'mousemove'];
+      activityEvents.forEach(event => {
+        document.addEventListener(event, updateActivity, { passive: true });
+      });
       
       // Check for inactivity every minute
       activityTimer = setInterval(checkInactivity, 60000);
+      
+      // Security: Warn about unsaved changes when leaving
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        // Only warn if user is authenticated and might have unsaved data
+        if ($authStore && (window.location.pathname.includes('/journal') || 
+            window.location.pathname.includes('/bugs'))) {
+          e.preventDefault();
+          e.returnValue = '';
+        }
+      };
+      
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      // Security: Monitor for suspicious activity
+      let rapidClickCount = 0;
+      let rapidClickTimer: NodeJS.Timeout | null = null;
+      
+      const monitorRapidClicks = () => {
+        rapidClickCount++;
+        
+        if (rapidClickCount > 50) {
+          console.warn('Suspicious rapid clicking detected');
+          // Could implement additional security measures here
+        }
+        
+        if (!rapidClickTimer) {
+          rapidClickTimer = setTimeout(() => {
+            rapidClickCount = 0;
+            rapidClickTimer = null;
+          }, 1000);
+        }
+      };
+      
+      document.addEventListener('click', monitorRapidClicks, { passive: true });
       
       // Cleanup function
       return () => {
         window.removeEventListener('scroll', updateScrollProgress);
         mediaQuery.removeEventListener('change', handleChange);
-        document.removeEventListener('mousedown', updateActivity);
-        document.removeEventListener('keydown', updateActivity);
-        document.removeEventListener('touchstart', updateActivity);
+        activityEvents.forEach(event => {
+          document.removeEventListener(event, updateActivity);
+        });
+        document.removeEventListener('click', monitorRapidClicks);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        
         if (activityTimer) {
           clearInterval(activityTimer);
+        }
+        if (warningTimer) {
+          clearTimeout(warningTimer);
+        }
+        if (rapidClickTimer) {
+          clearTimeout(rapidClickTimer);
         }
       };
     }
@@ -98,9 +187,12 @@
     journalStore.cleanup();
     bugStore.cleanup();
     
-    // Clear activity timer
+    // Clear timers
     if (activityTimer) {
       clearInterval(activityTimer);
+    }
+    if (warningTimer) {
+      clearTimeout(warningTimer);
     }
   });
 
@@ -120,9 +212,64 @@
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+  
+  function continueSession() {
+    lastActivity = Date.now();
+    showInactivityWarning = false;
+    if (warningTimer) {
+      clearTimeout(warningTimer);
+      warningTimer = null;
+    }
+  }
 </script>
 
+<svelte:head>
+  <!-- Security Headers via meta tags (actual headers should be set server-side) -->
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  
+  <!-- Additional security meta tags -->
+  {#if !isPublicPage}
+    <meta name="robots" content="noindex, nofollow" />
+  {/if}
+</svelte:head>
+
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors flex flex-col">
+  <!-- Inactivity Warning Modal -->
+  {#if showInactivityWarning}
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            Session Timeout Warning
+          </h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">
+            You will be logged out in 5 minutes due to inactivity. 
+            Click continue to stay logged in.
+          </p>
+          <div class="flex gap-3">
+            <button
+              on:click={continueSession}
+              class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all"
+            >
+              Continue Session
+            </button>
+            <button
+              on:click={() => authStore.signOut()}
+              class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+            >
+              Log Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+  
   <!-- Scroll Progress Bar -->
   <div class="fixed top-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-800 z-[60]">
     <div 
@@ -149,6 +296,25 @@
     Skip to main content
   </a>
   
+  <!-- Theme Toggle (only on authenticated pages) -->
+  {#if !isPublicPage}
+    <button
+      on:click={toggleDarkMode}
+      class="fixed bottom-20 left-4 z-50 p-3 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+      aria-label="Toggle dark mode"
+    >
+      {#if darkMode}
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      {:else}
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      {/if}
+    </button>
+  {/if}
+  
   <main id="main-content" class="flex-grow">
     <slot />
   </main>
@@ -174,5 +340,13 @@
   
   .animate-fade-in-up {
     animation: fade-in-up 0.3s ease-out;
+  }
+  
+  /* Security: Prevent text selection on sensitive UI elements */
+  button {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
   }
 </style>

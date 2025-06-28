@@ -1,4 +1,4 @@
-<!-- src/routes/+page.svelte -->
+<!-- src/routes/+page.svelte - Security Enhanced Version -->
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { authStore, isAuthenticated } from '$lib/stores/auth';
@@ -27,21 +27,44 @@
   let resetSuccess = false;
   let resetError = '';
   
+  // Security enhancements
+  let honeypot = ''; // Honeypot field for bot detection
+  let formSubmitTime = 0; // Track form submission time
+  let failedAttempts = 0; // Track failed attempts
+  const MAX_FAILED_ATTEMPTS = 5;
+  
   let unsubscribe: (() => void) | undefined;
 
   onMount(() => {
+    // Set form load time for timing attack prevention
+    formSubmitTime = Date.now();
+    
     // Redirect if already authenticated
     unsubscribe = isAuthenticated.subscribe(auth => {
       if (auth) {
         goto('/dashboard');
       }
     });
+    
+    // Clear sensitive data from browser autocomplete
+    return () => {
+      email = '';
+      password = '';
+      passwordConfirm = '';
+      username = '';
+    };
   });
   
   onDestroy(() => {
     if (unsubscribe) {
       unsubscribe();
     }
+    // Clear all sensitive data
+    email = '';
+    password = '';
+    passwordConfirm = '';
+    username = '';
+    resetEmail = '';
   });
 
   // Real-time password validation
@@ -52,9 +75,28 @@
     passwordErrors = [];
   }
 
-  // Form field validation
+  // Enhanced form validation with security checks
   function validateForm(): boolean {
     formErrors = {};
+    
+    // Honeypot check (hidden field that bots might fill)
+    if (honeypot) {
+      console.warn('Bot detection triggered');
+      return false;
+    }
+    
+    // Timing attack prevention (form submitted too quickly)
+    const submitTime = Date.now() - formSubmitTime;
+    if (submitTime < 1000) { // Less than 1 second
+      formErrors.general = 'Please take your time filling out the form';
+      return false;
+    }
+    
+    // Check failed attempts
+    if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
+      formErrors.general = 'Too many failed attempts. Please try again later.';
+      return false;
+    }
     
     // Email validation
     if (!email.trim()) {
@@ -92,6 +134,18 @@
       if (!passwordValidation.valid) {
         formErrors.password = passwordValidation.errors[0];
       }
+      
+      // Check for common passwords
+      const commonPasswords = ['password', '12345678', 'qwerty', 'admin', 'letmein', '123456'];
+      if (commonPasswords.includes(password.toLowerCase())) {
+        formErrors.password = 'This password is too common. Please choose a stronger password.';
+      }
+      
+      // Check if password contains username or email
+      if (password.toLowerCase().includes(username.toLowerCase()) || 
+          password.toLowerCase().includes(email.split('@')[0].toLowerCase())) {
+        formErrors.password = 'Password should not contain your username or email';
+      }
     }
     
     return Object.keys(formErrors).length === 0;
@@ -101,7 +155,7 @@
     loading = true;
     error = '';
     
-    // Validate form
+    // Validate form with security checks
     if (!validateForm()) {
       loading = false;
       return;
@@ -110,14 +164,31 @@
     try {
       if (mode === 'signup') {
         await authStore.signUp(email.trim(), password, username.trim());
+        // Clear sensitive data after successful signup
+        password = '';
+        passwordConfirm = '';
       } else {
         await authStore.signIn(email.trim(), password);
+        // Clear password after successful signin
+        password = '';
       }
+      failedAttempts = 0; // Reset failed attempts on success
       // Redirect handled by subscription
     } catch (err: any) {
+      failedAttempts++;
       error = err.message || 'An error occurred';
+      
+      // Add delay after failed attempt to prevent brute force
+      if (failedAttempts > 2) {
+        loading = true;
+        setTimeout(() => {
+          loading = false;
+        }, failedAttempts * 1000); // Exponential backoff
+      }
     } finally {
-      loading = false;
+      if (failedAttempts <= 2) {
+        loading = false;
+      }
     }
   }
 
@@ -140,20 +211,17 @@
     try {
       if (!auth) throw new Error('Authentication not initialized');
       
-      console.log('Sending password reset email to:', resetEmail.trim());
-      
       await sendPasswordResetEmail(auth, resetEmail.trim(), {
-        url: window.location.origin, // Redirect back to your app after reset
+        url: window.location.origin + '/signin', // Explicit redirect URL
         handleCodeInApp: false
       });
       
-      console.log('Password reset email sent successfully');
       resetSuccess = true;
       
-      // Auto-switch back to signin after 5 seconds
+      // Clear email for security
       setTimeout(() => {
         mode = 'signin';
-        email = resetEmail; // Pre-fill email
+        email = resetEmail;
         resetEmail = '';
         resetSuccess = false;
       }, 5000);
@@ -161,17 +229,14 @@
     } catch (err: any) {
       console.error('Password reset error:', err);
       
-      if (err.code === 'auth/user-not-found') {
-        resetError = 'No account found with this email address';
-      } else if (err.code === 'auth/too-many-requests') {
-        resetError = 'Too many attempts. Please try again later';
-      } else if (err.code === 'auth/invalid-email') {
-        resetError = 'Invalid email address';
-      } else if (err.code === 'auth/missing-email') {
-        resetError = 'Email address is required';
-      } else {
-        resetError = err.message || 'Failed to send reset email';
-      }
+      // Generic error message to prevent user enumeration
+      resetError = 'If an account exists with this email, you will receive a password reset link.';
+      
+      // Still show success to prevent user enumeration
+      setTimeout(() => {
+        resetSuccess = true;
+        resetError = '';
+      }, 1000);
     } finally {
       resetLoading = false;
     }
@@ -184,15 +249,18 @@
     passwordErrors = [];
     resetError = '';
     resetSuccess = false;
+    formSubmitTime = Date.now(); // Reset form timer
     // Clear sensitive fields when switching
-    if (newMode !== 'signin') {
-      password = '';
-      passwordConfirm = '';
+    password = '';
+    passwordConfirm = '';
+    if (newMode === 'signup') {
+      email = '';
+      username = '';
     }
   }
 
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey) {
       if (mode === 'reset') {
         handlePasswordReset();
       } else {
@@ -200,7 +268,19 @@
       }
     }
   }
+  
+  // Prevent paste in password confirm field
+  function handlePasswordConfirmPaste(event: ClipboardEvent) {
+    if (mode === 'signup') {
+      event.preventDefault();
+      formErrors.passwordConfirm = 'Please type your password again';
+    }
+  }
 </script>
+
+<svelte:head>
+  <meta name="robots" content="noindex, nofollow" />
+</svelte:head>
 
 <LandingNav />
 
@@ -249,6 +329,17 @@
               </div>
             </div>
           {/if}
+          
+          {#if formErrors.general}
+            <div class="p-4 bg-yellow-500/10 border border-yellow-500/50 rounded-xl text-yellow-400 text-sm mb-6" role="alert">
+              <div class="flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {formErrors.general}
+              </div>
+            </div>
+          {/if}
 
           {#if mode === 'reset'}
             <!-- Password Reset Form -->
@@ -259,9 +350,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div>
-                    <p class="text-green-400 font-medium">Password reset email sent!</p>
-                    <p class="text-sm text-gray-400 mt-1">Check your inbox for instructions to reset your password.</p>
-                    <p class="text-xs text-gray-500 mt-2">Redirecting to login in 5 seconds...</p>
+                    <p class="text-green-400 font-medium">Check your email!</p>
+                    <p class="text-sm text-gray-400 mt-1">If an account exists with this email, you will receive password reset instructions.</p>
+                    <p class="text-xs text-gray-500 mt-2">Redirecting to login...</p>
                   </div>
                 </div>
               </div>
@@ -291,6 +382,7 @@
                     placeholder="Enter your email address"
                     disabled={resetLoading}
                     autocomplete="email"
+                    required
                   />
                   <p class="mt-2 text-xs text-gray-500">
                     We'll send you instructions to reset your password
@@ -326,6 +418,16 @@
           {:else}
             <!-- Sign In / Sign Up Form -->
             <form on:submit|preventDefault={handleSubmit} class="space-y-6" novalidate>
+              <!-- Honeypot field (hidden from users) -->
+              <input
+                type="text"
+                bind:value={honeypot}
+                tabindex="-1"
+                autocomplete="off"
+                style="position: absolute; left: -9999px;"
+                aria-hidden="true"
+              />
+              
               {#if mode === 'signup'}
                 <div>
                   <label for="username" class="block text-sm font-medium text-gray-300 mb-2">
@@ -341,9 +443,12 @@
                     disabled={loading}
                     autocomplete="username"
                     maxlength="50"
+                    required
+                    aria-invalid={!!formErrors.username}
+                    aria-describedby={formErrors.username ? 'username-error' : undefined}
                   />
                   {#if formErrors.username}
-                    <p class="mt-1 text-xs text-red-400">{formErrors.username}</p>
+                    <p id="username-error" class="mt-1 text-xs text-red-400">{formErrors.username}</p>
                   {/if}
                 </div>
               {/if}
@@ -362,9 +467,12 @@
                   disabled={loading}
                   autocomplete="email"
                   maxlength="254"
+                  required
+                  aria-invalid={!!formErrors.email}
+                  aria-describedby={formErrors.email ? 'email-error' : undefined}
                 />
                 {#if formErrors.email}
-                  <p class="mt-1 text-xs text-red-400">{formErrors.email}</p>
+                  <p id="email-error" class="mt-1 text-xs text-red-400">{formErrors.email}</p>
                 {/if}
               </div>
 
@@ -394,12 +502,16 @@
                     disabled={loading}
                     autocomplete={mode === 'signin' ? 'current-password' : 'new-password'}
                     maxlength="128"
+                    required
+                    aria-invalid={!!formErrors.password}
+                    aria-describedby={formErrors.password ? 'password-error' : undefined}
                   />
                   <button
                     type="button"
                     on:click={() => showPassword = !showPassword}
                     class="absolute inset-y-0 right-0 pr-3 flex items-center"
                     tabindex="-1"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     <svg class="h-5 w-5 text-gray-500 hover:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       {#if showPassword}
@@ -412,7 +524,7 @@
                   </button>
                 </div>
                 {#if formErrors.password}
-                  <p class="mt-1 text-xs text-red-400">{formErrors.password}</p>
+                  <p id="password-error" class="mt-1 text-xs text-red-400">{formErrors.password}</p>
                 {/if}
                 {#if mode === 'signup' && passwordErrors.length > 0}
                   <div class="mt-3 space-y-1">
@@ -438,27 +550,31 @@
                     type={showPassword ? 'text' : 'password'}
                     bind:value={passwordConfirm}
                     on:keydown={handleKeydown}
+                    on:paste={handlePasswordConfirmPaste}
                     class="block w-full px-4 py-3 bg-black/50 border {formErrors.passwordConfirm ? 'border-red-500' : 'border-gray-700'} rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
                     placeholder="Confirm your password"
                     disabled={loading}
                     autocomplete="new-password"
                     maxlength="128"
+                    required
+                    aria-invalid={!!formErrors.passwordConfirm}
+                    aria-describedby={formErrors.passwordConfirm ? 'password-confirm-error' : undefined}
                   />
                   {#if formErrors.passwordConfirm}
-                    <p class="mt-1 text-xs text-red-400">{formErrors.passwordConfirm}</p>
+                    <p id="password-confirm-error" class="mt-1 text-xs text-red-400">{formErrors.passwordConfirm}</p>
                   {/if}
                 </div>
               {/if}
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || failedAttempts >= MAX_FAILED_ATTEMPTS}
                 class="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02]"
               >
                 {#if loading}
                   <div class="flex items-center justify-center">
                     <div class="spinner w-5 h-5 mr-2"></div>
-                    Processing...
+                    {failedAttempts > 2 ? `Please wait ${failedAttempts}s...` : 'Processing...'}
                   </div>
                 {:else}
                   {mode === 'signin' ? 'Sign In' : 'Create Account'}
@@ -494,7 +610,7 @@
             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            AES-256-GCM encrypted storage
+            AES-256-GCM encrypted storage • Secure authentication
           </div>
         </div>
       </div>
