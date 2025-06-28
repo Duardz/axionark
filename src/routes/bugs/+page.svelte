@@ -1,12 +1,13 @@
 <!-- src/routes/bugs/+page.svelte -->
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth';
   import { bugStore, userStore } from '$lib/stores/user';
   import Navbar from '$lib/components/Navbar.svelte';
   import type { Bug } from '$lib/stores/user';
   import { firebaseTimestampToDate } from '$lib/utils/security';
+  import { Timestamp } from 'firebase/firestore';
 
   let currentUser: any = null;
   let loading = false;
@@ -15,7 +16,8 @@
   let showSuccessToast = false;
   let successMessage = '';
   let processingBugs = new Set<string>();
-  let viewMode: 'grid' | 'list' = 'list';
+  let expandedBugs = new Set<string>();
+  let viewMode: 'list' | 'grid' = 'list';
   
   // Form fields
   let type = '';
@@ -23,25 +25,25 @@
   let program = '';
   let bounty = 0;
   let status: 'reported' | 'triaged' | 'resolved' | 'duplicate' | 'rejected' = 'reported';
-  let description = '';
   let dateFound = new Date().toISOString().split('T')[0];
+  let description = '';
 
-  // Filter states
+  // Filter and search
+  let searchQuery = '';
   let filterSeverity = 'all';
   let filterStatus = 'all';
-  let searchQuery = '';
   let sortBy = 'newest';
   let dateRange = 'all';
 
   // Stats
-  let totalBounty = 0;
   let totalBugs = 0;
+  let totalEarnings = 0;
+  let averageBounty = 0;
+  let criticalBugs = 0;
   let resolvedBugs = 0;
-  let avgBounty = 0;
-  let monthlyEarnings = 0;
-  let highSeverityCount = 0;
-  let criticalBugsCount = 0;
-  let resolveRate = 0;
+  let thisMonthBugs = 0;
+  let thisMonthEarnings = 0;
+  let topPrograms: { program: string; count: number; earnings: number }[] = [];
 
   // Store unsubscribe function
   let authUnsubscribe: (() => void) | null = null;
@@ -74,8 +76,7 @@
       if (authUnsubscribe) {
         authUnsubscribe();
       }
-      bugStore.cleanup();
-      userStore.cleanup();
+      // Don't cleanup stores here - keep data persistent
     };
   });
 
@@ -85,28 +86,37 @@
   }
 
   function calculateStats() {
-    totalBounty = $bugStore.reduce((sum, bug) => sum + bug.bounty, 0);
     totalBugs = $bugStore.length;
+    totalEarnings = $bugStore.reduce((sum, bug) => sum + bug.bounty, 0);
+    averageBounty = totalBugs > 0 ? Math.round(totalEarnings / totalBugs) : 0;
+    criticalBugs = $bugStore.filter(bug => bug.severity === 'critical').length;
     resolvedBugs = $bugStore.filter(bug => bug.status === 'resolved').length;
-    avgBounty = totalBugs > 0 ? Math.round(totalBounty / totalBugs) : 0;
-    resolveRate = totalBugs > 0 ? Math.round((resolvedBugs / totalBugs) * 100) : 0;
     
-    // Calculate monthly earnings
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Calculate this month's stats
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
-    monthlyEarnings = $bugStore
-      .filter(bug => {
-        const bugDate = firebaseTimestampToDate(bug.dateFound);
-        return bugDate >= thirtyDaysAgo;
-      })
-      .reduce((sum, bug) => sum + bug.bounty, 0);
+    const thisMonthBugsList = $bugStore.filter(bug => {
+      const bugDate = firebaseTimestampToDate(bug.dateFound);
+      return bugDate >= startOfMonth;
+    });
     
-    highSeverityCount = $bugStore.filter(bug => 
-      bug.severity === 'high' || bug.severity === 'critical'
-    ).length;
+    thisMonthBugs = thisMonthBugsList.length;
+    thisMonthEarnings = thisMonthBugsList.reduce((sum, bug) => sum + bug.bounty, 0);
     
-    criticalBugsCount = $bugStore.filter(bug => bug.severity === 'critical').length;
+    // Calculate top programs
+    const programStats = new Map<string, { count: number; earnings: number }>();
+    $bugStore.forEach(bug => {
+      const stats = programStats.get(bug.program) || { count: 0, earnings: 0 };
+      stats.count++;
+      stats.earnings += bug.bounty;
+      programStats.set(bug.program, stats);
+    });
+    
+    topPrograms = Array.from(programStats.entries())
+      .map(([program, stats]) => ({ program, ...stats }))
+      .sort((a, b) => b.earnings - a.earnings)
+      .slice(0, 5);
   }
 
   function getFilteredBugs() {
@@ -160,20 +170,23 @@
     
     // Apply sorting
     filtered.sort((a, b) => {
+      const dateA = firebaseTimestampToDate(a.dateFound).getTime();
+      const dateB = firebaseTimestampToDate(b.dateFound).getTime();
+      
       switch (sortBy) {
         case 'newest':
-          return firebaseTimestampToDate(b.dateFound).getTime() - firebaseTimestampToDate(a.dateFound).getTime();
+          return dateB - dateA;
         case 'oldest':
-          return firebaseTimestampToDate(a.dateFound).getTime() - firebaseTimestampToDate(b.dateFound).getTime();
-        case 'highest-bounty':
+          return dateA - dateB;
+        case 'bounty-high':
           return b.bounty - a.bounty;
-        case 'lowest-bounty':
+        case 'bounty-low':
           return a.bounty - b.bounty;
         case 'severity':
           const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
           return severityOrder[a.severity] - severityOrder[b.severity];
         default:
-          return firebaseTimestampToDate(b.dateFound).getTime() - firebaseTimestampToDate(a.dateFound).getTime();
+          return dateB - dateA;
       }
     });
     
@@ -195,24 +208,26 @@
           type: type.trim(),
           severity,
           program: program.trim(),
-          bounty,
+          bounty: Number(bounty),
           status,
-          description: description.trim(),
-          dateFound: new Date(dateFound)
+          dateFound: Timestamp.fromDate(new Date(dateFound)),
+          description: description.trim()
         });
         
-        successMessage = 'Bug updated successfully! 🎉';
+        successMessage = 'Bug updated successfully! 🐛';
         showSuccessToast = true;
         setTimeout(() => showSuccessToast = false, 3000);
+        
+        resetForm();
       } else {
         const bug: Bug = {
           uid: currentUser.uid,
           type: type.trim(),
           severity,
           program: program.trim(),
-          bounty,
+          bounty: Number(bounty),
           status,
-          dateFound: new Date(dateFound),
+          dateFound: Timestamp.fromDate(new Date(dateFound)),
           description: description.trim()
         };
         
@@ -221,9 +236,9 @@
         successMessage = 'Bug reported successfully! 🎉';
         showSuccessToast = true;
         setTimeout(() => showSuccessToast = false, 3000);
+        
+        resetForm();
       }
-      
-      resetForm();
     } catch (error: any) {
       console.error('Error saving bug:', error);
       successMessage = error.message || 'Error saving bug. Please try again.';
@@ -234,16 +249,16 @@
     }
   }
 
-  async function deleteBug(bug: Bug) {
-    if (!bug.id || processingBugs.has(bug.id)) return;
+  async function deleteBug(bugId: string, bugBounty: number) {
+    if (!bugId || processingBugs.has(bugId) || !currentUser) return;
     
     if (!confirm('Are you sure you want to delete this bug report?')) return;
     
-    processingBugs.add(bug.id);
+    processingBugs.add(bugId);
     processingBugs = processingBugs;
     
     try {
-      await bugStore.deleteBug(bug.id, bug.uid, bug.bounty);
+      await bugStore.deleteBug(bugId, currentUser.uid, bugBounty);
       
       successMessage = 'Bug deleted successfully!';
       showSuccessToast = true;
@@ -254,7 +269,7 @@
       showSuccessToast = true;
       setTimeout(() => showSuccessToast = false, 3000);
     } finally {
-      processingBugs.delete(bug.id!);
+      processingBugs.delete(bugId);
       processingBugs = processingBugs;
     }
   }
@@ -266,12 +281,10 @@
     program = bug.program;
     bounty = bug.bounty;
     status = bug.status;
+    dateFound = firebaseTimestampToDate(bug.dateFound).toISOString().split('T')[0];
     description = bug.description || '';
-    
-    const bugDate = firebaseTimestampToDate(bug.dateFound);
-    dateFound = bugDate.toISOString().split('T')[0];
-    
     showForm = true;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function resetForm() {
@@ -280,8 +293,8 @@
     program = '';
     bounty = 0;
     status = 'reported';
-    description = '';
     dateFound = new Date().toISOString().split('T')[0];
+    description = '';
     showForm = false;
     editingBug = null;
   }
@@ -294,119 +307,122 @@
     dateRange = 'all';
   }
 
-  function getSeverityColor(severity: string) {
-    switch (severity) {
-      case 'critical': return 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
-      case 'high': return 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800';
-      case 'medium': return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800';
-      case 'low': return 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800';
-      default: return 'bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-800';
+  function toggleBugExpansion(bugId: string) {
+    if (expandedBugs.has(bugId)) {
+      expandedBugs.delete(bugId);
+    } else {
+      expandedBugs.add(bugId);
     }
+    expandedBugs = expandedBugs;
   }
 
-  function getSeverityGradient(severity: string) {
-    switch (severity) {
-      case 'critical': return 'from-red-500 to-pink-600';
-      case 'high': return 'from-orange-500 to-red-600';
-      case 'medium': return 'from-yellow-500 to-orange-600';
-      case 'low': return 'from-green-500 to-emerald-600';
-      default: return 'from-gray-500 to-gray-600';
-    }
+  function getSeverityConfig(severity: string) {
+    const configs: Record<string, {
+      emoji: string;
+      label: string;
+      color: string;
+      bg: string;
+      gradient: string;
+    }> = {
+      critical: {
+        emoji: '🔴',
+        label: 'Critical',
+        color: 'text-red-600 dark:text-red-400',
+        bg: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+        gradient: 'from-red-500 to-pink-600'
+      },
+      high: {
+        emoji: '🟠',
+        label: 'High',
+        color: 'text-orange-600 dark:text-orange-400',
+        bg: 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
+        gradient: 'from-orange-500 to-amber-600'
+      },
+      medium: {
+        emoji: '🟡',
+        label: 'Medium',
+        color: 'text-yellow-600 dark:text-yellow-400',
+        bg: 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
+        gradient: 'from-yellow-500 to-amber-500'
+      },
+      low: {
+        emoji: '🟢',
+        label: 'Low',
+        color: 'text-green-600 dark:text-green-400',
+        bg: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800',
+        gradient: 'from-green-500 to-emerald-600'
+      }
+    };
+    return configs[severity] || configs.medium;
   }
 
-  function getStatusColor(status: string) {
-    switch (status) {
-      case 'resolved': return 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800';
-      case 'triaged': return 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800';
-      case 'reported': return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800';
-      case 'duplicate': return 'bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-800';
-      case 'rejected': return 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800';
-      default: return 'bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-800';
-    }
-  }
-
-  function getStatusIcon(status: string) {
-    switch (status) {
-      case 'resolved': return 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
-      case 'triaged': return 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2';
-      case 'reported': return 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-      case 'duplicate': return 'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z';
-      case 'rejected': return 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z';
-      default: return 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-    }
-  }
-
-  function getSeverityIcon(severity: string) {
-    switch (severity) {
-      case 'critical': return 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z';
-      case 'high': return 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-      case 'medium': return 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-      case 'low': return 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
-      default: return 'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-    }
+  function getStatusConfig(status: string) {
+    const configs: Record<string, {
+      label: string;
+      color: string;
+      bg: string;
+    }> = {
+      reported: {
+        label: 'Reported',
+        color: 'text-blue-600 dark:text-blue-400',
+        bg: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+      },
+      triaged: {
+        label: 'Triaged',
+        color: 'text-purple-600 dark:text-purple-400',
+        bg: 'bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
+      },
+      resolved: {
+        label: 'Resolved',
+        color: 'text-green-600 dark:text-green-400',
+        bg: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
+      },
+      duplicate: {
+        label: 'Duplicate',
+        color: 'text-gray-600 dark:text-gray-400',
+        bg: 'bg-gray-100 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-800'
+      },
+      rejected: {
+        label: 'Rejected',
+        color: 'text-red-600 dark:text-red-400',
+        bg: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+      }
+    };
+    return configs[status] || configs.reported;
   }
 
   function formatDate(date: any) {
-    const d = firebaseTimestampToDate(date);
-    return d.toLocaleDateString('en-US', {
+    return firebaseTimestampToDate(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   }
 
-  function formatCurrency(amount: number) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0
-    }).format(amount);
+  function getRelativeDate(date: any) {
+    const bugDate = firebaseTimestampToDate(date);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - bugDate.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays <= 7) return `${diffDays} days ago`;
+    if (diffDays <= 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays <= 365) return `${Math.floor(diffDays / 30)} months ago`;
+    return `${Math.floor(diffDays / 365)} years ago`;
   }
 
   function isProcessing(bugId?: string) {
     return bugId ? processingBugs.has(bugId) : false;
   }
 
-  // Force filter update
-  function applyFilters() {
-    // Force recalculation by reassigning
-    filteredBugs = $bugStore ? getFilteredBugs() : [];
-  }
-
   // Reactive statements
   $: filteredBugs = $bugStore ? getFilteredBugs() : [];
   $: hasActiveFilters = searchQuery || filterSeverity !== 'all' || filterStatus !== 'all' || sortBy !== 'newest' || dateRange !== 'all';
   
-  // Manual trigger for filters when values change
-  $: if ($bugStore) {
-    searchQuery, filterSeverity, filterStatus, sortBy, dateRange;
-    applyFilters();
-  }
-
-  // Get monthly trend
-  function getMonthlyTrend() {
-    if (!$bugStore || $bugStore.length === 0) return 0;
-    
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    
-    const lastMonth = $bugStore.filter(bug => {
-      const bugDate = firebaseTimestampToDate(bug.dateFound);
-      return bugDate >= thirtyDaysAgo;
-    }).reduce((sum, bug) => sum + bug.bounty, 0);
-    
-    const previousMonth = $bugStore.filter(bug => {
-      const bugDate = firebaseTimestampToDate(bug.dateFound);
-      return bugDate >= sixtyDaysAgo && bugDate < thirtyDaysAgo;
-    }).reduce((sum, bug) => sum + bug.bounty, 0);
-    
-    if (previousMonth === 0) return lastMonth > 0 ? 100 : 0;
-    return Math.round(((lastMonth - previousMonth) / previousMonth) * 100);
-  }
-
-  $: monthlyTrend = getMonthlyTrend();
+  // Force reactivity on filter changes
+  $: searchQuery, filterSeverity, filterStatus, sortBy, dateRange, filteredBugs = $bugStore ? getFilteredBugs() : [];
 </script>
 
 <Navbar />
@@ -426,329 +442,350 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         {/if}
       </svg>
-      <div class="font-semibold">{successMessage}</div>
+      <span class="font-semibold">{successMessage}</span>
     </div>
   </div>
 {/if}
 
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
   <!-- Hero Section -->
-  <div class="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/10 dark:to-pink-900/10 border-b border-gray-200 dark:border-gray-700">
+  <div class="bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 dark:from-red-900/10 dark:via-orange-900/10 dark:to-amber-900/10 border-b border-gray-200 dark:border-gray-700">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div class="animate-fade-in">
-        <!-- Header -->
-        <div class="text-center mb-8">
-          <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-            <span class="bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
-              Bug Tracker
-            </span>
-          </h1>
-          <p class="text-xl text-gray-600 dark:text-gray-400">
-            Track your vulnerability discoveries and earnings
-          </p>
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <h1 class="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+          <span class="bg-gradient-to-r from-red-600 via-orange-600 to-amber-600 bg-clip-text text-transparent">
+            Bug Bounty Tracker
+          </span>
+        </h1>
+        <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          Track your vulnerabilities, monitor earnings, and analyze your success
+        </p>
+      </div>
+
+      <!-- Stats Dashboard -->
+      <div class="max-w-6xl mx-auto">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <!-- Total Bugs -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div class="flex items-center justify-between mb-2">
+              <div class="p-3 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div class="text-3xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
+                {totalBugs}
+              </div>
+            </div>
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Bugs</h3>
+          </div>
+
+          <!-- Total Earnings -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div class="flex items-center justify-between mb-2">
+              <div class="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div class="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                ${totalEarnings.toLocaleString()}
+              </div>
+            </div>
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Earnings</h3>
+          </div>
+
+          <!-- Critical Bugs -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div class="flex items-center justify-between mb-2">
+              <div class="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+                </svg>
+              </div>
+              <div class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                {criticalBugs}
+              </div>
+            </div>
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Critical Bugs</h3>
+          </div>
+
+          <!-- Average Bounty -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div class="flex items-center justify-between mb-2">
+              <div class="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <div class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                ${averageBounty.toLocaleString()}
+              </div>
+            </div>
+            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Bounty</h3>
+          </div>
         </div>
 
-        <!-- Stats Overview -->
-        <div class="max-w-6xl mx-auto">
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Total Earnings Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-gray-100 dark:border-gray-700">
-              <div class="flex items-center justify-between mb-4">
-                <div class="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl text-white shadow-lg">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div class="text-right">
-                  {#if monthlyTrend > 0}
-                    <div class="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center">
-                      <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                      </svg>
-                      +{monthlyTrend}%
-                    </div>
-                  {:else if monthlyTrend < 0}
-                    <div class="text-xs font-medium text-red-600 dark:text-red-400 flex items-center">
-                      <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                      </svg>
-                      {monthlyTrend}%
-                    </div>
-                  {/if}
-                </div>
-              </div>
-              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">{formatCurrency(totalBounty)}</div>
-              <div class="text-sm text-gray-600 dark:text-gray-400">Total Earnings</div>
-              <div class="mt-3 text-xs text-emerald-600 dark:text-emerald-400">
-                {formatCurrency(monthlyEarnings)} this month
-              </div>
-            </div>
-
-            <!-- Total Bugs Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-gray-100 dark:border-gray-700">
-              <div class="flex items-center justify-between mb-4">
-                <div class="p-3 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl text-white shadow-lg">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                {#if criticalBugsCount > 0}
-                  <div class="flex items-center text-xs font-medium text-red-600 dark:text-red-400">
-                    <span class="w-2 h-2 bg-red-500 rounded-full mr-1 animate-pulse"></span>
-                    {criticalBugsCount} critical
-                  </div>
-                {/if}
-              </div>
-              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">{totalBugs}</div>
-              <div class="text-sm text-gray-600 dark:text-gray-400">Total Bugs</div>
-              <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                {highSeverityCount} high/critical severity
-              </div>
-            </div>
-
-            <!-- Resolution Rate Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-gray-100 dark:border-gray-700">
-              <div class="flex items-center justify-between mb-4">
-                <div class="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white shadow-lg">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div class="flex items-center gap-2">
-                  <div class="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      class="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-1000"
-                      style="width: {resolveRate}%"
-                    ></div>
-                  </div>
-                </div>
-              </div>
-              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">{resolveRate}%</div>
-              <div class="text-sm text-gray-600 dark:text-gray-400">Resolution Rate</div>
-              <div class="mt-3 text-xs text-blue-600 dark:text-blue-400">
-                {resolvedBugs} of {totalBugs} resolved
-              </div>
-            </div>
-
-            <!-- Average Bounty Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 border border-gray-100 dark:border-gray-700">
-              <div class="flex items-center justify-between mb-4">
-                <div class="p-3 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl text-white shadow-lg">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-              </div>
-              <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">{formatCurrency(avgBounty)}</div>
-              <div class="text-sm text-gray-600 dark:text-gray-400">Avg Bounty</div>
-              <div class="mt-3 text-xs text-yellow-600 dark:text-yellow-400">
-                Per vulnerability
-              </div>
-            </div>
-          </div>
+        <!-- Action Button -->
+        <div class="text-center mt-8">
+          <button
+            on:click={() => showForm = !showForm}
+            class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+          >
+            {#if showForm}
+              <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Close Form
+            {:else}
+              <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Report New Bug
+            {/if}
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Action Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
-      <div>
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Your Bug Reports</h2>
-        <p class="text-gray-600 dark:text-gray-400 mt-1">Manage and track your vulnerability findings</p>
-      </div>
-      <button
-        on:click={() => showForm = !showForm}
-        class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all"
-      >
-        {#if showForm}
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Cancel
-        {:else}
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          Report New Bug
-        {/if}
-      </button>
-    </div>
-
-    <!-- Bug Form -->
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+    <!-- Bug Report Form -->
     {#if showForm}
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 animate-slide-up border border-gray-100 dark:border-gray-700">
-        <div class="flex items-center mb-6">
-          <div class="p-3 bg-gradient-to-r from-red-500 to-pink-600 rounded-xl text-white mr-4 shadow-lg">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+      <div class="mb-8 animate-slide-down">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
+          <div class="bg-gradient-to-r from-red-600 to-orange-600 p-6 text-white">
+            <h2 class="text-2xl font-bold flex items-center">
+              <svg class="w-7 h-7 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              {editingBug ? 'Edit Bug Report' : 'New Bug Report'}
+            </h2>
           </div>
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-            {editingBug ? 'Edit Bug Report' : 'New Bug Report'}
-          </h2>
+          
+          <form on:submit|preventDefault={handleSubmit} class="p-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Bug Type -->
+              <div>
+                <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Bug Type *
+                </label>
+                <input
+                  id="type"
+                  type="text"
+                  bind:value={type}
+                  placeholder="XSS, SQLi, IDOR, etc."
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+
+              <!-- Program -->
+              <div>
+                <label for="program" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Program *
+                </label>
+                <input
+                  id="program"
+                  type="text"
+                  bind:value={program}
+                  placeholder="Company/Program name"
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+
+              <!-- Severity -->
+              <div>
+                <label for="severity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Severity
+                </label>
+                <select
+                  id="severity"
+                  bind:value={severity}
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                >
+                  <option value="low">🟢 Low</option>
+                  <option value="medium">🟡 Medium</option>
+                  <option value="high">🟠 High</option>
+                  <option value="critical">🔴 Critical</option>
+                </select>
+              </div>
+
+              <!-- Status -->
+              <div>
+                <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Status
+                </label>
+                <select
+                  id="status"
+                  bind:value={status}
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                >
+                  <option value="reported">Reported</option>
+                  <option value="triaged">Triaged</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="duplicate">Duplicate</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+
+              <!-- Bounty -->
+              <div>
+                <label for="bounty" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Bounty Amount ($)
+                </label>
+                <input
+                  id="bounty"
+                  type="number"
+                  bind:value={bounty}
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                />
+              </div>
+
+              <!-- Date Found -->
+              <div>
+                <label for="dateFound" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Date Found
+                </label>
+                <input
+                  id="dateFound"
+                  type="date"
+                  bind:value={dateFound}
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                />
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Description
+              </label>
+              <textarea
+                id="description"
+                bind:value={description}
+                rows="4"
+                placeholder="Provide details about the vulnerability..."
+                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
+              ></textarea>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+              <button
+                type="button"
+                on:click={resetForm}
+                class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                class="px-8 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {#if loading}
+                  <div class="spinner w-5 h-5 mr-2"></div>
+                  Saving...
+                {:else}
+                  <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  {editingBug ? 'Update Bug' : 'Report Bug'}
+                {/if}
+              </button>
+            </div>
+          </form>
         </div>
-        
-        <form on:submit|preventDefault={handleSubmit} class="space-y-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Bug Type -->
-            <div>
-              <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Bug Type *
-              </label>
-              <input
-                id="type"
-                type="text"
-                bind:value={type}
-                placeholder="e.g., XSS, SQL Injection, IDOR"
-                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                required
-              />
-            </div>
-
-            <!-- Program -->
-            <div>
-              <label for="program" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Program/Company *
-              </label>
-              <input
-                id="program"
-                type="text"
-                bind:value={program}
-                placeholder="e.g., Google VRP, Facebook, HackerOne"
-                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                required
-              />
-            </div>
-
-            <!-- Severity -->
-            <div>
-              <label for="severity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Severity
-              </label>
-              <select
-                id="severity"
-                bind:value={severity}
-                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-              >
-                <option value="low">🟢 Low</option>
-                <option value="medium">🟡 Medium</option>
-                <option value="high">🟠 High</option>
-                <option value="critical">🔴 Critical</option>
-              </select>
-            </div>
-
-            <!-- Bounty -->
-            <div>
-              <label for="bounty" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Bounty Amount ($)
-              </label>
-              <input
-                id="bounty"
-                type="number"
-                bind:value={bounty}
-                min="0"
-                step="0.01"
-                placeholder="0"
-                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                required
-              />
-            </div>
-
-            <!-- Status -->
-            <div>
-              <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Status
-              </label>
-              <select
-                id="status"
-                bind:value={status}
-                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-              >
-                <option value="reported">📝 Reported</option>
-                <option value="triaged">🔍 Triaged</option>
-                <option value="resolved">✅ Resolved</option>
-                <option value="duplicate">📋 Duplicate</option>
-                <option value="rejected">❌ Rejected</option>
-              </select>
-            </div>
-
-            <!-- Date Found -->
-            <div>
-              <label for="dateFound" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Date Found
-              </label>
-              <input
-                id="dateFound"
-                type="date"
-                bind:value={dateFound}
-                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                required
-              />
-            </div>
-          </div>
-
-          <!-- Description -->
-          <div>
-            <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description (optional)
-            </label>
-            <textarea
-              id="description"
-              bind:value={description}
-              rows="4"
-              placeholder="Brief description of the vulnerability and impact..."
-              class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
-            ></textarea>
-          </div>
-
-          <!-- Submit Buttons -->
-          <div class="flex flex-col sm:flex-row justify-end gap-3">
-            <button
-              type="button"
-              on:click={resetForm}
-              class="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              class="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
-            >
-              {#if loading}
-                <div class="spinner w-5 h-5 mr-2"></div>
-                Saving...
-              {:else}
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                {editingBug ? 'Update Bug' : 'Save Bug'}
-              {/if}
-            </button>
-          </div>
-        </form>
       </div>
     {/if}
 
-    <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8 border border-gray-100 dark:border-gray-700">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <!-- This Month Stats -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          This Month
+        </h3>
+        <div class="space-y-3">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600 dark:text-gray-400">Bugs</span>
+            <span class="font-semibold text-gray-900 dark:text-white">{thisMonthBugs}</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-600 dark:text-gray-400">Earnings</span>
+            <span class="font-semibold text-green-600 dark:text-green-400">${thisMonthEarnings.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resolution Rate -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Resolution Rate
+        </h3>
+        <div class="text-center">
+          <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+            {totalBugs > 0 ? Math.round((resolvedBugs / totalBugs) * 100) : 0}%
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            {resolvedBugs} of {totalBugs} resolved
+          </p>
+        </div>
+      </div>
+
+      <!-- Top Programs -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+          <svg class="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          </svg>
+          Top Programs
+        </h3>
+        {#if topPrograms.length > 0}
+          <div class="space-y-2">
+            {#each topPrograms.slice(0, 3) as program}
+              <div class="text-sm">
+                <div class="flex justify-between items-center">
+                  <span class="text-gray-600 dark:text-gray-400 truncate">{program.program}</span>
+                  <span class="font-semibold text-gray-900 dark:text-white">${program.earnings.toLocaleString()}</span>
+                </div>
+                <div class="text-xs text-gray-500 dark:text-gray-500">{program.count} bugs</div>
+              </div>
+            {/each}
+          </div>
+        {:else}
+          <p class="text-sm text-gray-500 dark:text-gray-400 text-center">No programs yet</p>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
       <div class="flex items-center justify-between mb-6">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Filter & Search
+          Search & Filter
         </h3>
         
         <div class="flex items-center gap-4">
           {#if hasActiveFilters}
             <button
               on:click={clearFilters}
-              class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium flex items-center transition-colors"
+              class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium"
             >
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Clear all
+              Clear all filters
             </button>
           {/if}
           
@@ -784,9 +821,9 @@
         </div>
       </div>
       
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Search -->
-        <div class="lg:col-span-2 xl:col-span-2">
+        <div class="sm:col-span-2">
           <div class="relative">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -796,7 +833,7 @@
             <input
               type="text"
               bind:value={searchQuery}
-              placeholder="Search by type, program, or description..."
+              placeholder="Search bugs..."
               class="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
             />
           </div>
@@ -822,12 +859,12 @@
             bind:value={filterStatus}
             class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
           >
-            <option value="all">All Statuses</option>
-            <option value="reported">📝 Reported</option>
-            <option value="triaged">🔍 Triaged</option>
-            <option value="resolved">✅ Resolved</option>
-            <option value="duplicate">📋 Duplicate</option>
-            <option value="rejected">❌ Rejected</option>
+            <option value="all">All Status</option>
+            <option value="reported">Reported</option>
+            <option value="triaged">Triaged</option>
+            <option value="resolved">Resolved</option>
+            <option value="duplicate">Duplicate</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
 
@@ -839,17 +876,25 @@
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
-            <option value="highest-bounty">Highest Bounty</option>
-            <option value="lowest-bounty">Lowest Bounty</option>
+            <option value="bounty-high">Highest Bounty</option>
+            <option value="bounty-low">Lowest Bounty</option>
             <option value="severity">By Severity</option>
           </select>
         </div>
+      </div>
 
+      <!-- Results -->
+      <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          Showing <span class="font-semibold text-gray-900 dark:text-white">{filteredBugs.length}</span> bugs
+        </div>
+        
         <!-- Date Range -->
-        <div class="lg:col-span-2 xl:col-span-1">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-500 dark:text-gray-400">Period:</span>
           <select
             bind:value={dateRange}
-            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+            class="px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
           >
             <option value="all">All Time</option>
             <option value="today">Today</option>
@@ -859,298 +904,208 @@
           </select>
         </div>
       </div>
-
-      <!-- Results Summary -->
-      {#if filteredBugs.length > 0}
-        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-              <div class="text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg inline-flex items-center gap-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                Showing <span class="font-medium text-gray-900 dark:text-white">{filteredBugs.length}</span> of <span class="font-medium">{$bugStore.length}</span> bugs
-              </div>
-            </div>
-            
-            <div class="text-sm text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20 px-4 py-2 rounded-lg inline-flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Total: <span class="font-medium">{formatCurrency(filteredBugs.reduce((sum, bug) => sum + bug.bounty, 0))}</span>
-            </div>
-          </div>
-        </div>
-      {/if}
     </div>
 
     <!-- Bugs List/Grid -->
     {#if loading && !showForm}
       <div class="flex justify-center items-center h-64">
-        <div class="text-center">
-          <div class="spinner w-16 h-16 mb-4"></div>
-          <p class="text-gray-600 dark:text-gray-400">Loading your bugs...</p>
-        </div>
+        <div class="spinner w-12 h-12"></div>
       </div>
     {:else if filteredBugs.length === 0}
-      <div class="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center shadow-lg border border-gray-100 dark:border-gray-700">
-        <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center">
-          <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center shadow-lg">
+        <div class="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-red-100 to-orange-100 dark:from-red-900/20 dark:to-orange-900/20 rounded-full flex items-center justify-center">
+          <svg class="w-12 h-12 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          {$bugStore.length === 0 ? 'No bugs reported yet' : 'No bugs match your filters'}
+        <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+          {$bugStore.length === 0 ? 'No bugs reported yet' : 'No matching bugs'}
         </h3>
-        <p class="text-gray-500 dark:text-gray-400 mb-6">
+        <p class="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
           {$bugStore.length === 0 
-            ? 'Start tracking your vulnerability discoveries and earnings!' 
-            : 'Try adjusting your search terms or filters to find what you\'re looking for.'}
+            ? 'Start tracking your vulnerability findings and build your bug bounty portfolio!' 
+            : 'Try adjusting your filters or search terms.'}
         </p>
         {#if $bugStore.length === 0}
           <button
             on:click={() => showForm = true}
-            class="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all"
+            class="px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all"
           >
-            Report First Bug
+            Report Your First Bug
           </button>
         {:else}
           <button
             on:click={clearFilters}
-            class="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all"
+            class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-all"
           >
             Clear Filters
           </button>
         {/if}
       </div>
     {:else}
-      <div class={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6' : 'space-y-4'}>
+      <div class={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
         {#each filteredBugs as bug, index (bug.id)}
-          <div 
-            class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700 {isProcessing(bug.id) ? 'opacity-50' : ''} {viewMode === 'grid' ? 'hover:scale-105' : ''}" 
+          {@const isExpanded = expandedBugs.has(bug.id || '')}
+          {@const severityConfig = getSeverityConfig(bug.severity)}
+          {@const statusConfig = getStatusConfig(bug.status)}
+          
+          <article 
+            class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden {isProcessing(bug.id) ? 'opacity-50' : ''}" 
             style="animation-delay: {Math.min(index * 50, 300)}ms;"
           >
-            {#if viewMode === 'grid'}
-              <!-- Grid View -->
-              <div class="p-6">
-                <!-- Header -->
-                <div class="flex items-start justify-between mb-4">
-                  <div class="flex-1">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                      {bug.type}
-                    </h3>
-                    <p class="text-gray-600 dark:text-gray-400 font-medium">{bug.program}</p>
-                  </div>
-                  <div class="flex flex-col items-end gap-2">
-                    <span class={`px-2.5 py-1 rounded-full text-xs font-medium ${getSeverityColor(bug.severity)} border`}>
-                      {bug.severity}
-                    </span>
-                    <span class={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(bug.status)} border`}>
-                      {bug.status}
-                    </span>
-                  </div>
-                </div>
-                
-                {#if bug.description}
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
-                    {bug.description}
+            <!-- Bug Header -->
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                  <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                    {bug.type}
+                  </h3>
+                  <p class="text-gray-600 dark:text-gray-400 font-medium">
+                    {bug.program}
                   </p>
-                {/if}
-                
-                <!-- Bounty -->
-                <div class="mb-4">
-                  <div class="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                    {formatCurrency(bug.bounty)}
-                  </div>
                 </div>
                 
-                <!-- Footer -->
-                <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    {formatDate(bug.dateFound)}
-                  </div>
-                  
+                <!-- Actions -->
+                {#if viewMode === 'list'}
                   <div class="flex items-center gap-2">
                     <button
                       on:click={() => editBug(bug)}
                       disabled={isProcessing(bug.id)}
-                      class="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                      title="Edit bug"
+                      class="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
+                      aria-label="Edit bug"
                     >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </button>
                     <button
-                      on:click={() => deleteBug(bug)}
+                      on:click={() => bug.id && deleteBug(bug.id, bug.bounty)}
                       disabled={isProcessing(bug.id)}
-                      class="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                      title="Delete bug"
+                      class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                      aria-label="Delete bug"
                     >
                       {#if isProcessing(bug.id)}
-                        <div class="spinner w-4 h-4"></div>
+                        <div class="spinner w-5 h-5"></div>
                       {:else}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       {/if}
                     </button>
                   </div>
-                </div>
+                {/if}
               </div>
-            {:else}
-              <!-- List View -->
-              <div class="p-6">
-                <div class="flex flex-col lg:flex-row lg:items-center gap-4">
-                  <!-- Bug Info -->
-                  <div class="flex-1 min-w-0">
-                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
-                      <div class="flex-1">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                          {bug.type}
-                        </h3>
-                        <p class="text-gray-600 dark:text-gray-400 font-medium">{bug.program}</p>
-                        {#if bug.description}
-                          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                            {bug.description}
-                          </p>
-                        {/if}
-                      </div>
-                      
-                      <!-- Severity & Status Badges -->
-                      <div class="flex items-center gap-2 flex-shrink-0">
-                        <span class={`px-3 py-1.5 rounded-full text-xs font-medium ${getSeverityColor(bug.severity)} border flex items-center`}>
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={getSeverityIcon(bug.severity)} />
-                          </svg>
-                          {bug.severity}
-                        </span>
-                        <span class={`px-3 py-1.5 rounded-full text-xs font-medium ${getStatusColor(bug.status)} border flex items-center`}>
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={getStatusIcon(bug.status)} />
-                          </svg>
-                          {bug.status}
-                        </span>
-                      </div>
-                    </div>
+              
+              <!-- Bug Details -->
+              <div class="space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${severityConfig.bg} border`}>
+                    {severityConfig.emoji} {severityConfig.label}
+                  </span>
+                  <span class={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusConfig.bg} border`}>
+                    {statusConfig.label}
+                  </span>
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                    {formatDate(bug.dateFound)}
+                  </span>
+                </div>
+                
+                <!-- Bounty -->
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600 dark:text-gray-400">Bounty</span>
+                  <span class="text-2xl font-bold text-green-600 dark:text-green-400">
+                    ${bug.bounty.toLocaleString()}
+                  </span>
+                </div>
+                
+                <!-- Description -->
+                {#if bug.description}
+                  <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <p class={`text-sm text-gray-700 dark:text-gray-300 leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}`}>
+                      {bug.description}
+                    </p>
                     
-                    <!-- Bug Details -->
-                    <div class="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                      <div class="flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {formatDate(bug.dateFound)}
-                      </div>
-                      <div class="flex items-center gap-2">
-                        <div class="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                          {formatCurrency(bug.bounty)}
-                        </div>
-                        {#if bug.bounty >= 1000}
-                          <span class="text-xs px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-full font-medium">
-                            💰 High Value
-                          </span>
-                        {/if}
-                      </div>
-                    </div>
+                    {#if bug.description.length > 100}
+                      <button
+                        on:click={() => toggleBugExpansion(bug.id || '')}
+                        class="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium"
+                      >
+                        {isExpanded ? 'Show less' : 'Read more'}
+                      </button>
+                    {/if}
                   </div>
-                  
-                  <!-- Actions -->
-                  <div class="flex items-center gap-3 flex-shrink-0">
+                {/if}
+                
+                <!-- Grid View Actions -->
+                {#if viewMode === 'grid'}
+                  <div class="flex gap-2 pt-3">
                     <button
                       on:click={() => editBug(bug)}
                       disabled={isProcessing(bug.id)}
-                      class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all flex items-center"
+                      class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all text-sm font-medium"
                     >
-                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
                       Edit
                     </button>
                     <button
-                      on:click={() => deleteBug(bug)}
+                      on:click={() => bug.id && deleteBug(bug.id, bug.bounty)}
                       disabled={isProcessing(bug.id)}
-                      class="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                      title="Delete bug"
-                      aria-label="Delete bug report"
+                      class="flex-1 px-3 py-2 bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/30 transition-all text-sm font-medium"
                     >
-                      {#if isProcessing(bug.id)}
-                        <div class="spinner w-4 h-4"></div>
-                      {:else}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      {/if}
+                      Delete
                     </button>
                   </div>
-                </div>
+                {/if}
               </div>
-            {/if}
-          </div>
+            </div>
+            
+            <!-- Bug Footer -->
+            <div class="px-6 py-3 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700">
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                {getRelativeDate(bug.dateFound)}
+              </div>
+            </div>
+          </article>
         {/each}
       </div>
     {/if}
 
     <!-- Summary Section -->
     {#if filteredBugs.length > 0}
-      {@const programStats = filteredBugs.reduce((acc: Record<string, number>, bug) => {
-        acc[bug.program] = (acc[bug.program] || 0) + bug.bounty;
-        return acc;
-      }, {})}
-      {@const topProgram = Object.entries(programStats).sort(([,a], [,b]) => (b as number) - (a as number))[0]}
-      {@const typeStats = filteredBugs.reduce((acc: Record<string, number>, bug) => {
-        acc[bug.type] = (acc[bug.type] || 0) + 1;
-        return acc;
-      }, {})}
-      {@const topType = Object.entries(typeStats).sort(([,a], [,b]) => (b as number) - (a as number))[0]}
-      
-      <div class="mt-12 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-3xl p-8 border border-gray-200 dark:border-gray-600">
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-          Bug Hunting Summary
-        </h3>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <!-- Most Profitable Program -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
-            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Top Program</div>
-            <div class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              {topProgram ? topProgram[0] : 'N/A'}
+      <div class="mt-16">
+        <div class="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/10 dark:to-orange-900/10 rounded-3xl p-8 border border-red-200 dark:border-red-800">
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
+            Your Bug Hunting Journey 🚀
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+            <div class="text-center">
+              <div class="text-4xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent mb-2">
+                {totalBugs}
+              </div>
+              <div class="text-gray-600 dark:text-gray-400">Vulnerabilities Found</div>
             </div>
-            <div class="text-2xl font-bold text-green-600 dark:text-green-400">
-              {topProgram ? formatCurrency(topProgram[1] as number) : '$0'}
+            <div class="text-center">
+              <div class="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+                ${totalEarnings.toLocaleString()}
+              </div>
+              <div class="text-gray-600 dark:text-gray-400">Total Earned</div>
+            </div>
+            <div class="text-center">
+              <div class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                {Math.round((resolvedBugs / totalBugs) * 100)}%
+              </div>
+              <div class="text-gray-600 dark:text-gray-400">Resolution Rate</div>
             </div>
           </div>
           
-          <!-- Most Common Bug Type -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
-            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Most Found</div>
-            <div class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              {topType ? topType[0] : 'N/A'}
-            </div>
-            <div class="text-2xl font-bold text-red-600 dark:text-red-400">
-              {topType ? topType[1] : 0} bugs
-            </div>
-          </div>
-          
-          <!-- Success Rate -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl p-6 text-center">
-            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Success Rate</div>
-            <div class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              Resolved Bugs
-            </div>
-            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {resolveRate}%
-            </div>
-          </div>
+          <p class="text-gray-600 dark:text-gray-400 text-center mt-8 max-w-2xl mx-auto">
+            Keep hunting! Every bug you find makes the internet a safer place. 🛡️
+          </p>
         </div>
       </div>
     {/if}
   </div>
 </div>
-
 
 <style>
   @keyframes slide-in {
@@ -1164,25 +1119,14 @@
     }
   }
   
-  @keyframes slide-up {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-  
-  @keyframes fade-in {
+  @keyframes slide-down {
     from {
       opacity: 0;
-      transform: translateY(10px);
+      max-height: 0;
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      max-height: 1000px;
     }
   }
   
@@ -1190,12 +1134,8 @@
     animation: slide-in 0.3s ease-out;
   }
   
-  .animate-slide-up {
-    animation: slide-up 0.4s ease-out;
-  }
-  
-  .animate-fade-in {
-    animation: fade-in 0.6s ease-out;
+  .animate-slide-down {
+    animation: slide-down 0.4s ease-out;
   }
   
   .spinner {
@@ -1214,8 +1154,8 @@
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    line-clamp: 2;
   }
 </style>

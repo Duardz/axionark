@@ -1,4 +1,4 @@
-// src/lib/stores/user.ts - Updated version with encryption
+// src/lib/stores/user.ts - Fixed version with better navigation handling
 import { writable, derived, get } from 'svelte/store';
 import { db } from '$lib/firebase';
 import { 
@@ -51,7 +51,7 @@ export interface JournalEntry {
   tags?: string[];
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
-  encrypted?: boolean; // Flag to indicate if entry is encrypted
+  encrypted?: boolean;
 }
 
 export interface Bug {
@@ -66,7 +66,7 @@ export interface Bug {
   description?: string;
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
-  encrypted?: boolean; // Flag to indicate if bug is encrypted
+  encrypted?: boolean;
 }
 
 export interface UserProfile {
@@ -103,11 +103,14 @@ async function handleFirestoreOperation<T>(
   }
 }
 
-// User Store with real-time updates
+// User Store with real-time updates and persistent state
 function createUserStore() {
   const { subscribe, set, update } = writable<UserProfile | null>(null);
   let unsubscribe: Unsubscribe | null = null;
   let isDeleting = false;
+  let currentUid: string | null = null;
+  let isInitialized = false;
+  let isLoading = false;
 
   return {
     subscribe,
@@ -116,71 +119,113 @@ function createUserStore() {
     loadProfile: async (uid: string) => {
       if (!db || !uid) return;
       
-      // Clean up previous listener
-      if (unsubscribe) {
-        unsubscribe();
+      // If already loaded for this user and initialized, don't reload
+      if (currentUid === uid && isInitialized && get({ subscribe })) {
+        console.log('User profile already loaded, skipping reload');
+        return get({ subscribe });
       }
+      
+      // If already loading, wait for it to complete
+      if (isLoading && currentUid === uid) {
+        console.log('Profile loading in progress, waiting...');
+        return new Promise((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (!isLoading) {
+              clearInterval(checkInterval);
+              resolve(get({ subscribe }));
+            }
+          }, 50);
+        });
+      }
+      
+      isLoading = true;
+      
+      // Clean up previous listener only if uid changed
+      if (unsubscribe && currentUid !== uid) {
+        unsubscribe();
+        unsubscribe = null;
+        isInitialized = false;
+      }
+      
+      currentUid = uid;
       
       return handleFirestoreOperation(async () => {
         const docRef = doc(db!, 'users', uid);
         
-        // Set up real-time listener
-        unsubscribe = onSnapshot(docRef, async (docSnap) => {
-          // Don't create a profile if we're in the process of deleting
-          if (isDeleting) {
-            console.log('Skipping profile creation during deletion');
-            return;
-          }
-          
-          if (docSnap.exists()) {
-            const data = docSnap.data() as UserProfile;
-            set(data);
-          } else {
-            // Check if the auth user still exists before creating a default profile
-            const { auth } = await import('$lib/firebase');
-            const { getAuth } = await import('firebase/auth');
-            
-            const currentAuth = getAuth();
-            const currentUser = currentAuth?.currentUser;
-            
-            if (auth && currentUser && currentUser.uid === uid) {
-              // Only create default profile if auth user exists
-              console.log('Creating default profile for authenticated user');
-              const defaultProfile = {
-                uid,
-                email: currentUser.email || '',
-                username: 'Anonymous',
-                totalXP: 0,
-                completedTasks: [],
-                currentPhase: 'beginner' as const,
-                totalBounty: 0,
-                bugsFound: 0,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                encryptionEnabled: true,
-                encryptedFields: []
-              };
-              
-              await setDoc(docRef, defaultProfile);
-              set(defaultProfile as UserProfile);
-            } else {
-              // No auth user, so don't create a profile
-              console.log('No authenticated user found, not creating profile');
-              set(null);
+        // Set up real-time listener only if not already set
+        if (!unsubscribe) {
+          unsubscribe = onSnapshot(docRef, async (docSnap) => {
+            if (isDeleting) {
+              console.log('Skipping profile creation during deletion');
+              return;
             }
-          }
-        }, (error) => {
-          console.error('Error listening to user profile:', error);
-          set(null);
-        });
+            
+            if (docSnap.exists()) {
+              const data = docSnap.data() as UserProfile;
+              set(data);
+              isInitialized = true;
+              isLoading = false;
+            } else {
+              // Check if the auth user still exists before creating a default profile
+              const { auth } = await import('$lib/firebase');
+              const { getAuth } = await import('firebase/auth');
+              
+              const currentAuth = getAuth();
+              const currentUser = currentAuth?.currentUser;
+              
+              if (auth && currentUser && currentUser.uid === uid) {
+                // Only create default profile if auth user exists
+                console.log('Creating default profile for authenticated user');
+                const defaultProfile = {
+                  uid,
+                  email: currentUser.email || '',
+                  username: 'Anonymous',
+                  totalXP: 0,
+                  completedTasks: [],
+                  currentPhase: 'beginner' as const,
+                  totalBounty: 0,
+                  bugsFound: 0,
+                  createdAt: serverTimestamp(),
+                  updatedAt: serverTimestamp(),
+                  encryptionEnabled: true,
+                  encryptedFields: []
+                };
+                
+                await setDoc(docRef, defaultProfile);
+                set(defaultProfile as UserProfile);
+                isInitialized = true;
+                isLoading = false;
+              } else {
+                console.log('No authenticated user found, not creating profile');
+                set(null);
+                isLoading = false;
+              }
+            }
+          }, (error) => {
+            console.error('Error listening to user profile:', error);
+            set(null);
+            isLoading = false;
+          });
+        }
         
-        // Initial load
+        // Initial load - check if we already have data
+        const currentData = get({ subscribe });
+        if (currentData && currentData.uid === uid) {
+          isLoading = false;
+          return currentData;
+        }
+        
+        // Otherwise, do initial fetch
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data() as UserProfile;
           set(data);
+          isInitialized = true;
+          isLoading = false;
           return data;
         }
+        
+        isLoading = false;
       }, 'Error loading user profile');
     },
     
@@ -196,8 +241,16 @@ function createUserStore() {
         unsubscribe = null;
       }
       isDeleting = false;
+      currentUid = null;
+      isInitialized = false;
+      isLoading = false;
       set(null);
     },
+    
+    // Reset without cleanup (for navigation) - REMOVED to prevent blinking
+    // reset: () => {
+    //   // Don't reset anything, keep the data
+    // },
     
     completeTask: async (uid: string, taskId: string, xp: number) => {
       if (!db || !uid || !taskId) return;
@@ -229,8 +282,6 @@ function createUserStore() {
               totalXP: updatedXP,
               updatedAt: serverTimestamp()
             });
-            
-            // Note: Real-time listener will automatically update the store
           }
         }
       }, 'Error completing task');
@@ -327,10 +378,13 @@ function createUserStore() {
   };
 }
 
-// Journal Store with encryption support
+// Journal Store with persistent listeners
 function createJournalStore() {
   const { subscribe, set, update } = writable<JournalEntry[]>([]);
   let unsubscribe: Unsubscribe | null = null;
+  let currentUid: string | null = null;
+  let isInitialized = false;
+  let isLoading = false;
 
   return {
     subscribe,
@@ -338,10 +392,35 @@ function createJournalStore() {
     loadEntries: async (uid: string) => {
       if (!db || !uid) return [];
       
-      // Clean up previous listener
-      if (unsubscribe) {
-        unsubscribe();
+      // If already loaded for this user and initialized, don't reload
+      if (currentUid === uid && isInitialized && get({ subscribe }).length >= 0) {
+        console.log('Journal entries already loaded, skipping reload');
+        return get({ subscribe }) as JournalEntry[];
       }
+      
+      // If already loading, wait for it to complete
+      if (isLoading && currentUid === uid) {
+        console.log('Journal loading in progress, waiting...');
+        return new Promise<JournalEntry[]>((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (!isLoading) {
+              clearInterval(checkInterval);
+              resolve(get({ subscribe }) as JournalEntry[]);
+            }
+          }, 50);
+        });
+      }
+      
+      isLoading = true;
+      
+      // Clean up previous listener only if uid changed
+      if (unsubscribe && currentUid !== uid) {
+        unsubscribe();
+        unsubscribe = null;
+        isInitialized = false;
+      }
+      
+      currentUid = uid;
       
       return handleFirestoreOperation(async () => {
         const q = query(
@@ -351,35 +430,46 @@ function createJournalStore() {
           limit(100)
         );
         
-        // Set up real-time listener
-        unsubscribe = onSnapshot(q, async (querySnapshot) => {
-          const entries: JournalEntry[] = [];
-          
-          for (const doc of querySnapshot.docs) {
-            const data = doc.data();
-            let entry: JournalEntry = { 
-              id: doc.id, 
-              ...data,
-              date: firebaseTimestampToDate(data.date)
-            } as JournalEntry;
+        // Set up real-time listener only if not already set
+        if (!unsubscribe) {
+          unsubscribe = onSnapshot(q, async (querySnapshot) => {
+            const entries: JournalEntry[] = [];
             
-            // Decrypt if encrypted and encryption is available
-            if (data.encrypted && isEncryptionAvailable()) {
-              try {
-                entry = await decryptFields(entry, JOURNAL_ENCRYPTED_FIELDS);
-              } catch (error) {
-                console.error('Failed to decrypt journal entry:', error);
-                // Keep encrypted data if decryption fails
+            for (const doc of querySnapshot.docs) {
+              const data = doc.data();
+              let entry: JournalEntry = { 
+                id: doc.id, 
+                ...data,
+                date: firebaseTimestampToDate(data.date)
+              } as JournalEntry;
+              
+              // Decrypt if encrypted and encryption is available
+              if (data.encrypted && isEncryptionAvailable()) {
+                try {
+                  entry = await decryptFields(entry, JOURNAL_ENCRYPTED_FIELDS);
+                } catch (error) {
+                  console.error('Failed to decrypt journal entry:', error);
+                }
               }
+              
+              entries.push(entry);
             }
             
-            entries.push(entry);
-          }
-          
-          set(entries);
-        }, (error) => {
-          console.error('Error listening to journal entries:', error);
-        });
+            set(entries);
+            isInitialized = true;
+            isLoading = false;
+          }, (error) => {
+            console.error('Error listening to journal entries:', error);
+            isLoading = false;
+          });
+        }
+        
+        // Check if we already have data
+        const currentData = get({ subscribe }) as JournalEntry[];
+        if (currentData.length >= 0 && currentUid === uid) {
+          isLoading = false;
+          return currentData;
+        }
         
         // Initial load
         const querySnapshot = await getDocs(q);
@@ -406,6 +496,8 @@ function createJournalStore() {
         }
         
         set(entries);
+        isInitialized = true;
+        isLoading = false;
         return entries;
       }, 'Error loading journal entries');
     },
@@ -415,8 +507,13 @@ function createJournalStore() {
         unsubscribe();
         unsubscribe = null;
       }
+      currentUid = null;
+      isInitialized = false;
+      isLoading = false;
       set([]);
     },
+    
+    // Removed reset method to prevent blinking
     
     addEntry: async (entry: JournalEntry) => {
       if (!db) return;
@@ -446,13 +543,11 @@ function createJournalStore() {
           sanitizedEntry.encrypted = true;
         } catch (error) {
           console.error('Failed to encrypt journal entry:', error);
-          // Continue without encryption
         }
       }
       
       return handleFirestoreOperation(async () => {
         const docRef = await addDoc(collection(db!, 'journal'), sanitizedEntry);
-        // Real-time listener will automatically update the store
         return docRef.id;
       }, 'Error adding journal entry');
     },
@@ -509,7 +604,6 @@ function createJournalStore() {
       
       return handleFirestoreOperation(async () => {
         await updateDoc(doc(db!, 'journal', entryId), sanitizedUpdates);
-        // Real-time listener will automatically update the store
       }, 'Error updating journal entry');
     },
     
@@ -523,17 +617,19 @@ function createJournalStore() {
       
       return handleFirestoreOperation(async () => {
         await deleteDoc(doc(db!, 'journal', entryId));
-        // Real-time listener will automatically update the store
       }, 'Error deleting journal entry');
     }
   };
 }
 
-// Bug Store with encryption support
+// Bug Store with persistent listeners
 function createBugStore() {
   const { subscribe, set, update } = writable<Bug[]>([]);
   let unsubscribe: Unsubscribe | null = null;
   let userStatsUnsubscribe: Unsubscribe | null = null;
+  let currentUid: string | null = null;
+  let isInitialized = false;
+  let isLoading = false;
 
   return {
     subscribe,
@@ -541,13 +637,41 @@ function createBugStore() {
     loadBugs: async (uid: string) => {
       if (!db || !uid) return [];
       
-      // Clean up previous listeners
-      if (unsubscribe) {
-        unsubscribe();
+      // If already loaded for this user and initialized, don't reload
+      if (currentUid === uid && isInitialized && get({ subscribe }).length >= 0) {
+        console.log('Bugs already loaded, skipping reload');
+        return get({ subscribe }) as Bug[];
       }
-      if (userStatsUnsubscribe) {
-        userStatsUnsubscribe();
+      
+      // If already loading, wait for it to complete
+      if (isLoading && currentUid === uid) {
+        console.log('Bugs loading in progress, waiting...');
+        return new Promise<Bug[]>((resolve) => {
+          const checkInterval = setInterval(() => {
+            if (!isLoading) {
+              clearInterval(checkInterval);
+              resolve(get({ subscribe }) as Bug[]);
+            }
+          }, 50);
+        });
       }
+      
+      isLoading = true;
+      
+      // Clean up previous listeners only if uid changed
+      if (currentUid !== uid) {
+        if (unsubscribe) {
+          unsubscribe();
+          unsubscribe = null;
+        }
+        if (userStatsUnsubscribe) {
+          userStatsUnsubscribe();
+          userStatsUnsubscribe = null;
+        }
+        isInitialized = false;
+      }
+      
+      currentUid = uid;
       
       return handleFirestoreOperation(async () => {
         const q = query(
@@ -557,45 +681,57 @@ function createBugStore() {
           limit(200)
         );
         
-        // Set up real-time listener for bugs
-        unsubscribe = onSnapshot(q, async (querySnapshot) => {
-          const bugs: Bug[] = [];
-          
-          for (const doc of querySnapshot.docs) {
-            const data = doc.data();
-            let bug: Bug = { 
-              id: doc.id, 
-              ...data,
-              dateFound: firebaseTimestampToDate(data.dateFound)
-            } as Bug;
+        // Set up real-time listener only if not already set
+        if (!unsubscribe) {
+          unsubscribe = onSnapshot(q, async (querySnapshot) => {
+            const bugs: Bug[] = [];
             
-            // Decrypt if encrypted and encryption is available
-            if (data.encrypted && isEncryptionAvailable()) {
-              try {
-                bug = await decryptFields(bug, BUG_ENCRYPTED_FIELDS);
-              } catch (error) {
-                console.error('Failed to decrypt bug:', error);
+            for (const doc of querySnapshot.docs) {
+              const data = doc.data();
+              let bug: Bug = { 
+                id: doc.id, 
+                ...data,
+                dateFound: firebaseTimestampToDate(data.dateFound)
+              } as Bug;
+              
+              // Decrypt if encrypted and encryption is available
+              if (data.encrypted && isEncryptionAvailable()) {
+                try {
+                  bug = await decryptFields(bug, BUG_ENCRYPTED_FIELDS);
+                } catch (error) {
+                  console.error('Failed to decrypt bug:', error);
+                }
               }
+              
+              bugs.push(bug);
             }
             
-            bugs.push(bug);
-          }
-          
-          set(bugs);
-          
-          // Update user stats
-          const totalBounty = bugs.reduce((sum, bug) => sum + bug.bounty, 0);
-          const bugsFound = bugs.length;
-          
-          const userRef = doc(db!, 'users', uid);
-          await updateDoc(userRef, {
-            totalBounty,
-            bugsFound,
-            updatedAt: serverTimestamp()
+            set(bugs);
+            isInitialized = true;
+            isLoading = false;
+            
+            // Update user stats
+            const totalBounty = bugs.reduce((sum, bug) => sum + bug.bounty, 0);
+            const bugsFound = bugs.length;
+            
+            const userRef = doc(db!, 'users', uid);
+            await updateDoc(userRef, {
+              totalBounty,
+              bugsFound,
+              updatedAt: serverTimestamp()
+            });
+          }, (error) => {
+            console.error('Error listening to bugs:', error);
+            isLoading = false;
           });
-        }, (error) => {
-          console.error('Error listening to bugs:', error);
-        });
+        }
+        
+        // Check if we already have data
+        const currentData = get({ subscribe }) as Bug[];
+        if (currentData.length >= 0 && currentUid === uid) {
+          isLoading = false;
+          return currentData;
+        }
         
         // Initial load
         const querySnapshot = await getDocs(q);
@@ -622,6 +758,8 @@ function createBugStore() {
         }
         
         set(bugs);
+        isInitialized = true;
+        isLoading = false;
         return bugs;
       }, 'Error loading bugs');
     },
@@ -635,8 +773,13 @@ function createBugStore() {
         userStatsUnsubscribe();
         userStatsUnsubscribe = null;
       }
+      currentUid = null;
+      isInitialized = false;
+      isLoading = false;
       set([]);
     },
+    
+    // Removed reset method to prevent blinking
     
     addBug: async (bug: Bug) => {
       if (!db) return;
@@ -686,7 +829,6 @@ function createBugStore() {
       
       return handleFirestoreOperation(async () => {
         const docRef = await addDoc(collection(db!, 'bugs'), sanitizedBug);
-        // Real-time listener will automatically update the store and user stats
         return docRef.id;
       }, 'Error adding bug report');
     },
@@ -758,7 +900,6 @@ function createBugStore() {
       
       return handleFirestoreOperation(async () => {
         await updateDoc(doc(db!, 'bugs', bugId), sanitizedUpdates);
-        // Real-time listener will automatically update the store
       }, 'Error updating bug report');
     },
     
@@ -772,7 +913,6 @@ function createBugStore() {
       
       return handleFirestoreOperation(async () => {
         await deleteDoc(doc(db!, 'bugs', bugId));
-        // Real-time listener will automatically update the store and user stats
       }, 'Error deleting bug report');
     }
   };

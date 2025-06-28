@@ -1,4 +1,4 @@
-<!-- src/routes/+layout.svelte - Security Enhanced Version -->
+<!-- src/routes/+layout.svelte - Fixed Version with Persistent Store -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { authStore } from '$lib/stores/auth';
@@ -13,6 +13,7 @@
   let lastActivity = Date.now();
   let warningTimer: NodeJS.Timeout | null = null;
   let showInactivityWarning = false;
+  let storesInitialized = false;
   
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
   const WARNING_BEFORE_TIMEOUT = 5 * 60 * 1000; // Show warning 5 minutes before timeout
@@ -32,6 +33,23 @@
   onMount(() => {
     // Initialize auth store
     authStore.initialize();
+    
+    // Subscribe to auth changes and initialize stores once
+    const authUnsubscribe = authStore.subscribe(async (user) => {
+      if (user && !storesInitialized) {
+        // Initialize stores only once when user logs in
+        await userStore.loadProfile(user.uid);
+        await journalStore.loadEntries(user.uid);
+        await bugStore.loadBugs(user.uid);
+        storesInitialized = true;
+      } else if (!user) {
+        // Clean up stores when user logs out
+        userStore.cleanup();
+        journalStore.cleanup();
+        bugStore.cleanup();
+        storesInitialized = false;
+      }
+    });
     
     // Security: Prevent clickjacking
     if (browser && window.self !== window.top) {
@@ -159,6 +177,7 @@
       
       // Cleanup function
       return () => {
+        authUnsubscribe();
         window.removeEventListener('scroll', updateScrollProgress);
         mediaQuery.removeEventListener('change', handleChange);
         activityEvents.forEach(event => {
@@ -181,11 +200,9 @@
   });
 
   onDestroy(() => {
-    // Clean up all subscriptions and listeners
+    // Only cleanup auth store on component destroy
+    // Don't cleanup user stores here as they should persist during navigation
     authStore.cleanup();
-    userStore.cleanup();
-    journalStore.cleanup();
-    bugStore.cleanup();
     
     // Clear timers
     if (activityTimer) {

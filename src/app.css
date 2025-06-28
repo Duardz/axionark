@@ -659,3 +659,45 @@ p {
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* Add these styles to your existing app.css file */
+
+/* Smooth page transitions */
+.page-transition {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Prevent layout shift during navigation */
+#svelte {
+  min-height: 100vh;
+}
+
+/* Navbar stability */
+nav {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Prevent flickering during store updates */
+[data-loading="true"] {
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* Smooth store data transitions */
+.store-data {
+  transition: opacity 0.2s ease-out;
+}
+
+.store-data.updating {
+  opacity: 0.6;
+}

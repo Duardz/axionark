@@ -34,6 +34,11 @@
       user = authUser;
       showWelcomeAnimation = true;
       
+      // Don't reset stores - just load data if needed
+      // Removed: userStore.reset();
+      // Removed: journalStore.reset();
+      // Removed: bugStore.reset();
+      
       // Load user data with loading states
       await loadDashboardData(authUser.uid);
       
@@ -50,12 +55,13 @@
     return () => {
       unsubscribe();
       clearInterval(refreshInterval);
+      // Don't cleanup stores here - keep data persistent
     };
   });
 
   async function loadDashboardData(uid: string) {
     try {
-      // Load all user data
+      // Load all user data (will use cached data if already loaded)
       await userStore.loadProfile(uid);
       const entries = await journalStore.loadEntries(uid);
       const bugs = await bugStore.loadBugs(uid);

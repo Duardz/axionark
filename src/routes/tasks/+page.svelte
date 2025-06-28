@@ -58,7 +58,7 @@
 
     return () => {
       unsubscribe();
-      userStore.cleanup();
+      // Don't cleanup stores here - keep data persistent
     };
   });
 

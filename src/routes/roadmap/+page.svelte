@@ -11,10 +11,14 @@
   let showTaskDetails = new Set();
 
   onMount(() => {
-    const unsubscribe = authStore.subscribe((user) => {
+    const unsubscribe = authStore.subscribe(async (user) => {
       if (!user) {
         goto('/');
+        return;
       }
+      
+      // Load user profile data so navbar has access to it
+      await userStore.loadProfile(user.uid);
     });
 
     return unsubscribe;

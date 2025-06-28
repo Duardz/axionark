@@ -68,8 +68,6 @@
       if (authUnsubscribe) {
         authUnsubscribe();
       }
-      journalStore.cleanup();
-      userStore.cleanup();
     };
   });
 
