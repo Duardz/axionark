@@ -254,7 +254,7 @@ export const CSP_HEADERS = {
     img-src 'self' data: https: blob:;
     font-src 'self' data:;
     connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com;
-    frame-src 'none';
+    frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://apis.google.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

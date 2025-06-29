@@ -1,6 +1,112 @@
-
 // src/lib/utils/encryption.ts
 import { browser } from '$app/environment';
+
+// IndexedDB setup for secure key storage
+const DB_NAME = 'axionark_secure';
+const DB_VERSION = 1;
+const STORE_NAME = 'encryption_keys';
+
+// Initialize IndexedDB
+async function initDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store.createIndex('uid', 'uid', { unique: true });
+      }
+    };
+  });
+}
+
+// Store encryption key in IndexedDB with expiration
+async function storeKeyInDB(uid: string, key: string, expirationHours: number = 168): Promise<void> {
+  if (!browser) return;
+  
+  try {
+    const db = await initDB();
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    
+    const expirationTime = Date.now() + (expirationHours * 60 * 60 * 1000);
+    
+    await new Promise((resolve, reject) => {
+      const request = store.put({
+        id: `key_${uid}`,
+        uid,
+        key,
+        expirationTime,
+        createdAt: Date.now()
+      });
+      request.onsuccess = () => resolve(undefined);
+      request.onerror = () => reject(request.error);
+    });
+    
+    db.close();
+  } catch (error) {
+    console.error('Failed to store key in IndexedDB:', error);
+    // Fallback to sessionStorage
+    sessionStorage.setItem('_ek', key);
+  }
+}
+
+// Retrieve encryption key from IndexedDB
+async function getKeyFromDB(uid: string): Promise<string | null> {
+  if (!browser) return null;
+  
+  try {
+    const db = await initDB();
+    const transaction = db.transaction([STORE_NAME], 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    
+    const result = await new Promise<any>((resolve, reject) => {
+      const request = store.get(`key_${uid}`);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    
+    db.close();
+    
+    if (result && result.expirationTime > Date.now()) {
+      return result.key;
+    } else if (result) {
+      // Key expired, remove it
+      await removeKeyFromDB(uid);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Failed to get key from IndexedDB:', error);
+    // Fallback to sessionStorage
+    return sessionStorage.getItem('_ek');
+  }
+}
+
+// Remove encryption key from IndexedDB
+async function removeKeyFromDB(uid: string): Promise<void> {
+  if (!browser) return;
+  
+  try {
+    const db = await initDB();
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    
+    await new Promise((resolve, reject) => {
+      const request = store.delete(`key_${uid}`);
+      request.onsuccess = () => resolve(undefined);
+      request.onerror = () => reject(request.error);
+    });
+    
+    db.close();
+  } catch (error) {
+    console.error('Failed to remove key from IndexedDB:', error);
+  }
+}
 
 // Generate a cryptographic key from user's password and uid
 async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
@@ -40,22 +146,49 @@ export async function generateUserKey(uid: string, password: string): Promise<st
   return btoa(String.fromCharCode(...new Uint8Array(exportedKey)));
 }
 
-// Store user's encryption key in sessionStorage (cleared on browser close)
-export function storeEncryptionKey(key: string): void {
+// Store user's encryption key (now persistent)
+export async function storeEncryptionKey(key: string, uid?: string): Promise<void> {
   if (!browser) return;
+  
+  // Always store in sessionStorage for immediate access
   sessionStorage.setItem('_ek', key);
+  
+  // Also store in IndexedDB for persistence if uid is provided
+  if (uid) {
+    await storeKeyInDB(uid, key);
+  }
 }
 
-// Retrieve user's encryption key
-export function getEncryptionKey(): string | null {
+// Retrieve user's encryption key (check both storages)
+export async function getEncryptionKey(uid?: string): Promise<string | null> {
   if (!browser) return null;
-  return sessionStorage.getItem('_ek');
+  
+  // First check sessionStorage (fastest)
+  const sessionKey = sessionStorage.getItem('_ek');
+  if (sessionKey) return sessionKey;
+  
+  // If not in session and uid provided, check IndexedDB
+  if (uid) {
+    const dbKey = await getKeyFromDB(uid);
+    if (dbKey) {
+      // Restore to sessionStorage for faster access
+      sessionStorage.setItem('_ek', dbKey);
+      return dbKey;
+    }
+  }
+  
+  return null;
 }
 
-// Clear encryption key on logout
-export function clearEncryptionKey(): void {
+// Clear encryption key (from both storages)
+export async function clearEncryptionKey(uid?: string): Promise<void> {
   if (!browser) return;
+  
   sessionStorage.removeItem('_ek');
+  
+  if (uid) {
+    await removeKeyFromDB(uid);
+  }
 }
 
 // Import key from stored base64 string
@@ -74,7 +207,7 @@ async function importKey(keyString: string): Promise<CryptoKey> {
 export async function encryptData(data: any, keyString?: string): Promise<string> {
   if (!browser) throw new Error('Encryption only available in browser');
   
-  const storedKey = keyString || getEncryptionKey();
+  const storedKey = keyString || await getEncryptionKey();
   if (!storedKey) throw new Error('No encryption key available');
   
   try {
@@ -109,7 +242,7 @@ export async function encryptData(data: any, keyString?: string): Promise<string
 export async function decryptData(encryptedString: string, keyString?: string): Promise<any> {
   if (!browser) throw new Error('Decryption only available in browser');
   
-  const storedKey = keyString || getEncryptionKey();
+  const storedKey = keyString || await getEncryptionKey();
   if (!storedKey) throw new Error('No encryption key available');
   
   try {
@@ -189,9 +322,16 @@ export function generateSecurePassword(): string {
   return btoa(String.fromCharCode(...array));
 }
 
-// Check if encryption key is available
-export function isEncryptionAvailable(): boolean {
-  return !!getEncryptionKey();
+// Check if encryption key is available (async now)
+export async function isEncryptionAvailable(uid?: string): Promise<boolean> {
+  const key = await getEncryptionKey(uid);
+  return !!key;
+}
+
+// Synchronous version for compatibility (checks sessionStorage only)
+export function isEncryptionAvailableSync(): boolean {
+  if (!browser) return false;
+  return !!sessionStorage.getItem('_ek');
 }
 
 // Batch encrypt multiple items
@@ -214,4 +354,16 @@ export async function batchDecrypt<T extends Record<string, any>>(
   return Promise.all(
     items.map(item => decryptFields(item, fieldsToDecrypt, keyString))
   );
+}
+
+// Re-authenticate user to restore encryption key
+export async function restoreEncryptionKey(uid: string, password: string): Promise<boolean> {
+  try {
+    const encryptionKey = await generateUserKey(uid, password);
+    await storeEncryptionKey(encryptionKey, uid);
+    return true;
+  } catch (error) {
+    console.error('Failed to restore encryption key:', error);
+    return false;
+  }
 }

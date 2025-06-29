@@ -119,6 +119,24 @@
       .slice(0, 5);
   }
 
+  // Format large numbers with K/M suffixes for mobile
+  function formatCompactNumber(num: number): string {
+    if (num >= 1000000) {
+      return '$' + (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+      return '$' + (num / 1000).toFixed(1) + 'K';
+    }
+    return '$' + num.toLocaleString();
+  }
+
+  // Format with full number but responsive
+  function formatResponsiveNumber(num: number): { full: string, compact: string } {
+    return {
+      full: '$' + num.toLocaleString(),
+      compact: formatCompactNumber(num)
+    };
+  }
+
   function getFilteredBugs() {
     let filtered = [...$bugStore];
     
@@ -420,6 +438,7 @@
   // Reactive statements
   $: filteredBugs = $bugStore ? getFilteredBugs() : [];
   $: hasActiveFilters = searchQuery || filterSeverity !== 'all' || filterStatus !== 'all' || sortBy !== 'newest' || dateRange !== 'all';
+  $: earningsDisplay = formatResponsiveNumber(totalEarnings);
   
   // Force reactivity on filter changes
   $: searchQuery, filterSeverity, filterStatus, sortBy, dateRange, filteredBugs = $bugStore ? getFilteredBugs() : [];
@@ -467,64 +486,88 @@
       <div class="max-w-6xl mx-auto">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <!-- Total Bugs -->
-          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <div class="flex items-center justify-between mb-2">
-              <div class="p-3 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 sm:p-3 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl text-white">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <div class="text-3xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
+              <div class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">
                 {totalBugs}
               </div>
             </div>
-            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Bugs</h3>
+            <h3 class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Total Bugs</h3>
           </div>
 
-          <!-- Total Earnings -->
-          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <!-- Total Earnings - Fixed responsive display -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden">
             <div class="flex items-center justify-between mb-2">
-              <div class="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 sm:p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl text-white flex-shrink-0">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <div class="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                ${totalEarnings.toLocaleString()}
+              <div class="min-w-0 flex-1 text-right">
+                {#if totalEarnings >= 10000}
+                  <!-- Show compact number on mobile, full on desktop -->
+                  <div class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    <span class="block sm:hidden">{earningsDisplay.compact}</span>
+                    <span class="hidden sm:block truncate">{earningsDisplay.full}</span>
+                  </div>
+                {:else}
+                  <div class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    ${totalEarnings.toLocaleString()}
+                  </div>
+                {/if}
               </div>
             </div>
-            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Earnings</h3>
+            <h3 class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+              Total Earnings
+              {#if totalEarnings >= 10000}
+                <span class="hidden sm:inline text-xs text-gray-500 dark:text-gray-500 ml-1">
+                  ({earningsDisplay.compact})
+                </span>
+              {/if}
+            </h3>
           </div>
 
           <!-- Critical Bugs -->
-          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <div class="flex items-center justify-between mb-2">
-              <div class="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 sm:p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl text-white">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
                 </svg>
               </div>
-              <div class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <div class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 {criticalBugs}
               </div>
             </div>
-            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Critical Bugs</h3>
+            <h3 class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Critical Bugs</h3>
           </div>
 
-          <!-- Average Bounty -->
-          <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <!-- Average Bounty - Also fixed for large numbers -->
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden">
             <div class="flex items-center justify-between mb-2">
-              <div class="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl text-white flex-shrink-0">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
-              <div class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                ${averageBounty.toLocaleString()}
+              <div class="min-w-0 flex-1 text-right">
+                <div class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  {#if averageBounty >= 10000}
+                    <span class="block sm:hidden">{formatCompactNumber(averageBounty)}</span>
+                    <span class="hidden sm:block">${averageBounty.toLocaleString()}</span>
+                  {:else}
+                    ${averageBounty.toLocaleString()}
+                  {/if}
+                </div>
               </div>
             </div>
-            <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Bounty</h3>
+            <h3 class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Avg Bounty</h3>
           </div>
         </div>
 
@@ -532,15 +575,15 @@
         <div class="text-center mt-8">
           <button
             on:click={() => showForm = !showForm}
-            class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+            class="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-2xl font-semibold text-base sm:text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
           >
             {#if showForm}
-              <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
               Close Form
             {:else}
-              <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Report New Bug
@@ -706,7 +749,7 @@
       </div>
     {/if}
 
-    <!-- Stats Cards -->
+    <!-- Stats Cards - Also fixed for responsive numbers -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <!-- This Month Stats -->
       <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
@@ -723,7 +766,13 @@
           </div>
           <div class="flex justify-between items-center">
             <span class="text-gray-600 dark:text-gray-400">Earnings</span>
-            <span class="font-semibold text-green-600 dark:text-green-400">${thisMonthEarnings.toLocaleString()}</span>
+            <span class="font-semibold text-green-600 dark:text-green-400">
+              {#if thisMonthEarnings >= 10000}
+                {formatCompactNumber(thisMonthEarnings)}
+              {:else}
+                ${thisMonthEarnings.toLocaleString()}
+              {/if}
+            </span>
           </div>
         </div>
       </div>
@@ -759,8 +808,14 @@
             {#each topPrograms.slice(0, 3) as program}
               <div class="text-sm">
                 <div class="flex justify-between items-center">
-                  <span class="text-gray-600 dark:text-gray-400 truncate">{program.program}</span>
-                  <span class="font-semibold text-gray-900 dark:text-white">${program.earnings.toLocaleString()}</span>
+                  <span class="text-gray-600 dark:text-gray-400 truncate mr-2">{program.program}</span>
+                  <span class="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+                    {#if program.earnings >= 10000}
+                      {formatCompactNumber(program.earnings)}
+                    {:else}
+                      ${program.earnings.toLocaleString()}
+                    {/if}
+                  </span>
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-500">{program.count} bugs</div>
               </div>
@@ -1010,11 +1065,16 @@
                   </span>
                 </div>
                 
-                <!-- Bounty -->
+                <!-- Bounty - Fixed for large numbers -->
                 <div class="flex items-center justify-between">
                   <span class="text-sm text-gray-600 dark:text-gray-400">Bounty</span>
                   <span class="text-2xl font-bold text-green-600 dark:text-green-400">
-                    ${bug.bounty.toLocaleString()}
+                    {#if bug.bounty >= 10000}
+                      <span class="sm:hidden">{formatCompactNumber(bug.bounty)}</span>
+                      <span class="hidden sm:inline">${bug.bounty.toLocaleString()}</span>
+                    {:else}
+                      ${bug.bounty.toLocaleString()}
+                    {/if}
                   </span>
                 </div>
                 
@@ -1069,7 +1129,7 @@
       </div>
     {/if}
 
-    <!-- Summary Section -->
+    <!-- Summary Section - Also fixed for large numbers -->
     {#if filteredBugs.length > 0}
       <div class="mt-16">
         <div class="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/10 dark:to-orange-900/10 rounded-3xl p-8 border border-red-200 dark:border-red-800">
@@ -1085,8 +1145,13 @@
               <div class="text-gray-600 dark:text-gray-400">Vulnerabilities Found</div>
             </div>
             <div class="text-center">
-              <div class="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
-                ${totalEarnings.toLocaleString()}
+              <div class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+                {#if totalEarnings >= 100000}
+                  <span class="block sm:hidden">{formatCompactNumber(totalEarnings)}</span>
+                  <span class="hidden sm:block">${totalEarnings.toLocaleString()}</span>
+                {:else}
+                  ${totalEarnings.toLocaleString()}
+                {/if}
               </div>
               <div class="text-gray-600 dark:text-gray-400">Total Earned</div>
             </div>

@@ -1,10 +1,11 @@
-<!-- src/routes/+layout.svelte - Fixed Version with Persistent Store -->
+<!-- src/routes/+layout.svelte - Fixed Version with Encryption Key Restoration -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { authStore } from '$lib/stores/auth';
   import { userStore, journalStore, bugStore } from '$lib/stores/user';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
+  import { getEncryptionKey, storeEncryptionKey } from '$lib/utils/encryption';
   import Footer from '$lib/components/Footer.svelte';
   import '../app.css';
 
@@ -14,6 +15,10 @@
   let warningTimer: NodeJS.Timeout | null = null;
   let showInactivityWarning = false;
   let storesInitialized = false;
+  let showReAuthModal = false;
+  let reAuthPassword = '';
+  let reAuthLoading = false;
+  let reAuthError = '';
   
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
   const WARNING_BEFORE_TIMEOUT = 5 * 60 * 1000; // Show warning 5 minutes before timeout
@@ -37,17 +42,23 @@
     // Subscribe to auth changes and initialize stores once
     const authUnsubscribe = authStore.subscribe(async (user) => {
       if (user && !storesInitialized) {
-        // Initialize stores only once when user logs in
-        await userStore.loadProfile(user.uid);
-        await journalStore.loadEntries(user.uid);
-        await bugStore.loadBugs(user.uid);
-        storesInitialized = true;
+        // Check if encryption key exists
+        const encryptionKey = await getEncryptionKey(user.uid);
+        
+        if (!encryptionKey && !isPublicPage) {
+          // No encryption key found, need to re-authenticate
+          showReAuthModal = true;
+        } else {
+          // Initialize stores
+          await initializeUserStores(user.uid);
+        }
       } else if (!user) {
         // Clean up stores when user logs out
         userStore.cleanup();
         journalStore.cleanup();
         bugStore.cleanup();
         storesInitialized = false;
+        showReAuthModal = false;
       }
     });
     
@@ -212,6 +223,50 @@
       clearTimeout(warningTimer);
     }
   });
+  
+  async function initializeUserStores(uid: string) {
+    try {
+      await userStore.loadProfile(uid);
+      await journalStore.loadEntries(uid);
+      await bugStore.loadBugs(uid);
+      storesInitialized = true;
+    } catch (error) {
+      console.error('Error initializing stores:', error);
+    }
+  }
+  
+  async function handleReAuth() {
+    if (!$authStore || !reAuthPassword) return;
+    
+    reAuthLoading = true;
+    reAuthError = '';
+    
+    try {
+      // Import the function we need
+      const { generateUserKey } = await import('$lib/utils/encryption');
+      
+      // Generate encryption key
+      const encryptionKey = await generateUserKey($authStore.uid, reAuthPassword);
+      
+      // Store it persistently
+      await storeEncryptionKey(encryptionKey, $authStore.uid);
+      
+      // Clear the password
+      reAuthPassword = '';
+      
+      // Hide modal
+      showReAuthModal = false;
+      
+      // Initialize stores
+      await initializeUserStores($authStore.uid);
+      
+    } catch (error) {
+      console.error('Re-authentication error:', error);
+      reAuthError = 'Invalid password. Please try again.';
+    } finally {
+      reAuthLoading = false;
+    }
+  }
 
   function toggleDarkMode() {
     if (!browser) return;
@@ -251,6 +306,67 @@
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors flex flex-col">
+  <!-- Re-authentication Modal -->
+  {#if showReAuthModal && $authStore}
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-gray-700">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            Password Required for Decryption
+          </h3>
+          <p class="text-gray-600 dark:text-gray-400">
+            Your data is encrypted. Please enter your password to decrypt it.
+          </p>
+        </div>
+        
+        {#if reAuthError}
+          <div class="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg">
+            <p class="text-sm text-red-700 dark:text-red-400">{reAuthError}</p>
+          </div>
+        {/if}
+        
+        <form on:submit|preventDefault={handleReAuth}>
+          <div class="mb-4">
+            <label for="reauth-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Password
+            </label>
+            <input
+              id="reauth-password"
+              type="password"
+              bind:value={reAuthPassword}
+              class="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Enter your password"
+              required
+              disabled={reAuthLoading}
+            />
+          </div>
+          
+          <div class="flex gap-3">
+            <button
+              type="submit"
+              disabled={reAuthLoading || !reAuthPassword}
+              class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {reAuthLoading ? 'Decrypting...' : 'Decrypt Data'}
+            </button>
+            <button
+              type="button"
+              on:click={() => authStore.signOut()}
+              class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+            >
+              Sign Out
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {/if}
+  
   <!-- Inactivity Warning Modal -->
   {#if showInactivityWarning}
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
