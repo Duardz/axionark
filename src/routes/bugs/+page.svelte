@@ -1,4 +1,4 @@
-<!-- src/routes/bugs/+page.svelte -->
+<!-- src/routes/bugs/+page.svelte - Fixed Text Overflow Version -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -19,7 +19,7 @@
   let expandedBugs = new Set<string>();
   let viewMode: 'list' | 'grid' = 'list';
   
-  // Form fields
+  // Form fields with character limits
   let type = '';
   let severity: 'low' | 'medium' | 'high' | 'critical' = 'medium';
   let program = '';
@@ -27,6 +27,11 @@
   let status: 'reported' | 'triaged' | 'resolved' | 'duplicate' | 'rejected' = 'reported';
   let dateFound = new Date().toISOString().split('T')[0];
   let description = '';
+
+  // Character limits
+  const MAX_TYPE_LENGTH = 30;
+  const MAX_PROGRAM_LENGTH = 40;
+  const MAX_DESCRIPTION_LENGTH = 500;
 
   // Filter and search
   let searchQuery = '';
@@ -76,7 +81,6 @@
       if (authUnsubscribe) {
         authUnsubscribe();
       }
-      // Don't cleanup stores here - keep data persistent
     };
   });
 
@@ -117,6 +121,13 @@
       .map(([program, stats]) => ({ program, ...stats }))
       .sort((a, b) => b.earnings - a.earnings)
       .slice(0, 5);
+  }
+
+  // Helper function to truncate text
+  function truncateText(text: string, maxLength: number = 50) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '...';
   }
 
   // Format large numbers with K/M suffixes for mobile
@@ -613,12 +624,13 @@
               <!-- Bug Type -->
               <div>
                 <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Bug Type *
+                  Bug Type * <span class="text-xs text-gray-500">({type.length}/{MAX_TYPE_LENGTH})</span>
                 </label>
                 <input
                   id="type"
                   type="text"
                   bind:value={type}
+                  maxlength={MAX_TYPE_LENGTH}
                   placeholder="XSS, SQLi, IDOR, etc."
                   class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
                   required
@@ -628,12 +640,13 @@
               <!-- Program -->
               <div>
                 <label for="program" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Program *
+                  Program * <span class="text-xs text-gray-500">({program.length}/{MAX_PROGRAM_LENGTH})</span>
                 </label>
                 <input
                   id="program"
                   type="text"
                   bind:value={program}
+                  maxlength={MAX_PROGRAM_LENGTH}
                   placeholder="Company/Program name"
                   class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
                   required
@@ -708,11 +721,12 @@
             <!-- Description -->
             <div>
               <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description
+                Description <span class="text-xs text-gray-500">({description.length}/{MAX_DESCRIPTION_LENGTH})</span>
               </label>
               <textarea
                 id="description"
                 bind:value={description}
+                maxlength={MAX_DESCRIPTION_LENGTH}
                 rows="4"
                 placeholder="Provide details about the vulnerability..."
                 class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
@@ -809,7 +823,7 @@
               <div class="text-sm">
                 <div class="flex justify-between items-center">
                   <span class="text-gray-600 dark:text-gray-400 truncate mr-2 max-w-[120px]" title={program.program}>
-                    {program.program}
+                    {truncateText(program.program, 20)}
                   </span>
                   <span class="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
                     {#if program.earnings >= 10000}
@@ -1014,11 +1028,11 @@
             <div class="p-6">
               <div class="flex items-start justify-between mb-4">
                 <div class="flex-1 min-w-0">
-                  <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1 break-words overflow-wrap-anywhere">
-                    {bug.type}
+                  <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1 truncate" title={bug.type}>
+                    {truncateText(bug.type, 25)}
                   </h3>
-                  <p class="text-gray-600 dark:text-gray-400 font-medium truncate max-w-full" title={bug.program}>
-                    {bug.program}
+                  <p class="text-gray-600 dark:text-gray-400 font-medium truncate" title={bug.program}>
+                    {truncateText(bug.program, 30)}
                   </p>
                 </div>
                 
@@ -1083,7 +1097,7 @@
                 <!-- Description -->
                 {#if bug.description}
                   <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <p class={`text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words overflow-wrap-anywhere ${isExpanded ? '' : 'line-clamp-2'}`}>
+                    <p class={`text-sm text-gray-700 dark:text-gray-300 leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}`}>
                       {bug.description}
                     </p>
                     
@@ -1227,11 +1241,9 @@
   }
   
   /* CSS for handling long text without spaces */
-  .break-words {
-    word-break: break-word;
-  }
-  
-  .overflow-wrap-anywhere {
-    overflow-wrap: anywhere;
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>

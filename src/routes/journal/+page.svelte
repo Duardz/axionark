@@ -1,4 +1,4 @@
-<!-- src/routes/journal/+page.svelte -->
+<!-- src/routes/journal/+page.svelte - Fixed Text Overflow Version -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
@@ -17,11 +17,17 @@
   let processingEntries = new Set<string>();
   let expandedEntries = new Set<string>();
   
-  // Form fields
+  // Form fields with character limits
   let title = '';
   let content = '';
   let mood: 'great' | 'good' | 'okay' | 'bad' = 'good';
   let tags = '';
+
+  // Character limits
+  const MAX_TITLE_LENGTH = 60;
+  const MAX_CONTENT_LENGTH = 2000;
+  const MAX_TAG_LENGTH = 20;
+  const MAX_TAGS = 5;
 
   // Filter and search
   let searchQuery = '';
@@ -151,6 +157,13 @@
     return streak;
   }
 
+  // Helper function to truncate text
+  function truncateText(text: string, maxLength: number = 50) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + '...';
+  }
+
   function getFilteredEntries() {
     let filtered = [...$journalStore];
     
@@ -228,6 +241,15 @@
     return filtered;
   }
 
+  // Process tags input to enforce limits
+  function processTags(tagsInput: string): string[] {
+    return tagsInput
+      .split(',')
+      .map(t => t.trim())
+      .filter(t => t && t.length <= MAX_TAG_LENGTH)
+      .slice(0, MAX_TAGS);
+  }
+
   async function handleSubmit() {
     if (!currentUser || !title.trim() || !content.trim()) {
       successMessage = 'Please fill in all required fields';
@@ -238,12 +260,14 @@
     
     loading = true;
     try {
+      const processedTags = processTags(tags);
+      
       if (editingEntry && editingEntry.id) {
         await journalStore.updateEntry(editingEntry.id, {
           title: title.trim(),
           content: content.trim(),
           mood,
-          tags: tags.split(',').map(t => t.trim()).filter(t => t)
+          tags: processedTags
         });
         
         successMessage = 'Entry updated successfully! 📝';
@@ -258,7 +282,7 @@
           content: content.trim(),
           date: new Date(),
           mood,
-          tags: tags.split(',').map(t => t.trim()).filter(t => t)
+          tags: processedTags
         };
         
         await journalStore.addEntry(entry);
@@ -563,12 +587,13 @@
             <!-- Title -->
             <div>
               <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Title *
+                Title * <span class="text-xs text-gray-500">({title.length}/{MAX_TITLE_LENGTH})</span>
               </label>
               <input
                 id="title"
                 type="text"
                 bind:value={title}
+                maxlength={MAX_TITLE_LENGTH}
                 placeholder="What's the highlight of today's learning?"
                 class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 required
@@ -578,11 +603,12 @@
             <!-- Content -->
             <div>
               <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Your Thoughts *
+                Your Thoughts * <span class="text-xs text-gray-500">({content.length}/{MAX_CONTENT_LENGTH})</span>
               </label>
               <textarea
                 id="content"
                 bind:value={content}
+                maxlength={MAX_CONTENT_LENGTH}
                 rows="8"
                 placeholder="Share your learning experience, challenges overcome, insights gained, and breakthroughs achieved..."
                 class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
@@ -626,7 +652,7 @@
               <!-- Tags -->
               <div>
                 <label for="tags" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Tags (comma separated)
+                  Tags (comma separated) <span class="text-xs text-gray-500">Max {MAX_TAGS} tags, {MAX_TAG_LENGTH} chars each</span>
                 </label>
                 <input
                   id="tags"
@@ -750,7 +776,7 @@
                 class="px-3 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 text-indigo-700 dark:text-indigo-400 rounded-full text-xs font-medium hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 transition-all truncate max-w-[120px]"
                 title="#{tagInfo.tag} ({tagInfo.count})"
               >
-                #{tagInfo.tag} ({tagInfo.count})
+                #{truncateText(tagInfo.tag, 15)} ({tagInfo.count})
               </button>
             {/each}
           </div>
@@ -808,8 +834,8 @@
             <div class="p-6">
               <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div class="flex-1 min-w-0">
-                  <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3 break-words overflow-wrap-anywhere">
-                    {entry.title}
+                  <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3 truncate" title={entry.title}>
+                    {truncateText(entry.title, 50)}
                   </h2>
                   
                   <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
@@ -867,7 +893,7 @@
               
               <!-- Entry Content -->
               <div class="mt-4">
-                <p class={`text-gray-700 dark:text-gray-300 leading-relaxed break-words overflow-wrap-anywhere ${isExpanded ? '' : 'line-clamp-3'}`}>
+                <p class={`text-gray-700 dark:text-gray-300 leading-relaxed ${isExpanded ? '' : 'line-clamp-3'}`}>
                   {entry.content}
                 </p>
                 
@@ -890,7 +916,7 @@
                       class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all truncate max-w-[150px]"
                       title="#{tag}"
                     >
-                      #{tag}
+                      #{truncateText(tag, 15)}
                     </button>
                   {/each}
                 </div>
@@ -984,11 +1010,9 @@
   }
   
   /* CSS for handling long text without spaces */
-  .break-words {
-    word-break: break-word;
-  }
-  
-  .overflow-wrap-anywhere {
-    overflow-wrap: anywhere;
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>
