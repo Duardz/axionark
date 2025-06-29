@@ -1,11 +1,17 @@
-<!-- src/routes/+layout.svelte - Fixed Version with Encryption Key Restoration -->
+<!-- src/routes/+layout.svelte - Fixed Version with Proper Encryption Initialization -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { authStore } from '$lib/stores/auth';
   import { userStore, journalStore, bugStore } from '$lib/stores/user';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
-  import { getEncryptionKey, storeEncryptionKey } from '$lib/utils/encryption';
+  import { 
+    getEncryptionKeyAsync, 
+    storeEncryptionKey, 
+    initializeEncryption,
+    restoreEncryptionFromSession,
+    generateUserKey 
+  } from '$lib/utils/encryption';
   import Footer from '$lib/components/Footer.svelte';
   import '../app.css';
 
@@ -19,9 +25,12 @@
   let reAuthPassword = '';
   let reAuthLoading = false;
   let reAuthError = '';
+  let encryptionInitialized = false;
+  let encryptionCheckAttempts = 0;
   
   const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
   const WARNING_BEFORE_TIMEOUT = 5 * 60 * 1000; // Show warning 5 minutes before timeout
+  const MAX_ENCRYPTION_CHECK_ATTEMPTS = 3;
   
   let scrollProgress = 0;
   let showScrollTop = false;
@@ -41,24 +50,21 @@
     
     // Subscribe to auth changes and initialize stores once
     const authUnsubscribe = authStore.subscribe(async (user) => {
-      if (user && !storesInitialized) {
-        // Check if encryption key exists
-        const encryptionKey = await getEncryptionKey(user.uid);
+      if (user && !storesInitialized && !encryptionInitialized) {
+        // Reset encryption check attempts for new user
+        encryptionCheckAttempts = 0;
         
-        if (!encryptionKey && !isPublicPage) {
-          // No encryption key found, need to re-authenticate
-          showReAuthModal = true;
-        } else {
-          // Initialize stores
-          await initializeUserStores(user.uid);
-        }
+        // Try to initialize encryption
+        await tryInitializeEncryption(user);
       } else if (!user) {
         // Clean up stores when user logs out
         userStore.cleanup();
         journalStore.cleanup();
         bugStore.cleanup();
         storesInitialized = false;
+        encryptionInitialized = false;
         showReAuthModal = false;
+        encryptionCheckAttempts = 0;
       }
     });
     
@@ -224,6 +230,54 @@
     }
   });
   
+  async function tryInitializeEncryption(user: any) {
+    encryptionCheckAttempts++;
+    
+    try {
+      // Step 1: Check if we have an encryption key in sessionStorage
+      const sessionRestored = await restoreEncryptionFromSession(user.uid);
+      
+      if (sessionRestored) {
+        console.log('Encryption restored from session');
+        encryptionInitialized = true;
+        await initializeUserStores(user.uid);
+        return;
+      }
+      
+      // Step 2: Try to initialize from IndexedDB
+      const initialized = await initializeEncryption(user.uid);
+      
+      if (initialized) {
+        console.log('Encryption initialized from IndexedDB');
+        encryptionInitialized = true;
+        await initializeUserStores(user.uid);
+        return;
+      }
+      
+      // Step 3: Check one more time with a delay (sometimes IndexedDB is slow)
+      if (encryptionCheckAttempts < MAX_ENCRYPTION_CHECK_ATTEMPTS) {
+        setTimeout(() => tryInitializeEncryption(user), 1000);
+        return;
+      }
+      
+      // Step 4: If we're not on a public page and still no key, show re-auth modal
+      if (!isPublicPage) {
+        showReAuthModal = true;
+      } else {
+        // On public pages, just initialize stores without encryption
+        await initializeUserStores(user.uid);
+      }
+      
+    } catch (error) {
+      console.error('Error initializing encryption:', error);
+      
+      // If error and not on public page, show re-auth modal
+      if (!isPublicPage) {
+        showReAuthModal = true;
+      }
+    }
+  }
+  
   async function initializeUserStores(uid: string) {
     try {
       await userStore.loadProfile(uid);
@@ -242,20 +296,28 @@
     reAuthError = '';
     
     try {
-      // Import the function we need
-      const { generateUserKey } = await import('$lib/utils/encryption');
-      
       // Generate encryption key
       const encryptionKey = await generateUserKey($authStore.uid, reAuthPassword);
       
       // Store it persistently
       await storeEncryptionKey(encryptionKey, $authStore.uid);
       
+      // Wait a moment for storage to complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Verify it was stored
+      const verified = await initializeEncryption($authStore.uid);
+      
+      if (!verified) {
+        throw new Error('Failed to store encryption key');
+      }
+      
       // Clear the password
       reAuthPassword = '';
       
       // Hide modal
       showReAuthModal = false;
+      encryptionInitialized = true;
       
       // Initialize stores
       await initializeUserStores($authStore.uid);

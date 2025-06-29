@@ -1,4 +1,4 @@
-// src/lib/stores/auth.ts - Fixed version with proper encryption key timing
+// src/lib/stores/auth.ts - Fixed version with better initialization flow
 import { writable, derived } from 'svelte/store';
 import { auth, db } from '$lib/firebase';
 import {
@@ -39,6 +39,10 @@ import {
   clearEncryptionKey,
   generateSecurePassword,
   encryptData,
+  isEncryptionAvailableAsync,
+  initializeEncryption,
+  getEncryptionKeyAsync,
+  restoreEncryptionFromSession,
   isEncryptionAvailable
 } from '$lib/utils/encryption';
 
@@ -68,6 +72,7 @@ interface AuthError {
 function createAuthStore() {
   const { subscribe, set } = writable<User | null>(null);
   let unsubscribe: (() => void) | null = null;
+  let isInitializing = false;
 
   return {
     subscribe,
@@ -81,10 +86,28 @@ function createAuthStore() {
         unsubscribe = onAuthStateChanged(auth, async (user) => {
           set(user);
           
-          // Update last login time and ensure email is synced if user is authenticated
-          if (user && db) {
+          // If user is authenticated, try to restore encryption key
+          if (user && db && !isInitializing) {
+            isInitializing = true;
+            
             try {
-              // Check if user document exists
+              // First, try to restore from session storage
+              const sessionRestored = await restoreEncryptionFromSession(user.uid);
+              
+              if (!sessionRestored) {
+                // If not in session, try to initialize from IndexedDB
+                const initialized = await initializeEncryption(user.uid);
+                
+                if (!initialized) {
+                  // Only log this if we truly don't have a key anywhere
+                  const anyKey = await getEncryptionKeyAsync(user.uid);
+                  if (!anyKey) {
+                    console.log('No encryption key found. User may need to sign in again for full functionality.');
+                  }
+                }
+              }
+              
+              // Check if user document exists and update last login
               const userDoc = await getDoc(doc(db, 'users', user.uid));
               if (userDoc.exists()) {
                 const userData = userDoc.data();
@@ -100,7 +123,9 @@ function createAuthStore() {
                 await updateDoc(doc(db, 'users', user.uid), updates);
               }
             } catch (error) {
-              // Silent fail in production
+              console.error('Error initializing user session:', error);
+            } finally {
+              isInitializing = false;
             }
           }
         });
@@ -157,15 +182,23 @@ function createAuthStore() {
 
         // Step 2: Generate encryption key for the user
         const encryptionKey = await generateUserKey(user.uid, password);
-        storeEncryptionKey(encryptionKey);
+        await storeEncryptionKey(encryptionKey, user.uid);
 
         // Step 3: Force refresh ID token to ensure Firestore has access to request.auth
         await user.getIdToken(true);
 
-        // Step 4: Wait briefly to ensure encryption key is stored
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Step 4: Wait to ensure encryption key is properly stored
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Step 5: Create user document with encryption enabled
+        // Step 5: Verify encryption is available
+        const encryptionAvailable = await isEncryptionAvailable();
+        if (!encryptionAvailable) {
+          console.warn('Encryption key not immediately available, retrying...');
+          await storeEncryptionKey(encryptionKey, user.uid);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        // Step 6: Create user document with encryption enabled
         const userData: UserData = {
           uid: user.uid,
           email: user.email!, // Ensure email is always set
@@ -199,7 +232,7 @@ function createAuthStore() {
           if (user) {
             await user.delete();
           }
-          clearEncryptionKey();
+          await clearEncryptionKey(user.uid);
           throw new Error('Failed to create user profile. Please try again.');
         }
 
@@ -213,7 +246,7 @@ function createAuthStore() {
             // Silent fail
           }
         }
-        clearEncryptionKey();
+        await clearEncryptionKey(user?.uid);
 
         const authError = handleAuthError(error);
         throw new Error(authError.message);
@@ -243,16 +276,23 @@ function createAuthStore() {
         
         // Generate and store encryption key BEFORE any data loading
         const encryptionKey = await generateUserKey(user.uid, password);
-        storeEncryptionKey(encryptionKey);
+        await storeEncryptionKey(encryptionKey, user.uid);
         
-        // Wait a moment to ensure the key is properly stored
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait to ensure the key is properly stored
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Verify encryption is available
-        if (!isEncryptionAvailable()) {
-          console.warn('Encryption key not properly stored, retrying...');
-          storeEncryptionKey(encryptionKey);
+        const encryptionAvailable = await isEncryptionAvailableAsync(user.uid);
+        if (!encryptionAvailable) {
+          console.warn('Encryption key not immediately available, retrying...');
+          await storeEncryptionKey(encryptionKey, user.uid);
           await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // Double-check encryption key is available
+        const finalCheck = await getEncryptionKeyAsync(user.uid);
+        if (!finalCheck) {
+          console.error('Failed to store encryption key properly');
         }
         
         // Check if user profile exists
@@ -309,7 +349,7 @@ function createAuthStore() {
           
           if (userData.accountLocked) {
             await signOut(auth);
-            clearEncryptionKey();
+            await clearEncryptionKey(user.uid);
             throw new Error('Account is locked. Please contact support.');
           }
           
@@ -317,15 +357,15 @@ function createAuthStore() {
           await updateDoc(doc(db, 'users', user.uid), updates);
         }
         
-        // Final encryption key verification
-        if (!isEncryptionAvailable()) {
-          console.error('Encryption key still not available after multiple attempts');
-          // Continue anyway - the stores will check periodically
-        }
+        // Force initialize encryption in stores
+        const { userStore, journalStore, bugStore } = await import('$lib/stores/user');
+        
+        // Wait a bit more to ensure everything is ready
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         return user;
       } catch (error: any) {
-        clearEncryptionKey();
+        await clearEncryptionKey();
         
         // Generic error message to prevent user enumeration
         if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
@@ -341,7 +381,19 @@ function createAuthStore() {
       if (!auth) throw new Error('Firebase not initialized');
       
       try {
-        clearEncryptionKey(); // Clear encryption key before signing out
+        // Get current user ID before signing out
+        const currentUser = auth.currentUser;
+        const userId = currentUser?.uid;
+        
+        // Clear encryption key before signing out
+        await clearEncryptionKey(userId);
+        
+        // Clean up stores
+        const { userStore, journalStore, bugStore } = await import('$lib/stores/user');
+        userStore.cleanup();
+        journalStore.cleanup();
+        bugStore.cleanup();
+        
         await signOut(auth);
       } catch (error: any) {
         throw new Error('Failed to sign out. Please try again.');
@@ -435,10 +487,10 @@ function createAuthStore() {
         const newEncryptionKey = await generateUserKey(uid, newPassword);
         
         // Store the new key
-        storeEncryptionKey(newEncryptionKey);
+        await storeEncryptionKey(newEncryptionKey, uid);
         
         // Wait to ensure it's stored
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Note: In a real implementation, you would need to:
         // 1. Decrypt all encrypted data with the old key
@@ -476,7 +528,7 @@ function createAuthStore() {
         bugStore.cleanup();
         
         // Clear encryption key
-        clearEncryptionKey();
+        await clearEncryptionKey(uid);
         
         // Get user data to clean up username reference
         const userDoc = await getDoc(doc(db, 'users', uid));

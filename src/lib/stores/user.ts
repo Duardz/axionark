@@ -39,7 +39,8 @@ import {
   decryptFields,
   isEncryptionAvailable,
   batchDecrypt,
-  getEncryptionKey
+  getEncryptionKeySync,
+  initializeEncryption
 } from '$lib/utils/encryption';
 
 export interface JournalEntry {
@@ -103,7 +104,7 @@ async function handleFirestoreOperation<T>(
   }
 }
 
-// Helper to decrypt a single entry with error handling
+// Helper to decrypt a single journal entry with error handling
 async function decryptJournalEntry(data: any, docId: string): Promise<JournalEntry> {
   let entry: JournalEntry = { 
     id: docId, 
@@ -112,7 +113,14 @@ async function decryptJournalEntry(data: any, docId: string): Promise<JournalEnt
   } as JournalEntry;
   
   // Only decrypt if marked as encrypted AND we have an encryption key
-  if (data.encrypted && isEncryptionAvailable()) {
+  if (data.encrypted) {
+    const hasKey = getEncryptionKeySync();
+    if (!hasKey) {
+      // Return encrypted data if no key available
+      console.warn('No encryption key available for decrypting journal entry');
+      return entry;
+    }
+    
     try {
       // Decrypt each field individually to handle partial failures
       const decrypted: any = { ...entry };
@@ -147,7 +155,14 @@ async function decryptBugEntry(data: any, docId: string): Promise<Bug> {
   } as Bug;
   
   // Only decrypt if marked as encrypted AND we have an encryption key
-  if (data.encrypted && isEncryptionAvailable()) {
+  if (data.encrypted) {
+    const hasKey = getEncryptionKeySync();
+    if (!hasKey) {
+      // Return encrypted data if no key available
+      console.warn('No encryption key available for decrypting bug entry');
+      return bug;
+    }
+    
     try {
       // Decrypt each field individually to handle partial failures
       const decrypted: any = { ...bug };
@@ -188,6 +203,9 @@ function createUserStore() {
     // Load profile with real-time listener
     loadProfile: async (uid: string) => {
       if (!db || !uid) return;
+      
+      // Initialize encryption for this user
+      await initializeEncryption(uid);
       
       // If already loaded for this user and initialized, don't reload
       if (currentUid === uid && isInitialized && get({ subscribe })) {
@@ -428,10 +446,23 @@ function createJournalStore() {
   let isInitialized = false;
   let isLoading = false;
   let encryptionCheckInterval: NodeJS.Timeout | null = null;
+  let lastDecryptAttempt = 0;
 
   // Function to check for encryption key and re-decrypt if needed
   async function checkAndReDecrypt() {
-    if (!currentUid || !isEncryptionAvailable()) return;
+    if (!currentUid) return;
+    
+    // Rate limit decryption attempts
+    const now = Date.now();
+    if (now - lastDecryptAttempt < 2000) return; // Wait at least 2 seconds between attempts
+    lastDecryptAttempt = now;
+    
+    const hasKey = getEncryptionKeySync();
+    if (!hasKey) {
+      // Try to initialize encryption
+      await initializeEncryption(currentUid);
+      return;
+    }
     
     const currentEntries = get({ subscribe });
     if (currentEntries.length === 0) return;
@@ -450,6 +481,9 @@ function createJournalStore() {
 
   async function loadEntries(uid: string) {
     if (!db || !uid) return [];
+    
+    // Initialize encryption for this user
+    await initializeEncryption(uid);
     
     // If already loaded for this user and initialized, check if we need to re-decrypt
     if (currentUid === uid && isInitialized) {
@@ -531,7 +565,7 @@ function createJournalStore() {
       if (!encryptionCheckInterval) {
         encryptionCheckInterval = setInterval(() => {
           checkAndReDecrypt();
-        }, 1000); // Check every second
+        }, 3000); // Check every 3 seconds instead of every second
       }
       
       return entries;
@@ -555,6 +589,7 @@ function createJournalStore() {
       currentUid = null;
       isInitialized = false;
       isLoading = false;
+      lastDecryptAttempt = 0;
       set([]);
     },
     
@@ -580,7 +615,8 @@ function createJournalStore() {
       };
       
       // Encrypt sensitive fields if encryption is available
-      if (isEncryptionAvailable()) {
+      const hasKey = getEncryptionKeySync();
+      if (hasKey) {
         try {
           // Encrypt each field individually
           const encryptedData: any = { ...sanitizedEntry };
@@ -646,7 +682,8 @@ function createJournalStore() {
       }
       
       // Encrypt updated fields if encryption is available
-      if (isEncryptionAvailable()) {
+      const hasKey = getEncryptionKeySync();
+      if (hasKey) {
         try {
           const encryptedUpdates: any = { ...sanitizedUpdates };
           
@@ -699,10 +736,23 @@ function createBugStore() {
   let isInitialized = false;
   let isLoading = false;
   let encryptionCheckInterval: NodeJS.Timeout | null = null;
+  let lastDecryptAttempt = 0;
 
   // Function to check for encryption key and re-decrypt if needed
   async function checkAndReDecrypt() {
-    if (!currentUid || !isEncryptionAvailable()) return;
+    if (!currentUid) return;
+    
+    // Rate limit decryption attempts
+    const now = Date.now();
+    if (now - lastDecryptAttempt < 2000) return; // Wait at least 2 seconds between attempts
+    lastDecryptAttempt = now;
+    
+    const hasKey = getEncryptionKeySync();
+    if (!hasKey) {
+      // Try to initialize encryption
+      await initializeEncryption(currentUid);
+      return;
+    }
     
     const currentBugs = get({ subscribe });
     if (currentBugs.length === 0) return;
@@ -722,6 +772,9 @@ function createBugStore() {
 
   async function loadBugs(uid: string) {
     if (!db || !uid) return [];
+    
+    // Initialize encryption for this user
+    await initializeEncryption(uid);
     
     // If already loaded for this user and initialized, check if we need to re-decrypt
     if (currentUid === uid && isInitialized) {
@@ -820,7 +873,7 @@ function createBugStore() {
       if (!encryptionCheckInterval) {
         encryptionCheckInterval = setInterval(() => {
           checkAndReDecrypt();
-        }, 1000); // Check every second
+        }, 3000); // Check every 3 seconds instead of every second
       }
       
       return bugs;
@@ -848,6 +901,7 @@ function createBugStore() {
       currentUid = null;
       isInitialized = false;
       isLoading = false;
+      lastDecryptAttempt = 0;
       set([]);
     },
     
@@ -888,7 +942,8 @@ function createBugStore() {
       };
       
       // Encrypt sensitive fields if encryption is available
-      if (isEncryptionAvailable()) {
+      const hasKey = getEncryptionKeySync();
+      if (hasKey) {
         try {
           // Encrypt each field individually
           const encryptedData: any = { ...sanitizedBug };
@@ -965,7 +1020,8 @@ function createBugStore() {
       }
       
       // Encrypt updated fields if encryption is available
-      if (isEncryptionAvailable()) {
+      const hasKey = getEncryptionKeySync();
+      if (hasKey) {
         try {
           const encryptedUpdates: any = { ...sanitizedUpdates };
           

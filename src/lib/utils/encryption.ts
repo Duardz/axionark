@@ -1,10 +1,14 @@
-// src/lib/utils/encryption.ts
+// src/lib/utils/encryption.ts - Fixed version with proper key management
 import { browser } from '$app/environment';
 
 // IndexedDB setup for secure key storage
 const DB_NAME = 'axionark_secure';
 const DB_VERSION = 1;
 const STORE_NAME = 'encryption_keys';
+
+// In-memory cache for the encryption key
+let encryptionKeyCache: string | null = null;
+let currentUserId: string | null = null;
 
 // Initialize IndexedDB
 async function initDB(): Promise<IDBDatabase> {
@@ -146,9 +150,15 @@ export async function generateUserKey(uid: string, password: string): Promise<st
   return btoa(String.fromCharCode(...new Uint8Array(exportedKey)));
 }
 
-// Store user's encryption key (now persistent)
+// Store user's encryption key with caching
 export async function storeEncryptionKey(key: string, uid?: string): Promise<void> {
   if (!browser) return;
+  
+  // Update cache
+  encryptionKeyCache = key;
+  if (uid) {
+    currentUserId = uid;
+  }
   
   // Always store in sessionStorage for immediate access
   sessionStorage.setItem('_ek', key);
@@ -159,19 +169,28 @@ export async function storeEncryptionKey(key: string, uid?: string): Promise<voi
   }
 }
 
-// Retrieve user's encryption key (check both storages)
-export async function getEncryptionKey(uid?: string): Promise<string | null> {
+// Retrieve user's encryption key (async version that checks IndexedDB)
+export async function getEncryptionKeyAsync(uid?: string): Promise<string | null> {
   if (!browser) return null;
   
-  // First check sessionStorage (fastest)
+  // First check cache
+  if (encryptionKeyCache) {
+    return encryptionKeyCache;
+  }
+  
+  // Then check sessionStorage (fastest)
   const sessionKey = sessionStorage.getItem('_ek');
-  if (sessionKey) return sessionKey;
+  if (sessionKey) {
+    encryptionKeyCache = sessionKey;
+    return sessionKey;
+  }
   
   // If not in session and uid provided, check IndexedDB
   if (uid) {
     const dbKey = await getKeyFromDB(uid);
     if (dbKey) {
-      // Restore to sessionStorage for faster access
+      // Restore to cache and sessionStorage for faster access
+      encryptionKeyCache = dbKey;
       sessionStorage.setItem('_ek', dbKey);
       return dbKey;
     }
@@ -180,12 +199,21 @@ export async function getEncryptionKey(uid?: string): Promise<string | null> {
   return null;
 }
 
-// Clear encryption key (from both storages)
+// For backwards compatibility, keep getEncryptionKey as async
+export const getEncryptionKey = getEncryptionKeyAsync;
+
+// Clear encryption key from all storages
 export async function clearEncryptionKey(uid?: string): Promise<void> {
   if (!browser) return;
   
+  // Clear cache
+  encryptionKeyCache = null;
+  currentUserId = null;
+  
+  // Clear sessionStorage
   sessionStorage.removeItem('_ek');
   
+  // Clear from IndexedDB if uid provided
   if (uid) {
     await removeKeyFromDB(uid);
   }
@@ -207,7 +235,7 @@ async function importKey(keyString: string): Promise<CryptoKey> {
 export async function encryptData(data: any, keyString?: string): Promise<string> {
   if (!browser) throw new Error('Encryption only available in browser');
   
-  const storedKey = keyString || await getEncryptionKey();
+  const storedKey = keyString || await getEncryptionKey(currentUserId || undefined);
   if (!storedKey) throw new Error('No encryption key available');
   
   try {
@@ -242,7 +270,7 @@ export async function encryptData(data: any, keyString?: string): Promise<string
 export async function decryptData(encryptedString: string, keyString?: string): Promise<any> {
   if (!browser) throw new Error('Decryption only available in browser');
   
-  const storedKey = keyString || await getEncryptionKey();
+  const storedKey = keyString || await getEncryptionKey(currentUserId || undefined);
   if (!storedKey) throw new Error('No encryption key available');
   
   try {
@@ -322,16 +350,22 @@ export function generateSecurePassword(): string {
   return btoa(String.fromCharCode(...array));
 }
 
-// Check if encryption key is available (async now)
-export async function isEncryptionAvailable(uid?: string): Promise<boolean> {
-  const key = await getEncryptionKey(uid);
+// Check if encryption key is available (async version)
+export async function isEncryptionAvailableAsync(uid?: string): Promise<boolean> {
+  const key = await getEncryptionKeyAsync(uid);
   return !!key;
 }
 
-// Synchronous version for compatibility (checks sessionStorage only)
-export function isEncryptionAvailableSync(): boolean {
+// Synchronous version for compatibility (checks cache and sessionStorage only)
+export function isEncryptionAvailable(): boolean {
   if (!browser) return false;
-  return !!sessionStorage.getItem('_ek');
+  return !!encryptionKeyCache || !!sessionStorage.getItem('_ek');
+}
+
+// Get current encryption key synchronously (from cache only)
+export function getEncryptionKeySync(): string | null {
+  if (!browser) return null;
+  return encryptionKeyCache || sessionStorage.getItem('_ek');
 }
 
 // Batch encrypt multiple items
@@ -361,9 +395,60 @@ export async function restoreEncryptionKey(uid: string, password: string): Promi
   try {
     const encryptionKey = await generateUserKey(uid, password);
     await storeEncryptionKey(encryptionKey, uid);
+    currentUserId = uid;
     return true;
   } catch (error) {
     console.error('Failed to restore encryption key:', error);
     return false;
   }
+}
+
+// Initialize encryption for a user (call after auth state changes)
+export async function initializeEncryption(uid: string): Promise<boolean> {
+  if (!browser) return false;
+  
+  currentUserId = uid;
+  
+  // First check if we already have a key in cache or session
+  if (encryptionKeyCache) {
+    return true;
+  }
+  
+  const sessionKey = sessionStorage.getItem('_ek');
+  if (sessionKey) {
+    encryptionKeyCache = sessionKey;
+    // Also store in IndexedDB for persistence
+    await storeKeyInDB(uid, sessionKey);
+    return true;
+  }
+  
+  // Try to restore key from IndexedDB
+  const storedKey = await getKeyFromDB(uid);
+  if (storedKey) {
+    encryptionKeyCache = storedKey;
+    sessionStorage.setItem('_ek', storedKey);
+    return true;
+  }
+  
+  return false;
+}
+
+// Restore encryption key from session storage
+export async function restoreEncryptionFromSession(uid: string): Promise<boolean> {
+  if (!browser) return false;
+  
+  currentUserId = uid;
+  
+  const sessionKey = sessionStorage.getItem('_ek');
+  if (sessionKey) {
+    encryptionKeyCache = sessionKey;
+    // Store in IndexedDB for persistence if not already there
+    const dbKey = await getKeyFromDB(uid);
+    if (!dbKey) {
+      await storeKeyInDB(uid, sessionKey);
+    }
+    return true;
+  }
+  
+  return false;
 }
