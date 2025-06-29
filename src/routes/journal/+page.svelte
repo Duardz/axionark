@@ -747,7 +747,8 @@
             {#each mostUsedTags.slice(0, 5) as tagInfo}
               <button
                 on:click={() => filterTags = tagInfo.tag}
-                class="px-3 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 text-indigo-700 dark:text-indigo-400 rounded-full text-xs font-medium hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 transition-all"
+                class="px-3 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 text-indigo-700 dark:text-indigo-400 rounded-full text-xs font-medium hover:from-indigo-100 hover:to-purple-100 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 transition-all truncate max-w-[120px]"
+                title="#{tagInfo.tag} ({tagInfo.count})"
               >
                 #{tagInfo.tag} ({tagInfo.count})
               </button>
@@ -806,24 +807,24 @@
             <!-- Entry Header -->
             <div class="p-6">
               <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div class="flex-1">
-                  <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                <div class="flex-1 min-w-0">
+                  <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-3 break-words overflow-wrap-anywhere">
                     {entry.title}
                   </h2>
                   
-                  <div class="flex flex-wrap items-center gap-4 text-sm">
+                  <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-sm">
                     <div class="flex items-center text-gray-500 dark:text-gray-400">
-                      <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      {formatDate(entry.date)}
+                      <span class="truncate">{formatDate(entry.date)}</span>
                     </div>
                     
                     <div class="flex items-center text-gray-500 dark:text-gray-400">
-                      <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      {formatTime(entry.date)}
+                      <span>{formatTime(entry.date)}</span>
                     </div>
                     
                     {#if entry.mood}
@@ -836,7 +837,7 @@
                 </div>
                 
                 <!-- Actions -->
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-shrink-0">
                   <button
                     on:click={() => editEntry(entry)}
                     disabled={isProcessing(entry.id)}
@@ -866,7 +867,7 @@
               
               <!-- Entry Content -->
               <div class="mt-4">
-                <p class={`text-gray-700 dark:text-gray-300 leading-relaxed ${isExpanded ? '' : 'line-clamp-3'}`}>
+                <p class={`text-gray-700 dark:text-gray-300 leading-relaxed break-words overflow-wrap-anywhere ${isExpanded ? '' : 'line-clamp-3'}`}>
                   {entry.content}
                 </p>
                 
@@ -886,7 +887,8 @@
                   {#each entry.tags as tag}
                     <button
                       on:click={() => filterTags = tag}
-                      class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+                      class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-all truncate max-w-[150px]"
+                      title="#{tag}"
                     >
                       #{tag}
                     </button>
@@ -979,5 +981,14 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-clamp: 3;
+  }
+  
+  /* CSS for handling long text without spaces */
+  .break-words {
+    word-break: break-word;
+  }
+  
+  .overflow-wrap-anywhere {
+    overflow-wrap: anywhere;
   }
 </style>

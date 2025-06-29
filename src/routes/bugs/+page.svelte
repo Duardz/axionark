@@ -796,7 +796,7 @@
       </div>
 
       <!-- Top Programs -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg overflow-hidden">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
           <svg class="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -808,7 +808,9 @@
             {#each topPrograms.slice(0, 3) as program}
               <div class="text-sm">
                 <div class="flex justify-between items-center">
-                  <span class="text-gray-600 dark:text-gray-400 truncate mr-2">{program.program}</span>
+                  <span class="text-gray-600 dark:text-gray-400 truncate mr-2 max-w-[120px]" title={program.program}>
+                    {program.program}
+                  </span>
                   <span class="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
                     {#if program.earnings >= 10000}
                       {formatCompactNumber(program.earnings)}
@@ -1011,18 +1013,18 @@
             <!-- Bug Header -->
             <div class="p-6">
               <div class="flex items-start justify-between mb-4">
-                <div class="flex-1">
-                  <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1 break-words overflow-wrap-anywhere">
                     {bug.type}
                   </h3>
-                  <p class="text-gray-600 dark:text-gray-400 font-medium">
+                  <p class="text-gray-600 dark:text-gray-400 font-medium truncate max-w-full" title={bug.program}>
                     {bug.program}
                   </p>
                 </div>
                 
                 <!-- Actions -->
                 {#if viewMode === 'list'}
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 flex-shrink-0">
                     <button
                       on:click={() => editBug(bug)}
                       disabled={isProcessing(bug.id)}
@@ -1081,7 +1083,7 @@
                 <!-- Description -->
                 {#if bug.description}
                   <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <p class={`text-sm text-gray-700 dark:text-gray-300 leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}`}>
+                    <p class={`text-sm text-gray-700 dark:text-gray-300 leading-relaxed break-words overflow-wrap-anywhere ${isExpanded ? '' : 'line-clamp-2'}`}>
                       {bug.description}
                     </p>
                     
@@ -1222,5 +1224,14 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-clamp: 2;
+  }
+  
+  /* CSS for handling long text without spaces */
+  .break-words {
+    word-break: break-word;
+  }
+  
+  .overflow-wrap-anywhere {
+    overflow-wrap: anywhere;
   }
 </style>
