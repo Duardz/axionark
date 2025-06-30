@@ -1,13 +1,20 @@
 <!-- src/routes/profile/ProfileSettings.svelte -->
 <script lang="ts">
   import { authStore } from '$lib/stores/auth';
-  import { userStore } from '$lib/stores/user';
-  import { auth } from '$lib/firebase';
+  import { userStore, userProgress } from '$lib/stores/user';
+  import { auth, db } from '$lib/firebase';
   import { 
     sendPasswordResetEmail
   } from 'firebase/auth';
+  import { 
+    doc, 
+    updateDoc,
+    serverTimestamp
+  } from 'firebase/firestore';
   import { goto } from '$app/navigation';
   import EncryptionStatus from '$lib/components/EncryptionStatus.svelte';
+  import AvatarSelector from '$lib/components/AvatarSelector.svelte';
+  import { getAvatarById, DEFAULT_AVATAR_ID } from '$lib/data/avatars';
   
   export let userStoreData: any;
   
@@ -19,6 +26,8 @@
   // Form states
   let editingUsername = false;
   let newUsername = userStoreData.username;
+  let showAvatarModal = false;
+  let savingAvatar = false;
   
   // Settings states
   let showAchievements = true;
@@ -34,6 +43,10 @@
   // Password reset state
   let showPasswordResetSuccess = false;
   let resetLoading = false;
+  
+  // Get current avatar
+  $: currentAvatar = userStoreData?.avatar ? getAvatarById(userStoreData.avatar) : getAvatarById(DEFAULT_AVATAR_ID);
+  $: avatarEmoji = currentAvatar?.emoji || '🐱';
   
   async function updateUsername() {
     if (!newUsername.trim()) return;
@@ -114,6 +127,37 @@
     }
   }
   
+  async function updateAvatar(avatarId: string) {
+    if (!avatarId || avatarId === userStoreData.avatar || !db) {
+      showAvatarModal = false;
+      return;
+    }
+    
+    savingAvatar = true;
+    error = '';
+    
+    try {
+      // Update the avatar directly in Firestore since the method doesn't exist in userStore
+      const userRef = doc(db, 'users', userStoreData.uid);
+      await updateDoc(userRef, {
+        avatar: avatarId,
+        updatedAt: serverTimestamp()
+      });
+      
+      // Update local state to reflect the change immediately
+      userStoreData.avatar = avatarId;
+      
+      success = 'Avatar updated successfully!';
+      showAvatarModal = false;
+      showSuccessToast = true;
+      setTimeout(() => showSuccessToast = false, 3000);
+    } catch (err: any) {
+      error = err.message || 'Failed to update avatar';
+    } finally {
+      savingAvatar = false;
+    }
+  }
+  
   function toggleSetting(setting: string) {
     // In a real app, you'd save these preferences to Firestore
     switch(setting) {
@@ -185,9 +229,30 @@
     </h3>
     
     <div class="space-y-6">
+      <!-- Avatar Field -->
+      <div>
+        <label for="avatar-display" class="block text-sm font-medium text-gray-300 mb-2">
+          Avatar
+        </label>
+        <div class="flex items-center gap-4">
+          <div id="avatar-display" class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span class="text-4xl">{avatarEmoji}</span>
+          </div>
+          <button
+            on:click={() => showAvatarModal = true}
+            class="px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Change Avatar
+          </button>
+        </div>
+      </div>
+      
       <!-- Email Field -->
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2">
+        <label for="email-input" class="block text-sm font-medium text-gray-300 mb-2">
           Email Address
         </label>
         <div class="relative">
@@ -197,6 +262,7 @@
             </svg>
           </div>
           <input
+            id="email-input"
             type="email"
             value={userStoreData.email}
             disabled
@@ -213,7 +279,7 @@
       
       <!-- Username Field -->
       <div>
-        <label class="block text-sm font-medium text-gray-300 mb-2">
+        <label for="username-input" class="block text-sm font-medium text-gray-300 mb-2">
           Username
         </label>
         {#if editingUsername}
@@ -225,6 +291,7 @@
                 </svg>
               </div>
               <input
+                id="username-input"
                 type="text"
                 bind:value={newUsername}
                 class="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
@@ -257,6 +324,7 @@
                 </svg>
               </div>
               <input
+                id="username-input"
                 type="text"
                 value={userStoreData.username}
                 disabled
@@ -468,10 +536,11 @@
       
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">
+          <label for="delete-confirm-text" class="block text-sm font-medium text-gray-300 mb-2">
             Type <span class="font-mono bg-gray-700 px-2 py-1 rounded">DELETE</span> to confirm
           </label>
           <input
+            id="delete-confirm-text"
             type="text"
             bind:value={deleteConfirmText}
             placeholder="Type DELETE"
@@ -480,10 +549,11 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">
+          <label for="delete-confirm-password" class="block text-sm font-medium text-gray-300 mb-2">
             Enter your password
           </label>
           <input
+            id="delete-confirm-password"
             type="password"
             bind:value={deleteConfirmPassword}
             placeholder="Your password"
@@ -510,6 +580,55 @@
           class="flex-1 px-4 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
         >
           Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Avatar Selection Modal -->
+{#if showAvatarModal}
+  <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-gray-800 rounded-2xl max-w-4xl w-full p-6 border border-gray-700 my-8">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span class="text-2xl">🎨</span>
+          Choose Your Avatar
+        </h3>
+        <button
+          on:click={() => showAvatarModal = false}
+          disabled={savingAvatar}
+          class="text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+          aria-label="Close avatar selection modal"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      {#if savingAvatar}
+        <div class="flex items-center justify-center py-12">
+          <div class="text-center">
+            <div class="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-gray-400">Updating avatar...</p>
+          </div>
+        </div>
+      {:else}
+        <AvatarSelector
+          currentAvatarId={userStoreData.avatar || DEFAULT_AVATAR_ID}
+          userLevel={$userProgress?.level || 1}
+          onSelect={updateAvatar}
+        />
+      {/if}
+      
+      <div class="mt-6 flex justify-end">
+        <button
+          on:click={() => showAvatarModal = false}
+          disabled={savingAvatar}
+          class="px-6 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium disabled:opacity-50"
+        >
+          Close
         </button>
       </div>
     </div>

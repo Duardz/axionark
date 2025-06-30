@@ -75,6 +75,7 @@ export interface UserProfile {
   uid: string;
   email: string;
   username: string;
+  avatar?: string; // Avatar ID
   totalXP: number;
   completedTasks: string[];
   currentPhase: 'beginner' | 'intermediate' | 'advanced';
@@ -1076,3 +1077,4 @@ export const userProgress = derived(userStore, $user => {
   
   return { percentage, level, currentLevelXP, xpPerLevel };
 });
+

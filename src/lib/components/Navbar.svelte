@@ -3,12 +3,17 @@
   import { goto } from '$app/navigation';
   import { authStore } from '$lib/stores/auth';
   import { userStore, userProgress } from '$lib/stores/user';
+  import { getAvatarById, DEFAULT_AVATAR_ID } from '$lib/data/avatars';
   import { onMount } from 'svelte';
   
   let mobileMenuOpen = false;
   let profileMenuOpen = false;
   let showProgressTooltip = false;
   let scrolled = false;
+  
+  // Get current avatar emoji
+  $: currentAvatar = $userStore?.avatar ? getAvatarById($userStore.avatar) : getAvatarById(DEFAULT_AVATAR_ID);
+  $: avatarEmoji = currentAvatar?.emoji || '🐱';
   
   // Track scroll for navbar effects
   onMount(() => {
@@ -203,8 +208,8 @@
               on:click={toggleProfileMenu}
             >
               <div class="relative">
-                <div class="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-sm font-bold ring-2 ring-white/30">
-                  {$userStore.username.charAt(0).toUpperCase()}
+                <div class="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-lg ring-2 ring-white/30">
+                  {avatarEmoji}
                 </div>
                 <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full ring-2 ring-white"></div>
               </div>
@@ -220,8 +225,8 @@
                 <div class="bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 p-5">
                   <div class="flex items-center space-x-4">
                     <div class="relative">
-                      <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl font-bold ring-2 ring-white/30">
-                        {$userStore.username.charAt(0).toUpperCase()}
+                      <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-3xl ring-2 ring-white/30">
+                        {avatarEmoji}
                       </div>
                       <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full ring-2 ring-white"></div>
                     </div>
@@ -316,9 +321,14 @@
           {#if $userStore && $userProgress}
             <div class="bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 rounded-xl p-4 mb-4">
               <div class="flex items-center justify-between text-white">
-                <div>
-                  <div class="text-lg font-bold">Level {$userProgress.level}</div>
-                  <div class="text-xs opacity-90">{$userStore.totalXP} XP</div>
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center text-2xl ring-2 ring-white/30">
+                    {avatarEmoji}
+                  </div>
+                  <div>
+                    <div class="text-lg font-bold">Level {$userProgress.level}</div>
+                    <div class="text-xs opacity-90">{$userStore.totalXP} XP</div>
+                  </div>
                 </div>
                 <div class="text-right">
                   <div class="font-semibold">{$userStore.username}</div>

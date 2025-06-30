@@ -5,6 +5,7 @@
   import { authStore } from '$lib/stores/auth';
   import { userStore, userProgress } from '$lib/stores/user';
   import { roadmapData } from '$lib/data/roadmap';
+  import { getAvatarById, DEFAULT_AVATAR_ID } from '$lib/data/avatars';
   import Navbar from '$lib/components/Navbar.svelte';
   import ProfileSettings from './ProfileSettings.svelte';
   import type { User } from 'firebase/auth';
@@ -43,6 +44,10 @@
   let memberSince = '';
   let skills: Skill[] = [];
   let powerLevel = 0;
+
+  // Get current avatar emoji
+  $: currentAvatar = $userStore?.avatar ? getAvatarById($userStore.avatar) : getAvatarById(DEFAULT_AVATAR_ID);
+  $: avatarEmoji = currentAvatar?.emoji || '🐱';
 
   onMount(() => {
     const unsubscribe = authStore.subscribe(async (authUser) => {
@@ -104,35 +109,58 @@
   function calculateSkills(): Skill[] {
     if (!$userStore) return [];
     
+    // Helper function to calculate proper level and XP within current level
+    function calculateSkillLevel(totalXp: number, xpPerLevel: number) {
+      const level = Math.floor(totalXp / xpPerLevel) + 1;
+      const xpInCurrentLevel = totalXp % xpPerLevel;
+      return { level, xpInCurrentLevel };
+    }
+    
+    // Web Security - based on foundation phase progress
+    const webSecurityTotalXp = (phaseProgress.foundation || 0) * 10;
+    const webSecurityData = calculateSkillLevel(webSecurityTotalXp, 200);
+    
+    // Network Hacking - based on pentesting phase progress
+    const networkHackingTotalXp = (phaseProgress.pentesting || 0) * 8;
+    const networkHackingData = calculateSkillLevel(networkHackingTotalXp, 200);
+    
+    // Exploit Dev - based on advanced phase progress
+    const exploitDevTotalXp = (phaseProgress.advanced || 0) * 5;
+    const exploitDevData = calculateSkillLevel(exploitDevTotalXp, 150);
+    
+    // Bug Hunting - based on bugs found
+    const bugHuntingTotalXp = ($userStore.bugsFound || 0) * 50;
+    const bugHuntingData = calculateSkillLevel(bugHuntingTotalXp, 150);
+    
     return [
       {
         name: 'Web Security',
-        level: Math.floor(phaseProgress.foundation / 20) || 1,
-        xp: (phaseProgress.foundation * 10) || 0,
+        level: Math.min(webSecurityData.level, 20), // Cap at level 20
+        xp: webSecurityData.xpInCurrentLevel,
         nextLevelXp: 200,
         icon: '🌐',
         color: 'from-blue-500 to-cyan-500'
       },
       {
         name: 'Network Hacking',
-        level: Math.floor(phaseProgress.pentesting / 25) || 1,
-        xp: (phaseProgress.pentesting * 8) || 0,
+        level: Math.min(networkHackingData.level, 20),
+        xp: networkHackingData.xpInCurrentLevel,
         nextLevelXp: 200,
         icon: '🔌',
         color: 'from-purple-500 to-pink-500'
       },
       {
         name: 'Exploit Dev',
-        level: Math.floor(phaseProgress.advanced / 30) || 1,
-        xp: (phaseProgress.advanced * 5) || 0,
+        level: Math.min(exploitDevData.level, 20),
+        xp: exploitDevData.xpInCurrentLevel,
         nextLevelXp: 150,
         icon: '💉',
         color: 'from-red-500 to-orange-500'
       },
       {
         name: 'Bug Hunting',
-        level: Math.min(Math.floor(($userStore.bugsFound || 0) / 3), 10),
-        xp: ($userStore.bugsFound || 0) * 50,
+        level: Math.min(bugHuntingData.level, 20),
+        xp: bugHuntingData.xpInCurrentLevel,
         nextLevelXp: 150,
         icon: '🐛',
         color: 'from-green-500 to-emerald-500'
@@ -334,7 +362,7 @@
               
               <!-- Avatar -->
               <div class="absolute inset-2 sm:inset-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-4xl sm:text-5xl font-bold text-white shadow-2xl group-hover:scale-110 transition-transform">
-                {$userStore.username.charAt(0).toUpperCase()}
+                {avatarEmoji}
               </div>
               
               <!-- Level Badge -->
@@ -557,7 +585,7 @@
       {/if}
 
       {#if activeTab === 'skills'}
-        <!-- Skills Tab Content (keeping same as before) -->
+        <!-- Skills Tab Content (FIXED) -->
         <div class="max-w-4xl mx-auto">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {#each skills as skill}
@@ -576,19 +604,27 @@
                   </div>
                 </div>
                 <div class="space-y-2">
-                  <div class="w-full bg-gray-700 rounded-full h-3">
+                  <div class="w-full bg-gray-700 rounded-full h-3 overflow-hidden">
                     <div 
                       class="bg-gradient-to-r {skill.color} h-3 rounded-full transition-all duration-1000 relative overflow-hidden"
-                      style="width: {(skill.xp / skill.nextLevelXp) * 100}%"
+                      style="width: {Math.min((skill.xp / skill.nextLevelXp) * 100, 100)}%"
                     >
                       <div class="absolute inset-0 bg-white/20 animate-shimmer"></div>
                     </div>
                   </div>
                   <div class="flex justify-between text-xs">
                     <span class="text-gray-500">Progress</span>
-                    <span class="text-gray-400">{Math.round((skill.xp / skill.nextLevelXp) * 100)}%</span>
+                    <span class="text-gray-400">{Math.round(Math.min((skill.xp / skill.nextLevelXp) * 100, 100))}%</span>
                   </div>
                 </div>
+                {#if skill.level >= 20}
+                  <div class="mt-3 text-xs text-yellow-400 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    MAX LEVEL
+                  </div>
+                {/if}
               </div>
             {/each}
           </div>

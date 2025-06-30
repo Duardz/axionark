@@ -14,6 +14,8 @@
   } from '$lib/utils/encryption';
   import Footer from '$lib/components/Footer.svelte';
   import '../app.css';
+  import { injectAnalytics } from '@vercel/analytics/sveltekit';
+  import { dev } from '$app/environment';
 
   let darkMode = false;
   let activityTimer: NodeJS.Timeout | null = null;
@@ -68,6 +70,9 @@
       }
     });
     
+    // Inject analytics
+    injectAnalytics({ mode: dev ? 'development' : 'production' });
+
     // Security: Prevent clickjacking
     if (browser && window.self !== window.top) {
       console.warn('Potential clickjacking attempt detected');
