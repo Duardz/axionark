@@ -1,4 +1,4 @@
-<!-- src/routes/journal/+page.svelte - Enhanced UI/UX Version -->
+<!-- src/routes/journal/+page.svelte - Complete Updated Version -->
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
@@ -7,6 +7,7 @@
   import Navbar from '$lib/components/Navbar.svelte';
   import type { JournalEntry } from '$lib/stores/user';
   import { firebaseTimestampToDate } from '$lib/utils/security';
+  import { Timestamp } from 'firebase/firestore'; // ADDED: Import for proper timestamp handling
 
   let currentUser: any = null;
   let loading = false;
@@ -250,6 +251,7 @@
       .slice(0, MAX_TAGS);
   }
 
+  // UPDATED: Fixed handleSubmit with proper timestamp
   async function handleSubmit() {
     if (!currentUser || !title.trim() || !content.trim()) {
       successMessage = 'Please fill in all required fields';
@@ -276,11 +278,12 @@
         
         closeModal();
       } else {
+        // FIXED: Use Timestamp.now() for accurate server time
         const entry: JournalEntry = {
           uid: currentUser.uid,
           title: title.trim(),
           content: content.trim(),
-          date: new Date(),
+          date: Timestamp.now(), // CHANGED: From new Date() to Timestamp.now()
           mood,
           tags: processedTags
         };
@@ -421,12 +424,7 @@
     });
   }
 
-  function formatTime(date: any) {
-    return firebaseTimestampToDate(date).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
+
 
   function getRelativeDate(date: any) {
     const entryDate = firebaseTimestampToDate(date);
@@ -882,13 +880,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       <span class="truncate">{formatDate(entry.date)}</span>
-                    </div>
-                    
-                    <div class="flex items-center text-gray-500 dark:text-gray-400">
-                      <svg class="w-4 h-4 mr-1.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{formatTime(entry.date)}</span>
                     </div>
                     
                     {#if entry.mood}
