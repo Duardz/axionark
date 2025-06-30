@@ -1,4 +1,4 @@
-<!-- src/routes/bugs/+page.svelte - Fixed Text Overflow Version -->
+<!-- src/routes/bugs/+page.svelte - Enhanced UI/UX Version -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -11,7 +11,7 @@
 
   let currentUser: any = null;
   let loading = false;
-  let showForm = false;
+  let showFormModal = false;
   let editingBug: Bug | null = null;
   let showSuccessToast = false;
   let successMessage = '';
@@ -247,7 +247,7 @@
         showSuccessToast = true;
         setTimeout(() => showSuccessToast = false, 3000);
         
-        resetForm();
+        closeModal();
       } else {
         const bug: Bug = {
           uid: currentUser.uid,
@@ -266,7 +266,7 @@
         showSuccessToast = true;
         setTimeout(() => showSuccessToast = false, 3000);
         
-        resetForm();
+        closeModal();
       }
     } catch (error: any) {
       console.error('Error saving bug:', error);
@@ -303,7 +303,7 @@
     }
   }
 
-  function editBug(bug: Bug) {
+  function openEditModal(bug: Bug) {
     editingBug = bug;
     type = bug.type;
     severity = bug.severity;
@@ -312,8 +312,18 @@
     status = bug.status;
     dateFound = firebaseTimestampToDate(bug.dateFound).toISOString().split('T')[0];
     description = bug.description || '';
-    showForm = true;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showFormModal = true;
+  }
+
+  function openNewBugModal() {
+    editingBug = null;
+    resetForm();
+    showFormModal = true;
+  }
+
+  function closeModal() {
+    showFormModal = false;
+    resetForm();
   }
 
   function resetForm() {
@@ -324,7 +334,6 @@
     status = 'reported';
     dateFound = new Date().toISOString().split('T')[0];
     description = '';
-    showForm = false;
     editingBug = null;
   }
 
@@ -477,6 +486,226 @@
   </div>
 {/if}
 
+<!-- Bug Report Form Modal - Enhanced Design (Matching Journal Page) -->
+{#if showFormModal}
+  <div class="fixed inset-0 z-50 overflow-y-auto">
+    <!-- Backdrop -->
+    <div 
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" 
+      on:click={closeModal}
+      on:keydown={(e) => e.key === 'Escape' && closeModal()}
+      role="button"
+      tabindex="-1"
+      aria-label="Close modal"
+    ></div>
+    
+    <!-- Modal -->
+    <div class="flex min-h-full items-center justify-center p-4">
+      <div class="relative w-full max-w-2xl transform transition-all">
+        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl">
+          <!-- Header -->
+          <div class="bg-gradient-to-r from-red-500 via-orange-500 to-amber-500 p-6 rounded-t-2xl">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div class="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-2xl font-bold text-white">
+                    {editingBug ? 'Edit Bug Report' : 'New Bug Report'}
+                  </h2>
+                  <p class="text-sm text-white/80 mt-1">
+                    {editingBug ? 'Update vulnerability details' : 'Track your bug bounty findings'}
+                  </p>
+                </div>
+              </div>
+              <button
+                on:click={closeModal}
+                class="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                aria-label="Close modal"
+              >
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Form -->
+          <form on:submit|preventDefault={handleSubmit} class="p-6 space-y-6">
+            <!-- Two Column Layout -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <!-- Bug Type -->
+              <div>
+                <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Bug Type <span class="text-red-500">*</span>
+                  <span class="float-right text-xs text-gray-500">{type.length}/{MAX_TYPE_LENGTH}</span>
+                </label>
+                <input
+                  id="type"
+                  type="text"
+                  bind:value={type}
+                  maxlength={MAX_TYPE_LENGTH}
+                  placeholder="XSS, SQLi, IDOR, etc."
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+
+              <!-- Program -->
+              <div>
+                <label for="program" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Program <span class="text-red-500">*</span>
+                  <span class="float-right text-xs text-gray-500">{program.length}/{MAX_PROGRAM_LENGTH}</span>
+                </label>
+                <input
+                  id="program"
+                  type="text"
+                  bind:value={program}
+                  maxlength={MAX_PROGRAM_LENGTH}
+                  placeholder="Company/Program name"
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+
+              <!-- Bounty Amount -->
+              <div>
+                <label for="bounty" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Bounty Amount ($)
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    id="bounty"
+                    type="number"
+                    bind:value={bounty}
+                    min="0"
+                    step="1"
+                    placeholder="0"
+                    class="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+
+              <!-- Date Found -->
+              <div>
+                <label for="dateFound" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Date Found
+                </label>
+                <input
+                  id="dateFound"
+                  type="date"
+                  bind:value={dateFound}
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                />
+              </div>
+            </div>
+
+            <!-- Severity Selection -->
+            <div>
+              <p class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Severity Level
+              </p>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {#each [
+                  { value: 'low', emoji: '🟢', label: 'Low', color: 'green' },
+                  { value: 'medium', emoji: '🟡', label: 'Medium', color: 'yellow' },
+                  { value: 'high', emoji: '🟠', label: 'High', color: 'orange' },
+                  { value: 'critical', emoji: '🔴', label: 'Critical', color: 'red' }
+                ] as severityOption}
+                  <label class="cursor-pointer">
+                    <input
+                      type="radio"
+                      bind:group={severity}
+                      value={severityOption.value}
+                      class="sr-only"
+                    />
+                    <div class={`p-4 rounded-xl border-2 transition-all text-center ${
+                      severity === severityOption.value 
+                        ? `border-${severityOption.color}-500 bg-${severityOption.color}-50 dark:bg-${severityOption.color}-900/20` 
+                        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                    }`}>
+                      <div class="text-3xl mb-1">{severityOption.emoji}</div>
+                      <div class="text-sm font-medium">{severityOption.label}</div>
+                    </div>
+                  </label>
+                {/each}
+              </div>
+            </div>
+
+            <!-- Status -->
+            <div>
+              <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Current Status
+              </label>
+              <select
+                id="status"
+                bind:value={status}
+                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+              >
+                <option value="reported">📤 Reported</option>
+                <option value="triaged">🔍 Triaged</option>
+                <option value="resolved">✅ Resolved</option>
+                <option value="duplicate">📑 Duplicate</option>
+                <option value="rejected">❌ Rejected</option>
+              </select>
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Description
+                <span class="float-right text-xs text-gray-500">{description.length}/{MAX_DESCRIPTION_LENGTH}</span>
+              </label>
+              <textarea
+                id="description"
+                bind:value={description}
+                maxlength={MAX_DESCRIPTION_LENGTH}
+                rows="6"
+                placeholder="Provide details about the vulnerability, impact, and steps to reproduce..."
+                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
+              ></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-4">
+              <button
+                type="button"
+                on:click={closeModal}
+                class="flex-1 sm:flex-none px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !type.trim() || !program.trim()}
+                class="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-medium hover:from-red-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center space-x-2"
+              >
+                {#if loading}
+                  <div class="spinner w-5 h-5"></div>
+                  <span>Saving...</span>
+                {:else}
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>{editingBug ? 'Update Bug' : 'Report Bug'}</span>
+                {/if}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
+
 <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
   <!-- Hero Section -->
   <div class="bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 dark:from-red-900/10 dark:via-orange-900/10 dark:to-amber-900/10 border-b border-gray-200 dark:border-gray-700">
@@ -585,20 +814,13 @@
         <!-- Action Button -->
         <div class="text-center mt-8">
           <button
-            on:click={() => showForm = !showForm}
+            on:click={openNewBugModal}
             class="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-2xl font-semibold text-base sm:text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
           >
-            {#if showForm}
-              <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Close Form
-            {:else}
-              <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Report New Bug
-            {/if}
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Report New Bug
           </button>
         </div>
       </div>
@@ -606,163 +828,6 @@
   </div>
 
   <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
-    <!-- Bug Report Form -->
-    {#if showForm}
-      <div class="mb-8 animate-slide-down">
-        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
-          <div class="bg-gradient-to-r from-red-600 to-orange-600 p-6 text-white">
-            <h2 class="text-2xl font-bold flex items-center">
-              <svg class="w-7 h-7 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              {editingBug ? 'Edit Bug Report' : 'New Bug Report'}
-            </h2>
-          </div>
-          
-          <form on:submit|preventDefault={handleSubmit} class="p-8 space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Bug Type -->
-              <div>
-                <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Bug Type * <span class="text-xs text-gray-500">({type.length}/{MAX_TYPE_LENGTH})</span>
-                </label>
-                <input
-                  id="type"
-                  type="text"
-                  bind:value={type}
-                  maxlength={MAX_TYPE_LENGTH}
-                  placeholder="XSS, SQLi, IDOR, etc."
-                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-
-              <!-- Program -->
-              <div>
-                <label for="program" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Program * <span class="text-xs text-gray-500">({program.length}/{MAX_PROGRAM_LENGTH})</span>
-                </label>
-                <input
-                  id="program"
-                  type="text"
-                  bind:value={program}
-                  maxlength={MAX_PROGRAM_LENGTH}
-                  placeholder="Company/Program name"
-                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                  required
-                />
-              </div>
-
-              <!-- Severity -->
-              <div>
-                <label for="severity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Severity
-                </label>
-                <select
-                  id="severity"
-                  bind:value={severity}
-                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                >
-                  <option value="low">🟢 Low</option>
-                  <option value="medium">🟡 Medium</option>
-                  <option value="high">🟠 High</option>
-                  <option value="critical">🔴 Critical</option>
-                </select>
-              </div>
-
-              <!-- Status -->
-              <div>
-                <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Status
-                </label>
-                <select
-                  id="status"
-                  bind:value={status}
-                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                >
-                  <option value="reported">Reported</option>
-                  <option value="triaged">Triaged</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="duplicate">Duplicate</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
-
-              <!-- Bounty -->
-              <div>
-                <label for="bounty" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Bounty Amount ($)
-                </label>
-                <input
-                  id="bounty"
-                  type="number"
-                  bind:value={bounty}
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                />
-              </div>
-
-              <!-- Date Found -->
-              <div>
-                <label for="dateFound" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Date Found
-                </label>
-                <input
-                  id="dateFound"
-                  type="date"
-                  bind:value={dateFound}
-                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                />
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div>
-              <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description <span class="text-xs text-gray-500">({description.length}/{MAX_DESCRIPTION_LENGTH})</span>
-              </label>
-              <textarea
-                id="description"
-                bind:value={description}
-                maxlength={MAX_DESCRIPTION_LENGTH}
-                rows="4"
-                placeholder="Provide details about the vulnerability..."
-                class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
-              ></textarea>
-            </div>
-
-            <!-- Submit Buttons -->
-            <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-              <button
-                type="button"
-                on:click={resetForm}
-                class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                class="px-8 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {#if loading}
-                  <div class="spinner w-5 h-5 mr-2"></div>
-                  Saving...
-                {:else}
-                  <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  {editingBug ? 'Update Bug' : 'Report Bug'}
-                {/if}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    {/if}
-
     <!-- Stats Cards - Also fixed for responsive numbers -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <!-- This Month Stats -->
@@ -978,7 +1043,7 @@
     </div>
 
     <!-- Bugs List/Grid -->
-    {#if loading && !showForm}
+    {#if loading && !showFormModal}
       <div class="flex justify-center items-center h-64">
         <div class="spinner w-12 h-12"></div>
       </div>
@@ -999,7 +1064,7 @@
         </p>
         {#if $bugStore.length === 0}
           <button
-            on:click={() => showForm = true}
+            on:click={openNewBugModal}
             class="px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-105 transition-all"
           >
             Report Your First Bug
@@ -1040,7 +1105,7 @@
                 {#if viewMode === 'list'}
                   <div class="flex items-center gap-2 flex-shrink-0">
                     <button
-                      on:click={() => editBug(bug)}
+                      on:click={() => openEditModal(bug)}
                       disabled={isProcessing(bug.id)}
                       class="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
                       aria-label="Edit bug"
@@ -1116,7 +1181,7 @@
                 {#if viewMode === 'grid'}
                   <div class="flex gap-2 pt-3">
                     <button
-                      on:click={() => editBug(bug)}
+                      on:click={() => openEditModal(bug)}
                       disabled={isProcessing(bug.id)}
                       class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-all text-sm font-medium"
                     >
@@ -1200,23 +1265,8 @@
     }
   }
   
-  @keyframes slide-down {
-    from {
-      opacity: 0;
-      max-height: 0;
-    }
-    to {
-      opacity: 1;
-      max-height: 1000px;
-    }
-  }
-  
   .animate-slide-in {
     animation: slide-in 0.3s ease-out;
-  }
-  
-  .animate-slide-down {
-    animation: slide-down 0.4s ease-out;
   }
   
   .spinner {
@@ -1224,6 +1274,7 @@
     border-top-color: #ef4444;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
+    display: inline-block;
   }
   
   @keyframes spin {
@@ -1240,7 +1291,6 @@
     line-clamp: 2;
   }
   
-  /* CSS for handling long text without spaces */
   .truncate {
     overflow: hidden;
     text-overflow: ellipsis;

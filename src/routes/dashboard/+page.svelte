@@ -1,4 +1,4 @@
-<!-- src/routes/dashboard/+page.svelte - Fixed Text Overflow Version -->
+<!-- src/routes/dashboard/+page.svelte - Enhanced UI/UX Version -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -116,7 +116,7 @@
     const configs: Record<string, { emoji: string; color: string }> = {
       critical: { emoji: '🔴', color: 'text-red-600 dark:text-red-400' },
       high: { emoji: '🟠', color: 'text-orange-600 dark:text-orange-400' },
-      medium: { emoji: '🟡', color: 'text-yellow-600 dark:text-yellow-400' },
+      medium: { emoji: '🟡', color: 'text-amber-600 dark:text-amber-400' },
       low: { emoji: '🟢', color: 'text-green-600 dark:text-green-400' }
     };
     return configs[severity] || configs.medium;
@@ -140,9 +140,9 @@
   function getGreeting() {
     const timeOfDay = getTimeOfDay();
     const greetings = {
-      morning: '🌅 Good morning',
-      afternoon: '☀️ Good afternoon',
-      evening: '🌙 Good evening'
+      morning: 'Good morning',
+      afternoon: 'Good afternoon',
+      evening: 'Good evening'
     };
     return greetings[timeOfDay];
   }
@@ -167,19 +167,57 @@
     return '$' + num.toLocaleString();
   }
 
+  function getPhaseIcon(phaseId: string): string {
+    switch (phaseId) {
+      case 'foundation': return '🌱';
+      case 'pentesting': return '🚀';
+      case 'advanced': return '⚡';
+      default: return '📚';
+    }
+  }
+
+  function getPhaseColor(phaseId: string) {
+    switch (phaseId) {
+      case 'foundation':
+        return {
+          bg: 'from-emerald-500 to-green-600',
+          text: 'text-emerald-600 dark:text-emerald-400',
+          light: 'bg-emerald-50 dark:bg-emerald-900/10'
+        };
+      case 'pentesting':
+        return {
+          bg: 'from-indigo-500 to-blue-600',
+          text: 'text-indigo-600 dark:text-indigo-400',
+          light: 'bg-indigo-50 dark:bg-indigo-900/10'
+        };
+      case 'advanced':
+        return {
+          bg: 'from-purple-500 to-violet-600',
+          text: 'text-purple-600 dark:text-purple-400',
+          light: 'bg-purple-50 dark:bg-purple-900/10'
+        };
+      default:
+        return {
+          bg: 'from-gray-500 to-slate-600',
+          text: 'text-gray-600 dark:text-gray-400',
+          light: 'bg-gray-50 dark:bg-gray-900/10'
+        };
+    }
+  }
+
   $: nextTasks = getNextTasks();
   $: currentPhaseId = getCurrentPhase();
 </script>
 
 <Navbar />
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
   <!-- New User Welcome Modal -->
   {#if showNewUserWelcome}
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full p-8 shadow-2xl animate-scale-in">
         <div class="text-center">
-          <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center animate-bounce-subtle">
+          <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center animate-bounce-subtle">
             <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
@@ -222,7 +260,7 @@
           
           <button
             on:click={closeWelcome}
-            class="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all"
+            class="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all"
           >
             Start My Journey
           </button>
@@ -240,7 +278,7 @@
       <!-- Greeting Header -->
       <div class="mb-8">
         <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          {getGreeting()}, <span class="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">{$userStore.username}</span>!
+          {getGreeting()}, <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{$userStore.username}</span>!
         </h1>
         <p class="text-lg text-gray-600 dark:text-gray-400">
           Ready to level up your skills today? Your dedication is paying off! 🚀
@@ -248,11 +286,11 @@
       </div>
 
       <!-- Stats Overview -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <!-- Level & XP -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
           <div class="flex items-center justify-between mb-4">
-            <div class="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl text-white">
+            <div class="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl text-white">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
@@ -271,7 +309,7 @@
             </div>
             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div 
-                class="bg-gradient-to-r from-cyan-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-500"
                 style="width: {$userProgress.percentage}%"
               ></div>
             </div>
@@ -310,7 +348,7 @@
         <!-- Bug Bounty Stats -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
           <div class="flex items-center justify-between mb-4">
-            <div class="p-3 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl text-white">
+            <div class="p-3 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl text-white">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -356,25 +394,32 @@
         </div>
       </div>
 
-      <!-- Current Phase Progress -->
-      <div class="bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 rounded-3xl p-8 mb-8 text-white shadow-xl">
-        <h2 class="text-2xl font-bold mb-6">📈 Your Learning Path</h2>
+      <!-- Current Phase Progress - Improved Layout -->
+      <div class="bg-white dark:bg-gray-800 rounded-3xl p-8 mb-8 shadow-xl">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <span class="text-3xl mr-3">📈</span>
+          Your Learning Path
+        </h2>
         
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <!-- Phase Progress -->
           <div>
-            <h3 class="text-lg font-medium mb-4 opacity-90">Phase Progress</h3>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Phase Progress</h3>
             <div class="space-y-4">
               {#each roadmapData.slice(0, 3) as phase}
                 {@const progress = getPhaseProgress(phase.id)}
-                <div>
-                  <div class="flex justify-between text-sm mb-2">
-                    <span class="font-medium">{phase.title}</span>
-                    <span class="opacity-90">{progress}%</span>
+                {@const phaseColor = getPhaseColor(phase.id)}
+                <div class={`p-4 rounded-xl ${phaseColor.light} border border-gray-200 dark:border-gray-700`}>
+                  <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                      <span class="text-2xl">{getPhaseIcon(phase.id)}</span>
+                      <span class="font-semibold text-gray-900 dark:text-white">{phase.title}</span>
+                    </div>
+                    <span class={`font-bold ${phaseColor.text}`}>{progress}%</span>
                   </div>
-                  <div class="w-full bg-white/20 rounded-full h-3">
+                  <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                     <div 
-                      class="bg-white h-3 rounded-full transition-all duration-500 relative overflow-hidden"
+                      class={`bg-gradient-to-r ${phaseColor.bg} h-3 rounded-full transition-all duration-500 relative overflow-hidden`}
                       style="width: {progress}%"
                     >
                       <div class="absolute inset-0 bg-white/30 animate-shimmer"></div>
@@ -387,21 +432,29 @@
           
           <!-- Next Tasks -->
           <div>
-            <h3 class="text-lg font-medium mb-4 opacity-90">🎯 Next Up</h3>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">🎯 Next Up</h3>
             <div class="space-y-3">
               {#each nextTasks as task}
+                {@const taskPhaseColor = getPhaseColor(task.phase)}
                 <a 
                   href="/roadmap" 
-                  class="block bg-white/10 backdrop-blur-sm rounded-xl p-4 hover:bg-white/20 transition-all group"
+                  class="block bg-gray-50 dark:bg-gray-700 rounded-xl p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all group"
                 >
-                  <h4 class="font-semibold mb-1 group-hover:translate-x-1 transition-transform truncate">
-                    {truncateText(task.title, 40)}
-                  </h4>
                   <div class="flex items-center justify-between">
-                    <span class="text-sm opacity-75">{task.xp} XP</span>
-                    <span class="text-xs bg-white/20 px-3 py-1 rounded-full">
-                      {task.phase}
-                    </span>
+                    <div class="flex-1 min-w-0">
+                      <h4 class="font-semibold text-gray-900 dark:text-white group-hover:translate-x-1 transition-transform truncate">
+                        {truncateText(task.title, 40)}
+                      </h4>
+                      <div class="flex items-center gap-2 mt-1">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">{task.xp} XP</span>
+                        <span class={`text-xs px-2 py-1 rounded-full ${taskPhaseColor.light} ${taskPhaseColor.text} font-medium`}>
+                          {task.phase}
+                        </span>
+                      </div>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </a>
               {/each}
@@ -553,14 +606,17 @@
 
       <!-- Quick Actions -->
       <div class="mt-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-3xl p-8">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">⚡ Quick Actions</h2>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <span class="text-2xl mr-3">⚡</span>
+          Quick Actions
+        </h2>
         
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <a 
             href="/roadmap" 
             class="bg-white dark:bg-gray-800 rounded-xl p-6 hover:shadow-lg transition-all group"
           >
-            <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
+            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
@@ -586,7 +642,7 @@
             href="/bugs" 
             class="bg-white dark:bg-gray-800 rounded-xl p-6 hover:shadow-lg transition-all group"
           >
-            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
+            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
