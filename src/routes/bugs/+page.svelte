@@ -1024,21 +1024,6 @@
         <div class="text-sm text-gray-600 dark:text-gray-400">
           Showing <span class="font-semibold text-gray-900 dark:text-white">{filteredBugs.length}</span> bugs
         </div>
-        
-        <!-- Date Range -->
-        <div class="flex items-center gap-2">
-          <span class="text-sm text-gray-500 dark:text-gray-400">Period:</span>
-          <select
-            bind:value={dateRange}
-            class="px-3 py-1 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
-          >
-            <option value="all">All Time</option>
-            <option value="today">Today</option>
-            <option value="week">Last 7 Days</option>
-            <option value="month">Last 30 Days</option>
-            <option value="year">Last Year</option>
-          </select>
-        </div>
       </div>
     </div>
 
