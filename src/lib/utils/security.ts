@@ -245,15 +245,15 @@ export function validateCSRFToken(token: string, storedToken: string): boolean {
   return true;
 }
 
-// Enhanced Content Security Policy headers
+// Enhanced Content Security Policy headers - UPDATED WITH VERCEL ANALYTICS
 export const CSP_HEADERS = {
   'Content-Security-Policy': `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://apis.google.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://apis.google.com https://va.vercel-scripts.com https://*.vercel-scripts.com;
     style-src 'self' 'unsafe-inline';
     img-src 'self' data: https: blob:;
     font-src 'self' data:;
-    connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com;
+    connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://vitals.vercel-insights.com https://va.vercel-scripts.com https://*.vercel-scripts.com;
     frame-src 'self' https://*.firebaseapp.com https://accounts.google.com https://apis.google.com;
     object-src 'none';
     base-uri 'self';

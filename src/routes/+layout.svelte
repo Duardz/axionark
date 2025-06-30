@@ -70,8 +70,10 @@
       }
     });
     
-    // Inject analytics
-    injectAnalytics({ mode: dev ? 'development' : 'production' });
+    // Only inject analytics in production
+    if (!dev) {
+      injectAnalytics({ mode: 'production' });
+    }
 
     // Security: Prevent clickjacking
     if (browser && window.self !== window.top) {
