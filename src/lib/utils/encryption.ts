@@ -1,4 +1,4 @@
-// src/lib/utils/encryption.ts - Fixed version with proper key management
+// src/lib/utils/encryption.ts - Complete fixed version
 import { browser } from '$app/environment';
 
 // IndexedDB setup for secure key storage
@@ -29,7 +29,7 @@ async function initDB(): Promise<IDBDatabase> {
 }
 
 // Store encryption key in IndexedDB with expiration
-async function storeKeyInDB(uid: string, key: string, expirationHours: number = 168): Promise<void> {
+export async function storeKeyInDB(uid: string, key: string, expirationHours: number = 720): Promise<void> {
   if (!browser) return;
   
   try {
@@ -150,8 +150,8 @@ export async function generateUserKey(uid: string, password: string): Promise<st
   return btoa(String.fromCharCode(...new Uint8Array(exportedKey)));
 }
 
-// Store user's encryption key with caching
-export async function storeEncryptionKey(key: string, uid?: string): Promise<void> {
+// Store user's encryption key with caching - Updated with longer default expiration
+export async function storeEncryptionKey(key: string, uid?: string, expirationHours: number = 720): Promise<void> {
   if (!browser) return;
   
   // Update cache
@@ -162,10 +162,13 @@ export async function storeEncryptionKey(key: string, uid?: string): Promise<voi
   
   // Always store in sessionStorage for immediate access
   sessionStorage.setItem('_ek', key);
+  if (uid) {
+    sessionStorage.setItem('_ek_uid', uid);
+  }
   
   // Also store in IndexedDB for persistence if uid is provided
   if (uid) {
-    await storeKeyInDB(uid, key);
+    await storeKeyInDB(uid, key, expirationHours);
   }
 }
 
@@ -192,6 +195,7 @@ export async function getEncryptionKeyAsync(uid?: string): Promise<string | null
       // Restore to cache and sessionStorage for faster access
       encryptionKeyCache = dbKey;
       sessionStorage.setItem('_ek', dbKey);
+      sessionStorage.setItem('_ek_uid', uid);
       return dbKey;
     }
   }
@@ -212,6 +216,7 @@ export async function clearEncryptionKey(uid?: string): Promise<void> {
   
   // Clear sessionStorage
   sessionStorage.removeItem('_ek');
+  sessionStorage.removeItem('_ek_uid');
   
   // Clear from IndexedDB if uid provided
   if (uid) {
@@ -394,7 +399,7 @@ export async function batchDecrypt<T extends Record<string, any>>(
 export async function restoreEncryptionKey(uid: string, password: string): Promise<boolean> {
   try {
     const encryptionKey = await generateUserKey(uid, password);
-    await storeEncryptionKey(encryptionKey, uid);
+    await storeEncryptionKey(encryptionKey, uid, 720); // 30 days
     currentUserId = uid;
     return true;
   } catch (error) {
@@ -415,10 +420,13 @@ export async function initializeEncryption(uid: string): Promise<boolean> {
   }
   
   const sessionKey = sessionStorage.getItem('_ek');
-  if (sessionKey) {
+  const sessionUid = sessionStorage.getItem('_ek_uid');
+  
+  // Verify the session key belongs to the current user
+  if (sessionKey && (!sessionUid || sessionUid === uid)) {
     encryptionKeyCache = sessionKey;
     // Also store in IndexedDB for persistence
-    await storeKeyInDB(uid, sessionKey);
+    await storeKeyInDB(uid, sessionKey, 720); // 30 days
     return true;
   }
   
@@ -427,6 +435,7 @@ export async function initializeEncryption(uid: string): Promise<boolean> {
   if (storedKey) {
     encryptionKeyCache = storedKey;
     sessionStorage.setItem('_ek', storedKey);
+    sessionStorage.setItem('_ek_uid', uid);
     return true;
   }
   
@@ -440,13 +449,39 @@ export async function restoreEncryptionFromSession(uid: string): Promise<boolean
   currentUserId = uid;
   
   const sessionKey = sessionStorage.getItem('_ek');
-  if (sessionKey) {
+  const sessionUid = sessionStorage.getItem('_ek_uid');
+  
+  if (sessionKey && (!sessionUid || sessionUid === uid)) {
     encryptionKeyCache = sessionKey;
     // Store in IndexedDB for persistence if not already there
     const dbKey = await getKeyFromDB(uid);
     if (!dbKey) {
-      await storeKeyInDB(uid, sessionKey);
+      await storeKeyInDB(uid, sessionKey, 720); // 30 days
     }
+    return true;
+  }
+  
+  return false;
+}
+
+// Check and restore encryption from all available sources
+export async function checkAndRestoreEncryption(uid: string): Promise<boolean> {
+  if (!browser) return false;
+  
+  // 1. Check cache
+  if (encryptionKeyCache && currentUserId === uid) {
+    return true;
+  }
+  
+  // 2. Check session storage
+  const sessionRestored = await restoreEncryptionFromSession(uid);
+  if (sessionRestored) {
+    return true;
+  }
+  
+  // 3. Check IndexedDB
+  const initialized = await initializeEncryption(uid);
+  if (initialized) {
     return true;
   }
   

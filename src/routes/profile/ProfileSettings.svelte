@@ -1,4 +1,4 @@
-<!-- src/routes/profile/ProfileSettings.svelte -->
+<!-- src/routes/profile/ProfileSettings.svelte - Complete fixed version -->
 <script lang="ts">
   import { authStore } from '$lib/stores/auth';
   import { userStore, userProgress } from '$lib/stores/user';
@@ -121,10 +121,19 @@
       await authStore.deleteAccount(deleteConfirmPassword);
       
       // The user will be automatically logged out and redirected by the auth state listener
+      // Show a brief success message before redirect
+      success = 'Account deleted successfully. Redirecting...';
+      showSuccessToast = true;
       
     } catch (err: any) {
-      deleteError = err.message || 'Failed to delete account';
+      console.error('Delete account error:', err);
+      deleteError = err.message || 'Failed to delete account. Please try again.';
       loading = false;
+      
+      // If it's a re-authentication error, provide clearer instructions
+      if (err.message.includes('sign in again')) {
+        deleteError = 'Your session has expired. Please sign out and sign in again to delete your account.';
+      }
     }
   }
   
@@ -583,7 +592,8 @@
             deleteConfirmPassword = '';
             deleteError = '';
           }}
-          class="flex-1 px-4 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
+          disabled={loading}
+          class="flex-1 px-4 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium disabled:opacity-50"
         >
           Cancel
         </button>

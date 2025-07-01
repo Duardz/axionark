@@ -221,44 +221,44 @@
   <!-- New User Welcome Modal -->
   {#if showNewUserWelcome}
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full p-8 shadow-2xl animate-scale-in">
+      <div class="bg-white dark:bg-gray-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto">
         <div class="text-center">
-          <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center animate-bounce-subtle">
-            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center animate-bounce-subtle">
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
           </div>
           
-          <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
             Welcome to Your Bug Hunting Journey! 🎯
           </h2>
           
-          <p class="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-xl mx-auto">
+          <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 mb-6 sm:mb-8 max-w-xl mx-auto px-4">
             You're about to embark on an exciting adventure in ethical hacking. 
             Let's get you started on the right path!
           </p>
           
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-6">
-              <div class="text-3xl mb-3">📚</div>
-              <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Learn & Practice</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-4 sm:p-6">
+              <div class="text-2xl sm:text-3xl mb-2 sm:mb-3">📚</div>
+              <h3 class="font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2 text-sm sm:text-base">Learn & Practice</h3>
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Follow our structured roadmap from basics to advanced techniques
               </p>
             </div>
             
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-6">
-              <div class="text-3xl mb-3">📝</div>
-              <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Document Progress</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-4 sm:p-6">
+              <div class="text-2xl sm:text-3xl mb-2 sm:mb-3">📝</div>
+              <h3 class="font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2 text-sm sm:text-base">Document Progress</h3>
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Keep a journal of your learning journey and discoveries
               </p>
             </div>
             
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-6">
-              <div class="text-3xl mb-3">🐛</div>
-              <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Track Findings</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-2xl p-4 sm:p-6">
+              <div class="text-2xl sm:text-3xl mb-2 sm:mb-3">🐛</div>
+              <h3 class="font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2 text-sm sm:text-base">Track Findings</h3>
+              <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 Record and analyze your bug bounty submissions
               </p>
             </div>
@@ -266,7 +266,7 @@
           
           <button
             on:click={closeWelcome}
-            class="px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all"
+            class="w-full sm:w-auto px-6 sm:px-8 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all text-sm sm:text-base"
           >
             Start My Journey
           </button>

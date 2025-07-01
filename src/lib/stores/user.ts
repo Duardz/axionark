@@ -1,4 +1,4 @@
-// src/lib/stores/user.ts - Fixed version with proper encryption/decryption handling
+// src/lib/stores/user.ts - Fixed version with better encryption handling
 import { writable, derived, get } from 'svelte/store';
 import { db } from '$lib/firebase';
 import { 
@@ -40,7 +40,8 @@ import {
   isEncryptionAvailable,
   batchDecrypt,
   getEncryptionKeySync,
-  initializeEncryption
+  initializeEncryption,
+  checkAndRestoreEncryption
 } from '$lib/utils/encryption';
 
 export interface JournalEntry {
@@ -205,8 +206,8 @@ function createUserStore() {
     loadProfile: async (uid: string) => {
       if (!db || !uid) return;
       
-      // Initialize encryption for this user
-      await initializeEncryption(uid);
+      // Check and restore encryption if needed
+      await checkAndRestoreEncryption(uid);
       
       // If already loaded for this user and initialized, don't reload
       if (currentUid === uid && isInitialized && get({ subscribe })) {
@@ -248,6 +249,15 @@ function createUserStore() {
             
             if (docSnap.exists()) {
               const data = docSnap.data() as UserProfile;
+              
+              // If the data shows anonymous/default values, check if we need to restore encryption
+              if (data.username === 'Anonymous' && data.totalXP === 0 && data.encryptionEnabled) {
+                const restored = await checkAndRestoreEncryption(uid);
+                if (!restored) {
+                  console.warn('User appears to have default values - encryption key may be missing');
+                }
+              }
+              
               set(data);
               isInitialized = true;
               isLoading = false;
@@ -259,33 +269,18 @@ function createUserStore() {
               const currentAuth = getAuth();
               const currentUser = currentAuth?.currentUser;
               
-              if (auth && currentUser && currentUser.uid === uid) {
-                // Only create default profile if auth user exists
-                const defaultProfile = {
-                  uid,
-                  email: currentUser.email || '',
-                  username: 'Anonymous',
-                  totalXP: 0,
-                  completedTasks: [],
-                  currentPhase: 'beginner' as const,
-                  totalBounty: 0,
-                  bugsFound: 0,
-                  createdAt: serverTimestamp(),
-                  updatedAt: serverTimestamp(),
-                  encryptionEnabled: true,
-                  encryptedFields: []
-                };
-                
-                await setDoc(docRef, defaultProfile);
-                set(defaultProfile as UserProfile);
-                isInitialized = true;
-                isLoading = false;
+              if (auth && currentUser && currentUser.uid === uid && !isDeleting) {
+                // Only create default profile if auth user exists and we're not deleting
+                console.warn('User profile missing, this should not happen for existing users');
+                // Don't create a new profile - this might overwrite existing data
+                set(null);
               } else {
                 set(null);
-                isLoading = false;
               }
+              isLoading = false;
             }
           }, (error) => {
+            console.error('User profile listener error:', error);
             set(null);
             isLoading = false;
           });
@@ -455,13 +450,11 @@ function createJournalStore() {
     
     // Rate limit decryption attempts
     const now = Date.now();
-    if (now - lastDecryptAttempt < 2000) return; // Wait at least 2 seconds between attempts
+    if (now - lastDecryptAttempt < 5000) return; // Wait at least 5 seconds between attempts
     lastDecryptAttempt = now;
     
-    const hasKey = getEncryptionKeySync();
-    if (!hasKey) {
-      // Try to initialize encryption
-      await initializeEncryption(currentUid);
+    const restored = await checkAndRestoreEncryption(currentUid);
+    if (!restored) {
       return;
     }
     
@@ -483,8 +476,8 @@ function createJournalStore() {
   async function loadEntries(uid: string) {
     if (!db || !uid) return [];
     
-    // Initialize encryption for this user
-    await initializeEncryption(uid);
+    // Check and restore encryption if needed
+    await checkAndRestoreEncryption(uid);
     
     // If already loaded for this user and initialized, check if we need to re-decrypt
     if (currentUid === uid && isInitialized) {
@@ -566,7 +559,7 @@ function createJournalStore() {
       if (!encryptionCheckInterval) {
         encryptionCheckInterval = setInterval(() => {
           checkAndReDecrypt();
-        }, 3000); // Check every 3 seconds instead of every second
+        }, 30000); // Check every 30 seconds instead of every 3 seconds
       }
       
       return entries;
@@ -745,13 +738,11 @@ function createBugStore() {
     
     // Rate limit decryption attempts
     const now = Date.now();
-    if (now - lastDecryptAttempt < 2000) return; // Wait at least 2 seconds between attempts
+    if (now - lastDecryptAttempt < 5000) return; // Wait at least 5 seconds between attempts
     lastDecryptAttempt = now;
     
-    const hasKey = getEncryptionKeySync();
-    if (!hasKey) {
-      // Try to initialize encryption
-      await initializeEncryption(currentUid);
+    const restored = await checkAndRestoreEncryption(currentUid);
+    if (!restored) {
       return;
     }
     
@@ -774,8 +765,8 @@ function createBugStore() {
   async function loadBugs(uid: string) {
     if (!db || !uid) return [];
     
-    // Initialize encryption for this user
-    await initializeEncryption(uid);
+    // Check and restore encryption if needed
+    await checkAndRestoreEncryption(uid);
     
     // If already loaded for this user and initialized, check if we need to re-decrypt
     if (currentUid === uid && isInitialized) {
@@ -874,7 +865,7 @@ function createBugStore() {
       if (!encryptionCheckInterval) {
         encryptionCheckInterval = setInterval(() => {
           checkAndReDecrypt();
-        }, 3000); // Check every 3 seconds instead of every second
+        }, 30000); // Check every 30 seconds instead of every 3 seconds
       }
       
       return bugs;
@@ -1077,4 +1068,3 @@ export const userProgress = derived(userStore, $user => {
   
   return { percentage, level, currentLevelXP, xpPerLevel };
 });
-

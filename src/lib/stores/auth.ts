@@ -1,4 +1,4 @@
-// src/lib/stores/auth.ts - Fixed version with better initialization flow
+// src/lib/stores/auth.ts - Complete fixed version
 import { writable, derived } from 'svelte/store';
 import { auth, db } from '$lib/firebase';
 import {
@@ -43,7 +43,8 @@ import {
   initializeEncryption,
   getEncryptionKeyAsync,
   restoreEncryptionFromSession,
-  isEncryptionAvailable
+  isEncryptionAvailable,
+  checkAndRestoreEncryption
 } from '$lib/utils/encryption';
 
 interface UserData {
@@ -73,6 +74,34 @@ function createAuthStore() {
   const { subscribe, set } = writable<User | null>(null);
   let unsubscribe: (() => void) | null = null;
   let isInitializing = false;
+  let sessionCheckInterval: NodeJS.Timeout | null = null;
+
+  // Periodically check and restore encryption if needed
+  function startSessionCheck(uid: string) {
+    if (sessionCheckInterval) {
+      clearInterval(sessionCheckInterval);
+    }
+
+    // Check every 5 minutes
+    sessionCheckInterval = setInterval(async () => {
+      const hasKey = await isEncryptionAvailableAsync(uid);
+      if (!hasKey) {
+        console.log('Encryption key lost, attempting to restore from IndexedDB...');
+        const restored = await checkAndRestoreEncryption(uid);
+        if (!restored) {
+          console.warn('Could not restore encryption key. User may need to re-authenticate.');
+          // You could show a notification here asking user to re-enter password
+        }
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+  }
+
+  function stopSessionCheck() {
+    if (sessionCheckInterval) {
+      clearInterval(sessionCheckInterval);
+      sessionCheckInterval = null;
+    }
+  }
 
   return {
     subscribe,
@@ -86,25 +115,38 @@ function createAuthStore() {
         unsubscribe = onAuthStateChanged(auth, async (user) => {
           set(user);
           
-          // If user is authenticated, try to restore encryption key
+          // Clear session check if no user
+          if (!user) {
+            stopSessionCheck();
+            return;
+          }
+          
+          // If user is authenticated, ensure we have encryption
           if (user && db && !isInitializing) {
             isInitializing = true;
             
             try {
-              // First, try to restore from session storage
-              const sessionRestored = await restoreEncryptionFromSession(user.uid);
+              // Start session check for this user
+              startSessionCheck(user.uid);
               
-              if (!sessionRestored) {
-                // If not in session, try to initialize from IndexedDB
-                const initialized = await initializeEncryption(user.uid);
-                
-                if (!initialized) {
-                  // Only log this if we truly don't have a key anywhere
-                  const anyKey = await getEncryptionKeyAsync(user.uid);
-                  if (!anyKey) {
-                    console.log('No encryption key found. User may need to sign in again for full functionality.');
-                  }
-                }
+              // Try to restore encryption in order of preference
+              let encryptionRestored = false;
+              
+              // 1. Try session storage first (fastest)
+              encryptionRestored = await restoreEncryptionFromSession(user.uid);
+              
+              // 2. Try IndexedDB if session storage failed
+              if (!encryptionRestored) {
+                encryptionRestored = await initializeEncryption(user.uid);
+              }
+              
+              // 3. Check one more time with the full restore function
+              if (!encryptionRestored) {
+                encryptionRestored = await checkAndRestoreEncryption(user.uid);
+              }
+              
+              if (!encryptionRestored) {
+                console.log('No encryption key found. User data may appear encrypted.');
               }
               
               // Check if user document exists and update last login
@@ -120,7 +162,10 @@ function createAuthStore() {
                   updates.email = user.email;
                 }
                 
-                await updateDoc(doc(db, 'users', user.uid), updates);
+                // Don't update if we can't decrypt - this prevents overwriting with bad data
+                if (encryptionRestored || !userData.encryptionEnabled) {
+                  await updateDoc(doc(db, 'users', user.uid), updates);
+                }
               }
             } catch (error) {
               console.error('Error initializing user session:', error);
@@ -137,6 +182,7 @@ function createAuthStore() {
         unsubscribe();
         unsubscribe = null;
       }
+      stopSessionCheck();
       clearEncryptionKey(); // Clear encryption key on cleanup
     },
     
@@ -182,7 +228,7 @@ function createAuthStore() {
 
         // Step 2: Generate encryption key for the user
         const encryptionKey = await generateUserKey(user.uid, password);
-        await storeEncryptionKey(encryptionKey, user.uid);
+        await storeEncryptionKey(encryptionKey, user.uid, 720); // Store for 30 days
 
         // Step 3: Force refresh ID token to ensure Firestore has access to request.auth
         await user.getIdToken(true);
@@ -194,7 +240,7 @@ function createAuthStore() {
         const encryptionAvailable = await isEncryptionAvailable();
         if (!encryptionAvailable) {
           console.warn('Encryption key not immediately available, retrying...');
-          await storeEncryptionKey(encryptionKey, user.uid);
+          await storeEncryptionKey(encryptionKey, user.uid, 720);
           await new Promise(resolve => setTimeout(resolve, 500));
         }
 
@@ -226,6 +272,9 @@ function createAuthStore() {
             uid: user.uid,
             createdAt: serverTimestamp()
           });
+
+          // Start session check
+          startSessionCheck(user.uid);
 
         } catch (profileError) {
           // Rollback if profile creation fails
@@ -276,7 +325,7 @@ function createAuthStore() {
         
         // Generate and store encryption key BEFORE any data loading
         const encryptionKey = await generateUserKey(user.uid, password);
-        await storeEncryptionKey(encryptionKey, user.uid);
+        await storeEncryptionKey(encryptionKey, user.uid, 720); // Store for 30 days
         
         // Wait to ensure the key is properly stored
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -285,7 +334,7 @@ function createAuthStore() {
         const encryptionAvailable = await isEncryptionAvailableAsync(user.uid);
         if (!encryptionAvailable) {
           console.warn('Encryption key not immediately available, retrying...');
-          await storeEncryptionKey(encryptionKey, user.uid);
+          await storeEncryptionKey(encryptionKey, user.uid, 720);
           await new Promise(resolve => setTimeout(resolve, 500));
         }
         
@@ -294,6 +343,9 @@ function createAuthStore() {
         if (!finalCheck) {
           console.error('Failed to store encryption key properly');
         }
+        
+        // Start session check
+        startSessionCheck(user.uid);
         
         // Check if user profile exists
         const userDoc = await getDoc(doc(db, 'users', user.uid));
@@ -366,6 +418,7 @@ function createAuthStore() {
         return user;
       } catch (error: any) {
         await clearEncryptionKey();
+        stopSessionCheck();
         
         // Generic error message to prevent user enumeration
         if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
@@ -384,6 +437,9 @@ function createAuthStore() {
         // Get current user ID before signing out
         const currentUser = auth.currentUser;
         const userId = currentUser?.uid;
+        
+        // Stop session check
+        stopSessionCheck();
         
         // Clear encryption key before signing out
         await clearEncryptionKey(userId);
@@ -486,8 +542,8 @@ function createAuthStore() {
         // Generate new encryption key
         const newEncryptionKey = await generateUserKey(uid, newPassword);
         
-        // Store the new key
-        await storeEncryptionKey(newEncryptionKey, uid);
+        // Store the new key with extended expiration
+        await storeEncryptionKey(newEncryptionKey, uid, 720); // 30 days
         
         // Wait to ensure it's stored
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -512,17 +568,24 @@ function createAuthStore() {
       const uid = user.uid;
       
       try {
+        // Re-authenticate user FIRST before any other operations
+        const credential = EmailAuthProvider.credential(user.email!, password);
+        await reauthenticateWithCredential(user, credential);
+        
         // Import user store to set deletion flag
         const { userStore, journalStore, bugStore } = await import('$lib/stores/user');
         
         // Set deletion flag to prevent re-creation
         userStore.setDeleting(true);
         
-        // Re-authenticate user before deletion
-        const credential = EmailAuthProvider.credential(user.email!, password);
-        await reauthenticateWithCredential(user, credential);
+        // Stop session check
+        stopSessionCheck();
         
-        // Clean up store listeners first
+        // Get user data to clean up username reference BEFORE cleaning stores
+        const userDoc = await getDoc(doc(db, 'users', uid));
+        const username = userDoc.exists() ? userDoc.data().username : null;
+        
+        // Clean up store listeners
         userStore.cleanup();
         journalStore.cleanup();
         bugStore.cleanup();
@@ -530,9 +593,8 @@ function createAuthStore() {
         // Clear encryption key
         await clearEncryptionKey(uid);
         
-        // Get user data to clean up username reference
-        const userDoc = await getDoc(doc(db, 'users', uid));
-        const username = userDoc.exists() ? userDoc.data().username : null;
+        // Small delay to ensure all listeners are cleaned up
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Delete all journal entries first
         const journalQuery = query(collection(db, 'journal'), where('uid', '==', uid));
@@ -596,18 +658,31 @@ function createAuthStore() {
         // Commit final batch
         await finalBatch.commit();
         
+        // Small delay before deleting auth user
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Finally, delete the auth user
         await deleteUser(user);
         
+        // The auth state change listener will handle the redirect
+        
       } catch (error: any) {
         // Reset deletion flag on error
-        const { userStore } = await import('$lib/stores/user');
-        userStore.setDeleting(false);
+        try {
+          const { userStore } = await import('$lib/stores/user');
+          userStore.setDeleting(false);
+        } catch (e) {
+          // Ignore import errors during cleanup
+        }
+        
+        console.error('Delete account error:', error);
         
         if (error.code === 'auth/wrong-password') {
           throw new Error('Incorrect password');
         } else if (error.code === 'auth/requires-recent-login') {
           throw new Error('Please sign out and sign in again before deleting your account');
+        } else if (error.code === 'auth/network-request-failed') {
+          throw new Error('Network error. Please check your connection and try again.');
         }
         
         const authError = handleAuthError(error);
