@@ -1,0 +1,70 @@
+# AXIONARK Robots.txt
+# https://axionark.com
+
+# Allow all crawlers to index public pages
+User-agent: *
+Allow: /$
+Allow: /about
+Allow: /sponsors
+Allow: /signin
+
+# Disallow all authenticated/dashboard routes
+Disallow: /dashboard
+Disallow: /roadmap
+Disallow: /tasks
+Disallow: /journal
+Disallow: /bugs
+Disallow: /profile
+
+# Disallow API routes
+Disallow: /api/
+
+# Allow search engines to access static assets
+Allow: /*.js$
+Allow: /*.css$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.svg$
+Allow: /*.webp$
+Allow: /*.woff$
+Allow: /*.woff2$
+
+# Sitemap location
+Sitemap: https://axionark.com/sitemap.xml
+
+# Crawl delay (optional, in seconds)
+Crawl-delay: 1
+
+# Specific rules for major search engines
+User-agent: Googlebot
+Allow: /
+Disallow: /dashboard
+Disallow: /roadmap
+Disallow: /tasks
+Disallow: /journal
+Disallow: /bugs
+Disallow: /profile
+
+User-agent: Bingbot
+Allow: /
+Disallow: /dashboard
+Disallow: /roadmap
+Disallow: /tasks
+Disallow: /journal
+Disallow: /bugs
+Disallow: /profile
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /

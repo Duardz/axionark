@@ -4,9 +4,59 @@
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		
+		<!-- Preconnect to external domains for performance -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		
+		<!-- DNS Prefetch for performance -->
+		<link rel="dns-prefetch" href="https://www.google-analytics.com" />
+		<link rel="dns-prefetch" href="https://vercel.live" />
+		
+		<!-- Favicon variations -->
+		<link rel="apple-touch-icon" sizes="180x180" href="%sveltekit.assets%/apple-touch-icon.png" />
+		<link rel="icon" type="image/png" sizes="32x32" href="%sveltekit.assets%/favicon-32x32.png" />
+		<link rel="icon" type="image/png" sizes="16x16" href="%sveltekit.assets%/favicon-16x16.png" />
+		<link rel="manifest" href="%sveltekit.assets%/manifest.json" />
+		
+		<!-- Basic Meta Tags (will be overridden by SEO component) -->
+		<meta name="title" content="AXIONARK - Ethical Hacking Journey Companion" />
+		<meta name="description" content="Track your bug bounty journey, document findings, and level up your ethical hacking skills with our secure, encrypted journaling platform." />
+		
+		<!-- Schema.org JSON-LD -->
+		<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "WebApplication",
+			"name": "AXIONARK",
+			"description": "Ethical hacking journey companion for bug bounty hunters",
+			"url": "https://axionark.com",
+			"applicationCategory": "SecurityApplication",
+			"operatingSystem": "Web",
+			"offers": {
+				"@type": "Offer",
+				"price": "0",
+				"priceCurrency": "USD"
+			},
+			"author": {
+				"@type": "Person",
+				"name": "Duardz"
+			}
+		}
+		</script>
+		
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
+		
+		<!-- Noscript fallback -->
+		<noscript>
+			<div style="padding: 2rem; text-align: center; background: #000; color: #fff;">
+				<h1>JavaScript Required</h1>
+				<p>AXIONARK requires JavaScript to provide secure encryption and functionality.</p>
+				<p>Please enable JavaScript in your browser settings to continue.</p>
+			</div>
+		</noscript>
 	</body>
 </html>

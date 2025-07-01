@@ -1,4 +1,4 @@
-<!-- src/routes/+page.svelte - Security Enhanced Version -->
+<!-- src/routes/+page.svelte - Updated with SEO -->
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { authStore, isAuthenticated } from '$lib/stores/auth';
@@ -8,6 +8,7 @@
   import { sendPasswordResetEmail } from 'firebase/auth';
   import LandingNav from '$lib/components/LandingNav.svelte';
   import LandingFooter from '$lib/components/LandingFooter.svelte';
+  import SEO from '$lib/components/SEO.svelte';
   
   let loading = false;
   let error = '';
@@ -278,9 +279,15 @@
   }
 </script>
 
-<svelte:head>
-  <meta name="robots" content="noindex, nofollow" />
-</svelte:head>
+<!-- SEO Meta Tags -->
+<SEO seo={{
+  title: mode === 'signup' ? 'Sign Up - Create Your Account' : mode === 'reset' ? 'Reset Password' : 'Sign In',
+  description: mode === 'signup' 
+    ? 'Join AXIONARK and start tracking your bug bounty journey. Create a secure account to document your ethical hacking progress.'
+    : 'Sign in to AXIONARK to access your encrypted bug bounty journal and track your ethical hacking progress.',
+  noindex: true, // Don't index auth pages
+  nofollow: true
+}} />
 
 <LandingNav />
 

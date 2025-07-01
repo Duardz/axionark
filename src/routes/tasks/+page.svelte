@@ -7,6 +7,7 @@
   import { roadmapData } from '$lib/data/roadmap';
   import Navbar from '$lib/components/Navbar.svelte';
   import type { Task } from '$lib/data/roadmap';
+  import SEO from '$lib/components/SEO.svelte';
 
   let loading = false;
   let selectedCategory = 'all';
@@ -306,6 +307,11 @@
 </script>
 
 <Navbar />
+
+<SEO seo={{
+  noindex: true,
+  nofollow: true
+}} />
 
 <!-- Success Toast -->
 {#if showSuccessToast}

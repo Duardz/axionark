@@ -8,6 +8,8 @@
   import type { Bug } from '$lib/stores/user';
   import { firebaseTimestampToDate } from '$lib/utils/security';
   import { Timestamp } from 'firebase/firestore';
+  import SEO from '$lib/components/SEO.svelte';
+
 
   let currentUser: any = null;
   let loading = false;
@@ -465,6 +467,11 @@
 </script>
 
 <Navbar />
+
+<SEO seo={{
+  noindex: true,
+  nofollow: true
+}} />
 
 <!-- Success Toast -->
 {#if showSuccessToast}

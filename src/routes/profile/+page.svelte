@@ -9,6 +9,7 @@
   import Navbar from '$lib/components/Navbar.svelte';
   import ProfileSettings from './ProfileSettings.svelte';
   import type { User } from 'firebase/auth';
+  import SEO from '$lib/components/SEO.svelte';
 
   interface Achievement {
     id: string;
@@ -303,6 +304,11 @@
 </script>
 
 <Navbar />
+
+<SEO seo={{
+  noindex: true,
+  nofollow: true
+}} />
 
 <!-- Achievement Unlocked Animation -->
 {#if unlockedAchievement}

@@ -8,6 +8,7 @@
   import { roadmapData } from '$lib/data/roadmap';
   import type { Task } from '$lib/data/roadmap';
   import { firebaseTimestampToDate } from '$lib/utils/security';
+  import SEO from '$lib/components/SEO.svelte';
 
   let currentUser: any = null;
   let loading = false;
@@ -210,6 +211,11 @@
 </script>
 
 <Navbar />
+
+<SEO seo={{
+  noindex: true,
+  nofollow: true
+}} />
 
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
   <!-- New User Welcome Modal -->

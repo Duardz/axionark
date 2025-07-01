@@ -15,6 +15,7 @@
   import EncryptionStatus from '$lib/components/EncryptionStatus.svelte';
   import AvatarSelector from '$lib/components/AvatarSelector.svelte';
   import { getAvatarById, DEFAULT_AVATAR_ID } from '$lib/data/avatars';
+  import SEO from '$lib/components/SEO.svelte';
   
   export let userStoreData: any;
   
@@ -173,6 +174,11 @@
     }
   }
 </script>
+
+<SEO seo={{
+  noindex: true,
+  nofollow: true
+}} />
 
 <!-- Success Toast -->
 {#if showSuccessToast}

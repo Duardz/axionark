@@ -2,6 +2,7 @@
 <script lang="ts">
   import LandingNav from '$lib/components/LandingNav.svelte';
   import LandingFooter from '$lib/components/LandingFooter.svelte';
+  import SEO from '$lib/components/SEO.svelte';
   
   const stats = [
     { value: '100%', label: 'Private & Secure', icon: '🔒' },
@@ -38,6 +39,12 @@
 </script>
 
 <LandingNav />
+
+  <SEO seo={{
+    title: 'About AXIONARK - Our Mission',
+    description: 'Learn about AXIONARK, the secure journaling companion for ethical hackers and bug bounty hunters.',
+    keywords: ['about', 'mission', 'ethical hacking platform']
+  }} />
 
 <div class="min-h-screen bg-black text-white relative overflow-hidden">
   <!-- Background elements -->

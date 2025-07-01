@@ -1,0 +1,28 @@
+# AXIONARK Security Policy
+# This file helps security researchers report security vulnerabilities responsibly
+
+Contact: security@axionark.com
+Contact: https://github.com/Duardz/axionark/security/advisories/new
+Expires: 2025-12-31T23:59:59.000Z
+Encryption: https://axionark.com/pgp-key.txt
+Preferred-Languages: en
+Canonical: https://axionark.com/.well-known/security.txt
+
+# Bug Bounty Program
+# We appreciate responsible disclosure of security vulnerabilities.
+# Please allow us reasonable time to respond to your report before public disclosure.
+
+# Hall of Fame
+Acknowledgments: https://axionark.com/security-acknowledgments
+
+# Our commitment
+# - We will respond to your report within 48 hours
+# - We will keep you informed about the progress of fixing the vulnerability
+# - We will credit you for your discovery (unless you prefer to remain anonymous)
+
+# Out of scope:
+# - Denial of Service attacks
+# - Social engineering
+# - Physical attacks
+# - Attacks on users of the service
+# - Spam or Social Engineering techniques
