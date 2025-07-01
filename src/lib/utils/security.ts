@@ -15,13 +15,17 @@ export function sanitizeHtml(input: string): string {
 }
 
 export function sanitizeText(input: string): string {
-  // First remove dangerous protocols and event handlers
-  const protocolCleaned = input
-    .replace(/(?:javascript|vbscript|data|about|file|res|ms-its):/gi, '')
-    .replace(/on[a-z]+\s*=/gi, '');
+  // Use DOMPurify for comprehensive text sanitization
+  // This is the recommended approach per CodeQL documentation
+  const cleaned = DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [], // No tags allowed - plain text only
+    ALLOWED_ATTR: [], // No attributes
+    KEEP_CONTENT: true, // Keep the text content
+    RETURN_DOM: false,
+    RETURN_DOM_FRAGMENT: false
+  });
   
-  // Then use the existing HTML escape function for complete safety
-  return escapeHtml(protocolCleaned)
+  return cleaned
     .trim()
     .slice(0, 5000);
 }
