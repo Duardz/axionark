@@ -17,6 +17,7 @@ export function sanitizeHtml(input: string): string {
 export function sanitizeText(input: string): string {
   return input
     .replace(/[<>]/g, '') // Remove HTML brackets
+    .replace(/["'`]/g, '') // Remove quotes to prevent attribute injection
     .replace(/javascript:/gi, '') // Remove javascript: protocol
     .replace(/on\w+\s*=/gi, '') // Remove event handlers
     .trim()
