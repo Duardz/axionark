@@ -8,7 +8,7 @@ AXIONARK is your personal companion for tracking your bug bounty and security re
 
 ### Key Features
 
-- **📚 Personal Learning Roadmap** - Track your cybersecurity journey with 122 suggested tasks across 5 phases
+- **📚 Personal Learning Roadmap** - Track your cybersecurity journey with 154 suggested tasks across 5 phases
 - **📝 XP-Based Progress System** - Earn experience points as you complete learning objectives
 - **📔 Encrypted Journal** - Document daily experiences with client-side encryption
 - **🐛 Bug Bounty Tracker** - Log vulnerabilities and track earnings

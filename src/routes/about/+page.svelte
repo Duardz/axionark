@@ -13,20 +13,20 @@
   
   const features = [
     {
-      title: 'Journal Your Journey',
-      description: 'Document your ethical hacking experiences, learnings, and discoveries in a structured way.',
-      icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+      title: 'Gamified Progress Tracking',
+      description: 'Earn XP, unlock achievements, and watch your skills grow through a structured 36-month roadmap with 154 suggested tasks.',
+      icon: 'M13 10V3L4 14h7v7l9-11h-7z',
       gradient: 'from-cyan-500 to-blue-600'
     },
     {
-      title: 'Your Data, Your Key',
-      description: 'Everything is encrypted with your password. We cannot access your data - only you can.',
+      title: 'Encrypted Personal Journal',
+      description: 'Document your daily experiences with client-side AES-256 encryption. Your journey, your data, completely private.',
       icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
       gradient: 'from-purple-500 to-pink-600'
     },
     {
-      title: 'Progress Tracking',
-      description: 'Gamified progress tracking to motivate your ethical hacking journey, not to train or teach.',
+      title: 'Your Journey, Your Pace',
+      description: 'No comparisons, no competition. Focus on YOUR growth with personalized milestones and achievements.',
       icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
       gradient: 'from-yellow-500 to-orange-600'
     }
@@ -61,9 +61,10 @@
           About <span class="bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">AXIONARK</span>
         </h1>
         <p class="text-xl text-gray-300 leading-relaxed max-w-3xl mx-auto animate-fade-in-delay">
-          Built by a solo developer passionate about ethical hacking, AXIONARK is a secure journaling companion 
-          designed to help security researchers document their journey, track findings, and organize their 
-          progress in the bug bounty world - all while maintaining complete privacy and ethical standards.
+          Created by a passionate developer and cybersecurity enthusiast, AXIONARK is a gamified personal 
+          progress tracker designed to help you document YOUR cybersecurity journey. Track your learning 
+          milestones, earn XP, unlock achievements, and maintain an encrypted journal of your experiences - 
+          all while staying motivated through your unique hacking adventure.
         </p>
       </div>
     </div>
@@ -96,20 +97,22 @@
           <div class="space-y-6 text-gray-300">
             <p class="text-lg leading-relaxed">
               Hi, I'm <span class="text-white font-semibold">Duardz</span>, the solo developer behind AXIONARK. 
-              As an ethical hacker and bug bounty hunter myself, I found myself constantly struggling to 
-              keep track of my findings, document my learning progress, and organize my journey in a secure way.
+              As a passionate developer and cybersecurity enthusiast, I wanted to create something unique - 
+              not another note-taking app, but a gamified companion that makes tracking your hacking journey 
+              exciting and motivating.
             </p>
             
             <p class="text-lg leading-relaxed">
-              Traditional note-taking apps weren't designed for security researchers. They lacked the privacy 
-              we need, the structure for tracking vulnerabilities, and most importantly - they weren't built 
-              with an ethical hacking mindset. That's when AXIONARK was born.
+              I noticed that while there are many platforms for learning and challenges, there wasn't a tool 
+              focused on helping you track YOUR personal progress in a fun, gamified way. AXIONARK fills that 
+              gap - it's your personal XP tracker, achievement system, and encrypted journal all in one.
             </p>
             
             <p class="text-lg leading-relaxed">
-              AXIONARK is NOT a hacking tutorial or training platform. It's your personal, encrypted journal 
-              companion for documenting your ethical hacking journey. Every feature is built to help you stay 
-              organized, motivated, and most importantly - ethical in your security research.
+              AXIONARK is NOT a learning platform or tutorial site. It's your personal progress companion that 
+              helps you document YOUR real-world security research journey. With 154 suggested tasks across a 
+              36-month roadmap, XP rewards, and achievement badges, it turns your cybersecurity journey into 
+              an engaging adventure that's uniquely yours.
             </p>
           </div>
           
@@ -179,14 +182,16 @@
         
         <div class="bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-3xl p-12 border border-purple-800/30 backdrop-blur-sm">
           <p class="text-xl text-gray-200 leading-relaxed mb-8">
-            To provide a <span class="font-semibold text-white">free, secure, and private journaling companion</span> 
-            for ethical hackers and security researchers worldwide. We believe every ethical hacker deserves a safe 
-            space to document their journey without compromising their privacy or security.
+            To provide a <span class="font-semibold text-white">free, gamified progress tracker</span> 
+            for cybersecurity enthusiasts and ethical hackers worldwide. We believe everyone deserves a 
+            motivating way to track their personal journey - no comparisons, no competition, just YOUR 
+            progress celebrated through XP, achievements, and encrypted documentation.
           </p>
           
           <p class="text-lg text-gray-300 mb-12">
             AXIONARK will always remain free for all features. We don't sell your data, we can't even access it. 
-            Your support helps maintain servers and keep the platform running for the ethical hacking community.
+            Your encrypted journal entries and progress data belong to you alone. Your support helps maintain 
+            servers and keep this personal journey tracker available for the cybersecurity community.
           </p>
           
           <a 

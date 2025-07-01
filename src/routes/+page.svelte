@@ -709,8 +709,8 @@
               </svg>
             </div>
             <div>
-              <h3 class="font-semibold text-white mb-1">Build Your Hacking Portfolio</h3>
-              <p class="text-sm text-gray-400">Create a living resume of your skills. Perfect for reflecting on growth or showcasing expertise.</p>
+              <h3 class="font-semibold text-white mb-1">Build Your Hacking Journal</h3>
+              <p class="text-sm text-gray-400">Perfect for reflecting on growth or showcasing expertise.</p>
             </div>
           </div>
           
