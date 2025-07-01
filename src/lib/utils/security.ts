@@ -15,11 +15,30 @@ export function sanitizeHtml(input: string): string {
 }
 
 export function sanitizeText(input: string): string {
-  return input
+  // First pass: remove dangerous protocols and patterns
+  let sanitized = input
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/vbscript:/gi, '') // Remove vbscript: protocol
+    .replace(/data:/gi, '') // Remove data: protocol
+    .replace(/on\w+\s*=/gi, ''); // Remove event handlers
+  
+  // Keep replacing until no more changes occur (handles repeated patterns)
+  let previousLength;
+  do {
+    previousLength = sanitized.length;
+    sanitized = sanitized
+      .replace(/javascript:/gi, '')
+      .replace(/vbscript:/gi, '')
+      .replace(/data:/gi, '')
+      .replace(/on\w+\s*=/gi, '');
+  } while (sanitized.length !== previousLength);
+  
+  // Final sanitization
+  return sanitized
     .replace(/[<>]/g, '') // Remove HTML brackets
     .replace(/["'`]/g, '') // Remove quotes to prevent attribute injection
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .replace(/[&]/g, '&amp;') // Escape ampersands
+    .replace(/\s+/g, ' ') // Normalize whitespace
     .trim()
     .slice(0, 5000); // Limit length
 }
