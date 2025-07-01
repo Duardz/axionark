@@ -203,55 +203,6 @@
           </ul>
         </div>
       </div>
-      
-      <!-- Futuristic Stats Section -->
-      <div class="mt-16 pt-8 border-t border-gray-800/50">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-          <div class="relative group">
-            <div class="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-2xl opacity-0 group-hover:opacity-10 blur-xl transition-all duration-500"></div>
-            <div class="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 text-center hover:border-gray-700 transition-all duration-300 group-hover:transform group-hover:scale-105">
-              <div class="text-3xl mb-2">⚡</div>
-              <div class="text-3xl font-bold bg-gradient-to-r from-yellow-500 to-orange-600 bg-clip-text text-transparent mb-1">
-                500K+
-              </div>
-              <div class="text-xs text-gray-500 uppercase tracking-wider">XP Earned</div>
-            </div>
-          </div>
-          
-          <div class="relative group">
-            <div class="absolute inset-0 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl opacity-0 group-hover:opacity-10 blur-xl transition-all duration-500"></div>
-            <div class="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 text-center hover:border-gray-700 transition-all duration-300 group-hover:transform group-hover:scale-105">
-              <div class="text-3xl mb-2">🎯</div>
-              <div class="text-3xl font-bold bg-gradient-to-r from-emerald-500 to-green-600 bg-clip-text text-transparent mb-1">
-                10K+
-              </div>
-              <div class="text-xs text-gray-500 uppercase tracking-wider">Tasks Completed</div>
-            </div>
-          </div>
-          
-          <div class="relative group">
-            <div class="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl opacity-0 group-hover:opacity-10 blur-xl transition-all duration-500"></div>
-            <div class="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 text-center hover:border-gray-700 transition-all duration-300 group-hover:transform group-hover:scale-105">
-              <div class="text-3xl mb-2">💰</div>
-              <div class="text-3xl font-bold bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent mb-1">
-                $1M+
-              </div>
-              <div class="text-xs text-gray-500 uppercase tracking-wider">Bounties Earned</div>
-            </div>
-          </div>
-          
-          <div class="relative group">
-            <div class="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-600 rounded-2xl opacity-0 group-hover:opacity-10 blur-xl transition-all duration-500"></div>
-            <div class="relative bg-gray-900/50 backdrop-blur-sm border border-gray-800/50 rounded-2xl p-6 text-center hover:border-gray-700 transition-all duration-300 group-hover:transform group-hover:scale-105">
-              <div class="text-3xl mb-2">🛡️</div>
-              <div class="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-600 bg-clip-text text-transparent mb-1">
-                1K+
-              </div>
-              <div class="text-xs text-gray-500 uppercase tracking-wider">Active Hunters</div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
     
     <!-- Futuristic Bottom Bar -->
