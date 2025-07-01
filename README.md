@@ -181,7 +181,8 @@ We welcome contributions! Please follow these steps:
 
 ## 📄 License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU Affero General Public License v3 (AGPLv3).  
+See the [LICENSE](LICENSE) file for full license details.
 
 ## 🙏 Acknowledgments
 
@@ -194,7 +195,6 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) file for 
 ## 📞 Support
 
 - Email: support@axionark.com
-- Discord: [Join our community](#)
 - Issues: [GitHub Issues](https://github.com/Duardz/axionark/issues)
 
 ---
