@@ -1,4 +1,4 @@
-<!-- src/routes/+page.svelte - Updated with SEO -->
+<!-- src/routes/+page.svelte - Updated with Personal Journal Focus -->
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { authStore, isAuthenticated } from '$lib/stores/auth';
@@ -281,10 +281,10 @@
 
 <!-- SEO Meta Tags -->
 <SEO seo={{
-  title: mode === 'signup' ? 'Sign Up - Create Your Account' : mode === 'reset' ? 'Reset Password' : 'Sign In',
+  title: mode === 'signup' ? 'Sign Up - Start Your Journal' : mode === 'reset' ? 'Reset Password' : 'Sign In',
   description: mode === 'signup' 
-    ? 'Join AXIONARK and start tracking your bug bounty journey. Create a secure account to document your ethical hacking progress.'
-    : 'Sign in to AXIONARK to access your encrypted bug bounty journal and track your ethical hacking progress.',
+    ? 'Create your AXIONARK account and start journaling your ethical hacking journey. Your private, encrypted diary for security research.'
+    : 'Sign in to AXIONARK to access your encrypted ethical hacking journal and track your security research progress.',
   noindex: false,
   nofollow: true
 }} />
@@ -306,21 +306,13 @@
     <!-- Left Side - Form -->
     <div class="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
       <div class="w-full max-w-md space-y-8 animate-fade-in">
-        <!-- Header -->
-        <div class="text-center">
-          <h1 class="text-4xl font-black bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-3">
-            AXIONARK
-          </h1>
-          <p class="text-gray-400 text-sm">Ethical Hacking Journey Companion</p>
-        </div>
-
         <!-- Form Container -->
         <div class="bg-gray-900/50 backdrop-blur-xl rounded-3xl p-8 border border-gray-800/50 shadow-2xl">
-          <h2 class="text-2xl font-bold text-white mb-8">
+          <h2 class="text-2xl font-bold text-white mb-8 text-center">
             {#if mode === 'signin'}
-              Welcome back
+              Booting AXIONARK...
             {:else if mode === 'signup'}
-              Create your account
+              Start your journal
             {:else}
               Reset your password
             {/if}
@@ -584,7 +576,7 @@
                     {failedAttempts > 2 ? `Please wait ${failedAttempts}s...` : 'Processing...'}
                   </div>
                 {:else}
-                  {mode === 'signin' ? 'Sign In' : 'Create Account'}
+                  {mode === 'signin' ? 'Sign In' : 'Create Journal'}
                 {/if}
               </button>
             </form>
@@ -597,7 +589,7 @@
               </div>
               <div class="relative flex justify-center text-sm">
                 <span class="px-2 bg-gray-900/50 text-gray-400">
-                  {mode === 'signin' ? "Don't have an account?" : mode === 'signup' ? 'Already have an account?' : 'Remember your password?'}
+                  {mode === 'signin' ? "Don't have a journal yet?" : mode === 'signup' ? 'Already have a journal?' : 'Remember your password?'}
                 </span>
               </div>
             </div>
@@ -606,18 +598,8 @@
               on:click={() => switchMode(mode === 'signin' ? 'signup' : 'signin')}
               class="w-full mt-4 text-center text-sm text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
             >
-              {mode === 'signin' ? 'Create an account' : 'Sign in instead'}
+              {mode === 'signin' ? 'Create your journal' : 'Sign in instead'}
             </button>
-          </div>
-        </div>
-
-        <!-- Security Notice -->
-        <div class="text-center">
-          <div class="inline-flex items-center text-xs text-gray-500">
-            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            AES-256-GCM encrypted storage • Secure authentication
           </div>
         </div>
       </div>
@@ -629,36 +611,36 @@
       
       <div class="relative z-10 max-w-lg">
         <h2 class="text-5xl font-bold text-white mb-6">
-          Level up your <span class="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">bug hunting</span> skills
+          Your personal <span class="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">hacking journal</span>
         </h2>
         
         <p class="text-xl text-gray-300 mb-12">
-          Document your ethical hacking journey, track findings, and organize your bug bounty progress with our secure journaling companion.
+          A private, encrypted space to document your ethical hacking journey. Write about your experiences, track discoveries, and reflect on your growth - all in one secure journal.
         </p>
         
         <div class="grid grid-cols-2 gap-6">
           <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
             <div class="text-3xl mb-3">📔</div>
-            <h3 class="font-semibold text-white mb-2">Journal Progress</h3>
-            <p class="text-sm text-gray-400">Document your ethical hacking journey</p>
+            <h3 class="font-semibold text-white mb-2">Daily Journal</h3>
+            <p class="text-sm text-gray-400">Write encrypted entries about your journey</p>
           </div>
           
           <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
             <div class="text-3xl mb-3">🔒</div>
-            <h3 class="font-semibold text-white mb-2">Your Data Only</h3>
-            <p class="text-sm text-gray-400">Encrypted storage - only you can access</p>
+            <h3 class="font-semibold text-white mb-2">100% Private</h3>
+            <p class="text-sm text-gray-400">Only you can decrypt your entries</p>
           </div>
           
           <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
             <div class="text-3xl mb-3">📊</div>
-            <h3 class="font-semibold text-white mb-2">Track Findings</h3>
-            <p class="text-sm text-gray-400">Organize bugs and vulnerabilities</p>
+            <h3 class="font-semibold text-white mb-2">Track Progress</h3>
+            <p class="text-sm text-gray-400">Monitor your growth and achievements</p>
           </div>
           
           <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-            <div class="text-3xl mb-3">⚖️</div>
-            <h3 class="font-semibold text-white mb-2">Stay Ethical</h3>
-            <p class="text-sm text-gray-400">Responsible disclosure tracking</p>
+            <div class="text-3xl mb-3">🎯</div>
+            <h3 class="font-semibold text-white mb-2">Personal Goals</h3>
+            <p class="text-sm text-gray-400">Set and track your learning objectives</p>
           </div>
         </div>
       </div>

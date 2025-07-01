@@ -96,12 +96,13 @@
           href="https://ko-fi.com/duardz" 
           target="_blank"
           rel="noopener noreferrer"
-          class="ml-4 flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-sm font-medium transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/25"
+          class="ml-4 h-10 flex items-center"
         >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.189-.096-.323-.378-.323-.378s-.045-4.906-.025-7.602c.02-2.696-.516-3.227-.516-3.227l7.838.023s2.657.334 2.657 3.556c0 3.222-5.31 3.629-5.31 3.629z"/>
-          </svg>
-          <span>Support</span>
+          <img 
+            src='https://storage.ko-fi.com/cdn/kofi5.png?v=3' 
+            alt='Buy Me a Coffee at ko-fi.com'
+            class="h-full hover:opacity-90 transition-opacity"
+          />
         </a>
       </div>
       
@@ -138,12 +139,13 @@
                 href="https://ko-fi.com/duardz" 
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex items-center justify-center space-x-2 w-full px-5 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl text-sm font-medium"
+                class="flex items-center justify-center w-full py-3"
               >
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.189-.096-.323-.378-.323-.378s-.045-4.906-.025-7.602c.02-2.696-.516-3.227-.516-3.227l7.838.023s2.657.334 2.657 3.556c0 3.222-5.31 3.629-5.31 3.629z"/>
-                </svg>
-                <span>Support the Developer</span>
+                <img 
+                  src='https://storage.ko-fi.com/cdn/kofi5.png?v=3' 
+                  alt='Buy Me a Coffee at ko-fi.com'
+                  class="h-9"
+                />
               </a>
             </div>
           </div>

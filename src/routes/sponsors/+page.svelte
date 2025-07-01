@@ -20,12 +20,12 @@
   };
   
   const benefits = [
-    { icon: '⚡', title: 'Early Access', description: 'Be the first to try new features' },
-    { icon: '🛠️', title: 'Priority Support', description: 'Get help when you need it most' },
-    { icon: '🎯', title: 'Shape the Future', description: 'Influence the development roadmap' },
-    { icon: '💜', title: 'Support Indie Dev', description: 'Help keep the platform independent' },
-    { icon: '🆓', title: 'Keep it Free', description: 'Ensure free access for everyone' },
-    { icon: '🚀', title: 'Faster Updates', description: 'Enable continuous improvements' }
+    { icon: '📔', title: 'Keep It Free', description: 'Help keep this journal free for all ethical hackers' },
+    { icon: '🛠️', title: 'New Features', description: 'Enable development of new journaling features' },
+    { icon: '🔒', title: 'Better Security', description: 'Support ongoing security improvements' },
+    { icon: '💜', title: 'Support Indie Dev', description: 'Help a solo developer maintain this project' },
+    { icon: '🖥️', title: 'Server Costs', description: 'Keep the servers running reliably' },
+    { icon: '🚀', title: 'Continuous Updates', description: 'Enable regular improvements and bug fixes' }
   ];
   
   // Current sponsors - empty for now
@@ -41,9 +41,9 @@
 <LandingNav />
 
   <SEO seo={{
-    title: 'About AXIONARK - Our Mission',
-    description: 'Learn about AXIONARK, the secure journaling companion for ethical hackers and bug bounty hunters.',
-    keywords: ['about', 'mission', 'ethical hacking platform']
+    title: 'Support AXIONARK - Keep the Journal Free',
+    description: 'Support the development of AXIONARK, the free encrypted journal for ethical hackers. Your contribution helps keep this personal journaling tool accessible to everyone.',
+    keywords: ['support', 'sponsors', 'donations', 'ko-fi', 'github sponsors']
   }} />
 
 <div class="min-h-screen bg-black text-white relative overflow-hidden">
@@ -58,11 +58,12 @@
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <div class="max-w-4xl mx-auto text-center">
         <h1 class="text-5xl sm:text-6xl font-black mb-6 animate-fade-in">
-          Support <span class="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">AXIONARK</span>
+          Support Your <span class="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">Private Journal</span>
         </h1>
         <p class="text-xl text-gray-300 leading-relaxed max-w-3xl mx-auto animate-fade-in-delay">
-          Your support enables continuous development, server maintenance, and keeps AXIONARK free and accessible 
-          to the entire cybersecurity community. Every contribution makes a difference.
+          AXIONARK is a free, open-source personal journal for ethical hackers. Your support helps keep 
+          the servers running, enables new features, and ensures this private journaling tool remains 
+          free and accessible to everyone.
         </p>
       </div>
     </div>
@@ -72,16 +73,18 @@
   <section class="py-20 relative">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <h2 class="text-4xl font-bold text-center mb-16">
-        Our Amazing <span class="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">Sponsors</span>
+        Amazing <span class="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">Supporters</span>
       </h2>
       
       <div class="max-w-6xl mx-auto">
         <!-- Ko-fi Sponsors -->
         <div class="mb-12">
           <h3 class="text-2xl font-semibold mb-8 flex items-center justify-center">
-            <svg class="w-8 h-8 mr-3 text-orange-500" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.189-.096-.323-.378-.323-.378s-.045-4.906-.025-7.602c.02-2.696-.516-3.227-.516-3.227l7.838.023s2.657.334 2.657 3.556c0 3.222-5.31 3.629-5.31 3.629z"/>
-            </svg>
+            <img 
+              src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' 
+              alt='Ko-fi'
+              class="h-8 mr-3"
+            />
             Ko-fi Supporters
           </h3>
           
@@ -104,19 +107,21 @@
             {:else}
               <div class="md:col-span-3">
                 <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-12 border border-gray-800 text-center">
-                  <div class="text-5xl mb-4">🤝</div>
+                  <div class="text-5xl mb-4">☕</div>
                   <h4 class="text-xl font-semibold mb-2 text-gray-300">Be Our First Ko-fi Supporter!</h4>
-                  <p class="text-gray-500 mb-6">No Ko-fi supporters yet. Your support would mean the world to us!</p>
+                  <p class="text-gray-500 mb-6">Help keep this personal journal free for the ethical hacking community</p>
                   <a 
-                    href="https://ko-fi.com/duardz"
-                    target="_blank"
+                    href='https://ko-fi.com/duardz' 
+                    target='_blank'
                     rel="noopener noreferrer"
-                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white rounded-xl font-medium transition-all duration-300"
+                    class="inline-block"
                   >
-                    <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.189-.096-.323-.378-.323-.378s-.045-4.906-.025-7.602c.02-2.696-.516-3.227-.516-3.227l7.838.023s2.657.334 2.657 3.556c0 3.222-5.31 3.629-5.31 3.629z"/>
-                    </svg>
-                    Become the First Supporter
+                    <img 
+                      height='36' 
+                      style='border:0px;height:36px;' 
+                      src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' 
+                      alt='Buy Me a Coffee at ko-fi.com' 
+                    />
                   </a>
                 </div>
               </div>
@@ -154,7 +159,7 @@
                 <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-12 border border-gray-800 text-center">
                   <div class="text-5xl mb-4">💻</div>
                   <h4 class="text-xl font-semibold mb-2 text-gray-300">No Contributors Yet</h4>
-                  <p class="text-gray-500 mb-6">Be the first to contribute to AXIONARK's open-source codebase!</p>
+                  <p class="text-gray-500 mb-6">Be the first to contribute to this open-source journal!</p>
                   <a 
                     href="https://github.com/Duardz/axionark"
                     target="_blank"
@@ -174,22 +179,33 @@
         
         <!-- Become a Sponsor CTA -->
         <div class="mt-12 text-center">
-          <p class="text-gray-400 mb-4">Want to see your name here?</p>
-          <div class="flex flex-wrap gap-4 justify-center">
+          <p class="text-gray-400 mb-6">Support the development of this free journaling tool</p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <a 
-              href="https://ko-fi.com/duardz"
-              target="_blank"
+              href='https://ko-fi.com/duardz' 
+              target='_blank'
               rel="noopener noreferrer"
-              class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white rounded-xl font-medium transition-all duration-300"
+              class="inline-block"
             >
-              Become a Ko-fi Supporter
+              <img 
+                height='36' 
+                style='border:0px;height:36px;' 
+                src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' 
+                alt='Buy Me a Coffee at ko-fi.com' 
+              />
             </a>
+            
+            <div class="text-gray-600">or</div>
+            
             <a 
               href="https://github.com/sponsors/Duardz"
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium transition-all duration-300 border border-gray-700"
             >
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+              </svg>
               Sponsor on GitHub
             </a>
           </div>
@@ -217,6 +233,69 @@
     </div>
   </section>
   
+  <!-- What Your Support Enables -->
+  <section class="py-20 relative">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-4xl font-bold text-center mb-16">
+          What Your Support <span class="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Enables</span>
+        </h2>
+        
+        <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 md:p-12 border border-gray-800">
+          <div class="space-y-6">
+            <div class="flex items-start">
+              <div class="flex-shrink-0 w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center mr-4">
+                <span class="text-2xl">🖥️</span>
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold mb-2">Server Infrastructure</h3>
+                <p class="text-gray-400">
+                  Your support helps pay for reliable servers to keep your encrypted journal data safe and accessible 24/7.
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="flex-shrink-0 w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mr-4">
+                <span class="text-2xl">🔐</span>
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold mb-2">Security Audits</h3>
+                <p class="text-gray-400">
+                  Regular security reviews ensure your private journal entries remain encrypted and protected.
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="flex-shrink-0 w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center mr-4">
+                <span class="text-2xl">⏰</span>
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold mb-2">Development Time</h3>
+                <p class="text-gray-400">
+                  As a solo developer, your support allows me to dedicate more time to improving AXIONARK instead of client work.
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="flex-shrink-0 w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center mr-4">
+                <span class="text-2xl">🆓</span>
+              </div>
+              <div>
+                <h3 class="text-xl font-semibold mb-2">Free Forever</h3>
+                <p class="text-gray-400">
+                  Your contributions ensure AXIONARK remains free for all ethical hackers who need a private journal.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
   <!-- Other Ways to Help -->
   <section class="py-20 relative">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -233,7 +312,7 @@
           </div>
           <h3 class="text-xl font-semibold mb-3">Contribute Code</h3>
           <p class="text-gray-400 mb-6">
-            Help improve AXIONARK by contributing to our open-source codebase. Every PR matters!
+            Help improve this journaling tool by contributing to our open-source codebase.
           </p>
           <a 
             href="https://github.com/Duardz/axionark"
@@ -256,7 +335,7 @@
           </div>
           <h3 class="text-xl font-semibold mb-3">Share the Word</h3>
           <p class="text-gray-400 mb-6">
-            Help us grow by sharing AXIONARK with fellow security researchers and bug bounty hunters.
+            Tell fellow ethical hackers about this free journaling tool for documenting their journey.
           </p>
           <span class="inline-flex items-center text-purple-400 font-medium">
             Spread the knowledge
@@ -271,7 +350,7 @@
           </div>
           <h3 class="text-xl font-semibold mb-3">Report Bugs</h3>
           <p class="text-gray-400 mb-6">
-            Found an issue? Help us improve by reporting bugs and suggesting new features.
+            Found an issue? Help improve the journal by reporting bugs and suggesting features.
           </p>
           <a 
             href="https://github.com/Duardz/axionark/issues"
@@ -297,16 +376,31 @@
           Thank You <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-500">❤️</span>
         </h2>
         <p class="text-xl text-gray-300 mb-12 leading-relaxed">
-          Every contribution, whether it's code, financial support, or spreading the word, helps keep AXIONARK 
-          running and improving. You're not just supporting a platform – you're supporting the entire 
-          cybersecurity community's growth and learning.
+          Every contribution helps keep AXIONARK free and accessible. You're not just supporting a tool – 
+          you're helping ethical hackers worldwide have a secure, private space to document their journey.
         </p>
         
         <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-12 border border-gray-800">
           <p class="text-2xl font-semibold mb-8 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-            "Building tools for hackers, by a hacker, with the support of hackers."
+            "Building a private journal for hackers, by a hacker, with the support of hackers."
           </p>
           <p class="text-gray-400">- Duardz, Solo Developer</p>
+        </div>
+        
+        <div class="mt-12">
+          <a 
+            href='https://ko-fi.com/duardz' 
+            target='_blank'
+            rel="noopener noreferrer"
+            class="inline-block"
+          >
+            <img 
+              height='36' 
+              style='border:0px;height:36px;' 
+              src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' 
+              alt='Buy Me a Coffee at ko-fi.com' 
+            />
+          </a>
         </div>
       </div>
     </div>
