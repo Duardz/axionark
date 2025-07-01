@@ -63,7 +63,7 @@ export const roadmapData: Phase[] = [
           {
             id: 'virtualization-lab',
             title: 'Home Lab Setup',
-            description: 'VMware/VirtualBox mastery, snapshot management, isolated networks, resource optimization',
+            description: 'Virtualization mastery, snapshot management, isolated networks, resource optimization',
             xp: 500,
             phase: 'foundation',
             category: 'system-fundamentals',
@@ -87,7 +87,7 @@ export const roadmapData: Phase[] = [
           {
             id: 'protocol-analysis',
             title: 'Protocol Deep Dive',
-            description: 'Master HTTP/S, DNS, DHCP, ARP, ICMP, SMB, FTP, SSH, Telnet with Wireshark analysis',
+            description: 'Master HTTP/S, DNS, DHCP, ARP, ICMP, SMB, FTP, SSH, Telnet with packet analysis tools',
             xp: 1000,
             phase: 'foundation',
             category: 'networking-core',
@@ -120,7 +120,7 @@ export const roadmapData: Phase[] = [
           {
             id: 'python-mastery',
             title: 'Python Security Programming',
-            description: 'Socket programming, requests, BeautifulSoup, regex, threading, subprocess, scapy basics',
+            description: 'Socket programming, HTTP libraries, web scraping, regex, threading, subprocess, network packet crafting',
             xp: 1500,
             phase: 'foundation',
             category: 'programming-foundations',
@@ -147,11 +147,20 @@ export const roadmapData: Phase[] = [
           {
             id: 'c-assembly-intro',
             title: 'Low-Level Introduction',
-            description: 'C programming basics, memory management, assembly reading, GDB fundamentals',
+            description: 'C programming basics, memory management, assembly reading, debugger fundamentals',
             xp: 800,
             phase: 'foundation',
             category: 'programming-foundations',
             order: 12
+          },
+          {
+            id: 'golang-basics',
+            title: 'Go Programming Basics',
+            description: 'Go syntax, concurrency basics, building simple security tools, HTTP clients/servers',
+            xp: 900,
+            phase: 'foundation',
+            category: 'programming-foundations',
+            order: 13
           }
         ]
       },
@@ -166,34 +175,43 @@ export const roadmapData: Phase[] = [
             xp: 600,
             phase: 'foundation',
             category: 'security-basics',
-            order: 13
+            order: 14
           },
           {
             id: 'recon-methodology',
             title: 'Reconnaissance & OSINT',
-            description: 'Google dorking, social media OSINT, DNS enumeration, subdomain discovery, theHarvester',
+            description: 'Search engine dorking, social media OSINT, DNS enumeration, subdomain discovery, information gathering tools',
             xp: 1200,
-            phase: 'foundation',
-            category: 'security-basics',
-            order: 14
-          },
-          {
-            id: 'scanning-enumeration',
-            title: 'Scanning & Enumeration',
-            description: 'Nmap mastery, port scanning techniques, service enumeration, banner grabbing, OS fingerprinting',
-            xp: 1500,
             phase: 'foundation',
             category: 'security-basics',
             order: 15
           },
           {
-            id: 'metasploit-basics',
-            title: 'Metasploit Framework',
-            description: 'MSF architecture, basic exploitation, meterpreter, post-exploitation modules, pivoting basics',
-            xp: 1000,
+            id: 'scanning-enumeration',
+            title: 'Scanning & Enumeration',
+            description: 'Port scanning mastery, service enumeration, banner grabbing, OS fingerprinting, vulnerability scanning',
+            xp: 1500,
             phase: 'foundation',
             category: 'security-basics',
             order: 16
+          },
+          {
+            id: 'exploitation-frameworks',
+            title: 'Exploitation Framework Basics',
+            description: 'Popular framework architecture, basic exploitation, payload usage, post-exploitation modules, pivoting basics',
+            xp: 1000,
+            phase: 'foundation',
+            category: 'security-basics',
+            order: 17
+          },
+          {
+            id: 'vulnerability-databases',
+            title: 'Vulnerability Research Basics',
+            description: 'CVE database navigation, vulnerability database usage, understanding CVSS scores, patch analysis',
+            xp: 700,
+            phase: 'foundation',
+            category: 'security-basics',
+            order: 18
           }
         ]
       },
@@ -202,31 +220,31 @@ export const roadmapData: Phase[] = [
         title: 'Web Security Basics',
         tasks: [
           {
-            id: 'burp-suite-intro',
-            title: 'Burp Suite Fundamentals',
+            id: 'proxy-tools-intro',
+            title: 'Web Proxy Fundamentals',
             description: 'Proxy setup, intercepting requests, repeater, decoder, comparing responses, basic extensions',
             xp: 1200,
             phase: 'foundation',
             category: 'web-foundations',
-            order: 17
+            order: 19
           },
           {
-            id: 'owasp-top10',
-            title: 'OWASP Top 10 Understanding',
-            description: 'Learn all OWASP Top 10 vulnerabilities, their impact, and basic exploitation',
+            id: 'web-vulns-top10',
+            title: 'Common Web Vulnerabilities',
+            description: 'Learn top 10 web vulnerabilities, their impact, and basic exploitation techniques',
             xp: 1500,
             phase: 'foundation',
             category: 'web-foundations',
-            order: 18
+            order: 20
           },
           {
             id: 'basic-sqli',
             title: 'SQL Injection Basics',
-            description: 'Union-based SQLi, error-based, boolean blind basics, using SQLMap',
+            description: 'Union-based SQLi, error-based, boolean blind basics, automated scanning tools',
             xp: 1800,
             phase: 'foundation',
             category: 'web-foundations',
-            order: 19
+            order: 21
           },
           {
             id: 'basic-xss',
@@ -235,7 +253,16 @@ export const roadmapData: Phase[] = [
             xp: 1600,
             phase: 'foundation',
             category: 'web-foundations',
-            order: 20
+            order: 22
+          },
+          {
+            id: 'http-basics',
+            title: 'HTTP Deep Dive',
+            description: 'HTTP methods, headers, cookies, sessions, status codes, content types, HTTP/2 basics',
+            xp: 1000,
+            phase: 'foundation',
+            category: 'web-foundations',
+            order: 23
           }
         ]
       },
@@ -244,40 +271,49 @@ export const roadmapData: Phase[] = [
         title: 'Foundation Practice',
         tasks: [
           {
-            id: 'thm-beginner',
-            title: 'TryHackMe Complete Beginner Path',
-            description: 'Finish entire beginner learning path, document all learnings',
+            id: 'beginner-learning-path',
+            title: 'Complete Beginner Security Path',
+            description: 'Finish comprehensive beginner learning path on security platforms, document all learnings',
             xp: 3000,
             phase: 'foundation',
             category: 'practice-foundation',
-            order: 21
+            order: 24
           },
           {
-            id: 'overthewire',
-            title: 'OverTheWire Wargames',
-            description: 'Complete Bandit, Natas (web), and start Narnia',
+            id: 'wargames-challenges',
+            title: 'Security Wargames',
+            description: 'Complete beginner and intermediate level wargames focusing on various security concepts',
             xp: 2500,
             phase: 'foundation',
             category: 'practice-foundation',
-            order: 22
+            order: 25
           },
           {
-            id: 'htb-starting',
-            title: 'HackTheBox Starting Point',
-            description: 'Complete all Starting Point machines, understand methodology',
+            id: 'guided-pentesting',
+            title: 'Guided Penetration Testing',
+            description: 'Complete guided penetration testing exercises, understand methodology',
             xp: 2000,
             phase: 'foundation',
             category: 'practice-foundation',
-            order: 23
+            order: 26
           },
           {
             id: 'first-ctf',
             title: 'First CTF Participation',
-            description: 'Participate in beginner CTF, solve at least 5 challenges',
+            description: 'Participate in beginner CTF, solve at least 5 challenges across different categories',
             xp: 1500,
             phase: 'foundation',
             category: 'practice-foundation',
-            order: 24
+            order: 27
+          },
+          {
+            id: 'web-security-academy',
+            title: 'Web Security Academy Fundamentals',
+            description: 'Complete apprentice-level labs for SQLi, XSS, and authentication vulnerabilities',
+            xp: 2000,
+            phase: 'foundation',
+            category: 'practice-foundation',
+            order: 28
           }
         ]
       }
@@ -300,7 +336,7 @@ export const roadmapData: Phase[] = [
             xp: 3000,
             phase: 'pentesting',
             category: 'web-pentest',
-            order: 25
+            order: 29
           },
           {
             id: 'injection-mastery',
@@ -309,7 +345,7 @@ export const roadmapData: Phase[] = [
             xp: 3500,
             phase: 'pentesting',
             category: 'web-pentest',
-            order: 26
+            order: 30
           },
           {
             id: 'authentication-attacks',
@@ -318,7 +354,7 @@ export const roadmapData: Phase[] = [
             xp: 3200,
             phase: 'pentesting',
             category: 'web-pentest',
-            order: 27
+            order: 31
           },
           {
             id: 'xxe-ssrf',
@@ -327,16 +363,145 @@ export const roadmapData: Phase[] = [
             xp: 3800,
             phase: 'pentesting',
             category: 'web-pentest',
-            order: 28
+            order: 32
           },
           {
             id: 'file-upload-rce',
             title: 'File Upload to RCE',
-            description: 'Bypass filters, polyglot files, race conditions, zip traversal, image tragick',
+            description: 'Bypass filters, polyglot files, race conditions, zip traversal, image manipulation exploits',
             xp: 3000,
             phase: 'pentesting',
             category: 'web-pentest',
-            order: 29
+            order: 33
+          },
+          {
+            id: 'business-logic',
+            title: 'Business Logic Vulnerabilities',
+            description: 'Price manipulation, race conditions in payments, workflow bypass, insufficient process validation',
+            xp: 3500,
+            phase: 'pentesting',
+            category: 'web-pentest',
+            order: 34
+          },
+          {
+            id: 'cors-attacks',
+            title: 'CORS & Origin-based Attacks',
+            description: 'CORS misconfigurations, origin reflection, null origin, wildcard issues, credentials exposure',
+            xp: 2800,
+            phase: 'pentesting',
+            category: 'web-pentest',
+            order: 35
+          },
+          {
+            id: 'idor-access-control',
+            title: 'IDOR & Access Control',
+            description: 'Horizontal/vertical privilege escalation, UUID prediction, parameter pollution, forced browsing',
+            xp: 3000,
+            phase: 'pentesting',
+            category: 'web-pentest',
+            order: 36
+          }
+        ]
+      },
+      {
+        id: 'api-security',
+        title: 'API Security Testing',
+        tasks: [
+          {
+            id: 'api-fundamentals',
+            title: 'API Security Fundamentals',
+            description: 'REST/SOAP basics, API authentication methods, common API vulnerabilities, API testing tools mastery',
+            xp: 2500,
+            phase: 'pentesting',
+            category: 'api-security',
+            order: 37
+          },
+          {
+            id: 'graphql-security',
+            title: 'GraphQL Security Testing',
+            description: 'Introspection attacks, query depth attacks, batching attacks, field suggestions abuse',
+            xp: 3200,
+            phase: 'pentesting',
+            category: 'api-security',
+            order: 38
+          },
+          {
+            id: 'api-auth-attacks',
+            title: 'API Authentication Attacks',
+            description: 'JWT attacks, API key security, OAuth2 flows exploitation, bearer token vulnerabilities',
+            xp: 3000,
+            phase: 'pentesting',
+            category: 'api-security',
+            order: 39
+          },
+          {
+            id: 'webhook-security',
+            title: 'Webhook Security',
+            description: 'Webhook validation bypass, SSRF via webhooks, webhook flooding, signature verification attacks',
+            xp: 2800,
+            phase: 'pentesting',
+            category: 'api-security',
+            order: 40
+          },
+          {
+            id: 'api-rate-limiting',
+            title: 'API Rate Limiting & DoS',
+            description: 'Rate limit testing, resource exhaustion, GraphQL complexity attacks, batch API abuse',
+            xp: 2600,
+            phase: 'pentesting',
+            category: 'api-security',
+            order: 41
+          }
+        ]
+      },
+      {
+        id: 'modern-web-security',
+        title: 'Modern Web Security',
+        tasks: [
+          {
+            id: 'oauth-saml',
+            title: 'OAuth2 & SAML Security',
+            description: 'OAuth2 flow vulnerabilities, SAML signature wrapping, XML injection, SSO bypass techniques',
+            xp: 3500,
+            phase: 'pentesting',
+            category: 'modern-web-security',
+            order: 42
+          },
+          {
+            id: 'spa-security',
+            title: 'SPA & Modern JS Security',
+            description: 'React/Vue/Angular specific bugs, client-side storage, postMessage vulnerabilities, prototype pollution',
+            xp: 3200,
+            phase: 'pentesting',
+            category: 'modern-web-security',
+            order: 43
+          },
+          {
+            id: 'websocket-security',
+            title: 'WebSocket Security',
+            description: 'WebSocket hijacking, cross-site WebSocket hijacking, message tampering, origin validation',
+            xp: 2800,
+            phase: 'pentesting',
+            category: 'modern-web-security',
+            order: 44
+          },
+          {
+            id: 'csp-bypass',
+            title: 'CSP Bypass Techniques',
+            description: 'CSP header analysis, unsafe-inline/eval, script gadgets, base-uri attacks, CSP reporting abuse',
+            xp: 3000,
+            phase: 'pentesting',
+            category: 'modern-web-security',
+            order: 45
+          },
+          {
+            id: 'dom-vulnerabilities',
+            title: 'Advanced DOM Vulnerabilities',
+            description: 'DOM clobbering, mutation XSS, DOM sanitizer bypasses, trusted types bypass',
+            xp: 3400,
+            phase: 'pentesting',
+            category: 'modern-web-security',
+            order: 46
           }
         ]
       },
@@ -351,34 +516,34 @@ export const roadmapData: Phase[] = [
             xp: 4000,
             phase: 'pentesting',
             category: 'system-exploitation',
-            order: 30
+            order: 47
           },
           {
             id: 'windows-privesc',
             title: 'Windows Privilege Escalation',
-            description: 'Token impersonation, DLL hijacking, unquoted paths, registry keys, potato attacks',
+            description: 'Token impersonation, DLL hijacking, unquoted paths, registry keys, privilege escalation techniques',
             xp: 3500,
             phase: 'pentesting',
             category: 'system-exploitation',
-            order: 31
+            order: 48
           },
           {
             id: 'linux-privesc',
             title: 'Linux Privilege Escalation',
-            description: 'SUID abuse, sudo misconfig, kernel exploits, cron jobs, capabilities, docker escape',
+            description: 'SUID abuse, sudo misconfig, kernel exploits, cron jobs, capabilities, container escape',
             xp: 3500,
             phase: 'pentesting',
             category: 'system-exploitation',
-            order: 32
+            order: 49
           },
           {
             id: 'post-exploitation',
             title: 'Post-Exploitation Techniques',
-            description: 'Persistence, lateral movement, mimikatz, credential harvesting, log cleaning',
+            description: 'Persistence, lateral movement, credential harvesting, log cleaning, anti-forensics',
             xp: 3200,
             phase: 'pentesting',
             category: 'system-exploitation',
-            order: 33
+            order: 50
           }
         ]
       },
@@ -389,11 +554,11 @@ export const roadmapData: Phase[] = [
           {
             id: 'ad-enumeration',
             title: 'AD Enumeration Mastery',
-            description: 'PowerView, BloodHound, LDAP queries, SPNs discovery, trust mapping, ACL abuse',
+            description: 'AD enumeration tools, LDAP queries, SPNs discovery, trust mapping, ACL abuse',
             xp: 4000,
             phase: 'pentesting',
             category: 'active-directory',
-            order: 34
+            order: 51
           },
           {
             id: 'kerberos-attacks',
@@ -402,7 +567,7 @@ export const roadmapData: Phase[] = [
             xp: 4500,
             phase: 'pentesting',
             category: 'active-directory',
-            order: 35
+            order: 52
           },
           {
             id: 'ad-persistence',
@@ -411,7 +576,7 @@ export const roadmapData: Phase[] = [
             xp: 4200,
             phase: 'pentesting',
             category: 'active-directory',
-            order: 36
+            order: 53
           },
           {
             id: 'ad-lab',
@@ -420,7 +585,7 @@ export const roadmapData: Phase[] = [
             xp: 3000,
             phase: 'pentesting',
             category: 'active-directory',
-            order: 37
+            order: 54
           }
         ]
       },
@@ -431,11 +596,11 @@ export const roadmapData: Phase[] = [
           {
             id: 'network-attacks',
             title: 'Network Attack Vectors',
-            description: 'MITM attacks, ARP poisoning, VLAN hopping, DNS spoofing, responder attacks',
+            description: 'MITM attacks, ARP poisoning, VLAN hopping, DNS spoofing, network protocol attacks',
             xp: 3200,
             phase: 'pentesting',
             category: 'network-pentesting',
-            order: 38
+            order: 55
           },
           {
             id: 'wireless-hacking',
@@ -444,7 +609,7 @@ export const roadmapData: Phase[] = [
             xp: 2800,
             phase: 'pentesting',
             category: 'network-pentesting',
-            order: 39
+            order: 56
           },
           {
             id: 'vpn-attacks',
@@ -453,7 +618,7 @@ export const roadmapData: Phase[] = [
             xp: 2500,
             phase: 'pentesting',
             category: 'network-pentesting',
-            order: 40
+            order: 57
           },
           {
             id: 'infrastructure-pentest',
@@ -462,7 +627,7 @@ export const roadmapData: Phase[] = [
             xp: 3000,
             phase: 'pentesting',
             category: 'network-pentesting',
-            order: 41
+            order: 58
           }
         ]
       },
@@ -473,11 +638,11 @@ export const roadmapData: Phase[] = [
           {
             id: 'exploit-development',
             title: 'Basic Exploit Writing',
-            description: 'Modify public exploits, write Metasploit modules, understand exploit structure',
+            description: 'Modify public exploits, write exploitation modules, understand exploit structure',
             xp: 4000,
             phase: 'pentesting',
             category: 'tool-development',
-            order: 42
+            order: 59
           },
           {
             id: 'scanner-development',
@@ -486,7 +651,7 @@ export const roadmapData: Phase[] = [
             xp: 3500,
             phase: 'pentesting',
             category: 'tool-development',
-            order: 43
+            order: 60
           },
           {
             id: 'automation-framework',
@@ -495,7 +660,7 @@ export const roadmapData: Phase[] = [
             xp: 3800,
             phase: 'pentesting',
             category: 'tool-development',
-            order: 44
+            order: 61
           },
           {
             id: 'payload-generation',
@@ -504,7 +669,16 @@ export const roadmapData: Phase[] = [
             xp: 4200,
             phase: 'pentesting',
             category: 'tool-development',
-            order: 45
+            order: 62
+          },
+          {
+            id: 'proxy-extensions',
+            title: 'Web Proxy Extension Development',
+            description: 'Create custom proxy extensions in Python/Java, passive/active scanners, custom checks',
+            xp: 3600,
+            phase: 'pentesting',
+            category: 'tool-development',
+            order: 63
           }
         ]
       },
@@ -513,31 +687,31 @@ export const roadmapData: Phase[] = [
         title: 'Certification & Practice',
         tasks: [
           {
-            id: 'oscp-prep',
-            title: 'OSCP Preparation',
-            description: 'Complete PWK labs, practice buffer overflows, AD attacks, report writing',
+            id: 'offensive-cert-prep',
+            title: 'Offensive Security Certification Prep',
+            description: 'Complete practice labs, buffer overflows, AD attacks, report writing preparation',
             xp: 8000,
             phase: 'pentesting',
             category: 'certifications-practice',
-            order: 46
+            order: 64
           },
           {
-            id: 'htb-pro-labs',
-            title: 'HackTheBox Pro Labs',
-            description: 'Complete Offshore, RastaLabs, or Cybernetics pro lab',
+            id: 'advanced-lab-environments',
+            title: 'Advanced Lab Environments',
+            description: 'Complete enterprise-grade lab environments simulating real corporate networks',
             xp: 6000,
             phase: 'pentesting',
             category: 'certifications-practice',
-            order: 47
+            order: 65
           },
           {
-            id: 'vulnhub-oscp',
-            title: 'VulnHub OSCP-Like',
-            description: 'Complete 20 OSCP-like machines, time yourself, practice methodology',
+            id: 'practice-vulnerable-machines',
+            title: 'Practice Vulnerable Machines',
+            description: 'Complete 20 intermediate to hard vulnerable machines, time yourself, practice methodology',
             xp: 4000,
             phase: 'pentesting',
             category: 'certifications-practice',
-            order: 48
+            order: 66
           },
           {
             id: 'bug-bounty-start',
@@ -546,7 +720,7 @@ export const roadmapData: Phase[] = [
             xp: 5000,
             phase: 'pentesting',
             category: 'certifications-practice',
-            order: 49
+            order: 67
           }
         ]
       }
@@ -565,20 +739,20 @@ export const roadmapData: Phase[] = [
           {
             id: 'deserialization',
             title: 'Deserialization Attacks',
-            description: 'Java, PHP, Python, .NET deserialization, gadget chains, ysoserial mastery',
+            description: 'Java, PHP, Python, .NET deserialization, gadget chains, serialization vulnerabilities',
             xp: 6000,
             phase: 'advanced',
             category: 'advanced-web',
-            order: 50
+            order: 68
           },
           {
             id: 'race-conditions',
             title: 'Race Condition Exploitation',
-            description: 'TOCTOU bugs, payment races, async vulnerabilities, turbo intruder mastery',
+            description: 'TOCTOU bugs, payment races, async vulnerabilities, advanced request timing attacks',
             xp: 5500,
             phase: 'advanced',
             category: 'advanced-web',
-            order: 51
+            order: 69
           },
           {
             id: 'cache-poisoning',
@@ -587,7 +761,7 @@ export const roadmapData: Phase[] = [
             xp: 5000,
             phase: 'advanced',
             category: 'advanced-web',
-            order: 52
+            order: 70
           },
           {
             id: 'request-smuggling',
@@ -596,7 +770,7 @@ export const roadmapData: Phase[] = [
             xp: 6500,
             phase: 'advanced',
             category: 'advanced-web',
-            order: 53
+            order: 71
           },
           {
             id: 'api-advanced',
@@ -605,7 +779,67 @@ export const roadmapData: Phase[] = [
             xp: 5200,
             phase: 'advanced',
             category: 'advanced-web',
-            order: 54
+            order: 72
+          },
+          {
+            id: 'prototype-pollution',
+            title: 'Prototype Pollution',
+            description: 'Client-side prototype pollution, gadget hunting, pollution to XSS/RCE, server-side pollution',
+            xp: 5800,
+            phase: 'advanced',
+            category: 'advanced-web',
+            order: 73
+          },
+          {
+            id: 'postmessage-attacks',
+            title: 'PostMessage & DOM Security',
+            description: 'PostMessage exploitation, origin validation bypass, DOM-based race conditions, frame hijacking',
+            xp: 5300,
+            phase: 'advanced',
+            category: 'advanced-web',
+            order: 74
+          }
+        ]
+      },
+      {
+        id: 'source-code-review',
+        title: 'Source Code Analysis',
+        tasks: [
+          {
+            id: 'sast-fundamentals',
+            title: 'Static Analysis Fundamentals',
+            description: 'Manual code review techniques, data flow analysis, taint tracking, sink identification',
+            xp: 5500,
+            phase: 'advanced',
+            category: 'source-code-review',
+            order: 75
+          },
+          {
+            id: 'sast-tools',
+            title: 'SAST Tools Mastery',
+            description: 'Advanced static analysis tools, custom rule writing, security pattern detection, CI/CD integration',
+            xp: 5000,
+            phase: 'advanced',
+            category: 'source-code-review',
+            order: 76
+          },
+          {
+            id: 'js-code-review',
+            title: 'JavaScript Security Review',
+            description: 'Node.js vulnerabilities, npm package analysis, webpack misconfigs, source map exploitation',
+            xp: 5200,
+            phase: 'advanced',
+            category: 'source-code-review',
+            order: 77
+          },
+          {
+            id: 'java-code-review',
+            title: 'Java Security Review',
+            description: 'Spring vulnerabilities, JNDI injection, expression language injection, unsafe reflection',
+            xp: 5400,
+            phase: 'advanced',
+            category: 'source-code-review',
+            order: 78
           }
         ]
       },
@@ -620,7 +854,7 @@ export const roadmapData: Phase[] = [
             xp: 7000,
             phase: 'advanced',
             category: 'cloud-security',
-            order: 55
+            order: 79
           },
           {
             id: 'azure-security',
@@ -629,7 +863,7 @@ export const roadmapData: Phase[] = [
             xp: 6500,
             phase: 'advanced',
             category: 'cloud-security',
-            order: 56
+            order: 80
           },
           {
             id: 'kubernetes-exploitation',
@@ -638,16 +872,34 @@ export const roadmapData: Phase[] = [
             xp: 7500,
             phase: 'advanced',
             category: 'cloud-security',
-            order: 57
+            order: 81
           },
           {
             id: 'container-breakout',
             title: 'Container Escape Techniques',
-            description: 'Docker breakout, privileged containers, namespace abuse, cgroups exploitation',
+            description: 'Container breakout techniques, privileged containers, namespace abuse, cgroups exploitation',
             xp: 6000,
             phase: 'advanced',
             category: 'cloud-security',
-            order: 58
+            order: 82
+          },
+          {
+            id: 'serverless-security',
+            title: 'Serverless Security',
+            description: 'Lambda/Functions exploitation, event injection, cold start attacks, function URL abuse',
+            xp: 5500,
+            phase: 'advanced',
+            category: 'cloud-security',
+            order: 83
+          },
+          {
+            id: 'cicd-security',
+            title: 'CI/CD Pipeline Security',
+            description: 'Pipeline exploitation, secrets extraction, supply chain attacks, artifact poisoning',
+            xp: 6200,
+            phase: 'advanced',
+            category: 'cloud-security',
+            order: 84
           }
         ]
       },
@@ -658,11 +910,11 @@ export const roadmapData: Phase[] = [
           {
             id: 'android-pentesting',
             title: 'Android Security Testing',
-            description: 'APK reversing, Frida hooking, SSL pinning bypass, intent exploitation, root detection bypass',
+            description: 'APK reversing, dynamic instrumentation, SSL pinning bypass, intent exploitation, root detection bypass',
             xp: 6000,
             phase: 'advanced',
             category: 'mobile-security',
-            order: 59
+            order: 85
           },
           {
             id: 'ios-security',
@@ -671,7 +923,7 @@ export const roadmapData: Phase[] = [
             xp: 5500,
             phase: 'advanced',
             category: 'mobile-security',
-            order: 60
+            order: 86
           },
           {
             id: 'mobile-api',
@@ -680,7 +932,7 @@ export const roadmapData: Phase[] = [
             xp: 4500,
             phase: 'advanced',
             category: 'mobile-security',
-            order: 61
+            order: 87
           },
           {
             id: 'mobile-malware',
@@ -689,7 +941,16 @@ export const roadmapData: Phase[] = [
             xp: 5000,
             phase: 'advanced',
             category: 'mobile-security',
-            order: 62
+            order: 88
+          },
+          {
+            id: 'react-native-security',
+            title: 'React Native Security',
+            description: 'JavaScript bridge exploitation, native module vulnerabilities, bytecode reversing',
+            xp: 4800,
+            phase: 'advanced',
+            category: 'mobile-security',
+            order: 89
           }
         ]
       },
@@ -700,11 +961,11 @@ export const roadmapData: Phase[] = [
           {
             id: 'heap-exploitation',
             title: 'Heap Exploitation',
-            description: 'Heap overflow, use-after-free, heap spraying, tcache attacks, house of techniques',
+            description: 'Heap overflow, use-after-free, heap spraying, tcache attacks, advanced heap techniques',
             xp: 8000,
             phase: 'advanced',
             category: 'exploit-dev-advanced',
-            order: 63
+            order: 90
           },
           {
             id: 'rop-chains',
@@ -713,7 +974,7 @@ export const roadmapData: Phase[] = [
             xp: 7500,
             phase: 'advanced',
             category: 'exploit-dev-advanced',
-            order: 64
+            order: 91
           },
           {
             id: 'kernel-intro',
@@ -722,16 +983,16 @@ export const roadmapData: Phase[] = [
             xp: 9000,
             phase: 'advanced',
             category: 'exploit-dev-advanced',
-            order: 65
+            order: 92
           },
           {
             id: 'fuzzing-advanced',
             title: 'Advanced Fuzzing',
-            description: 'AFL++, libFuzzer, custom harnesses, coverage-guided fuzzing, crash analysis',
+            description: 'Coverage-guided fuzzing, custom harnesses, crash analysis, fuzzer development',
             xp: 6500,
             phase: 'advanced',
             category: 'exploit-dev-advanced',
-            order: 66
+            order: 93
           }
         ]
       },
@@ -742,11 +1003,11 @@ export const roadmapData: Phase[] = [
           {
             id: 'recon-automation',
             title: 'Automated Recon Pipeline',
-            description: 'Build complete automation: subdomain enum, port scan, nuclei, custom checks',
+            description: 'Build complete automation: subdomain enum, port scan, vulnerability scanning, custom checks',
             xp: 5000,
             phase: 'advanced',
             category: 'bug-bounty-mastery',
-            order: 67
+            order: 94
           },
           {
             id: 'bounty-methodology',
@@ -755,7 +1016,7 @@ export const roadmapData: Phase[] = [
             xp: 4000,
             phase: 'advanced',
             category: 'bug-bounty-mastery',
-            order: 68
+            order: 95
           },
           {
             id: 'high-impact-bugs',
@@ -764,7 +1025,7 @@ export const roadmapData: Phase[] = [
             xp: 10000,
             phase: 'advanced',
             category: 'bug-bounty-mastery',
-            order: 69
+            order: 96
           },
           {
             id: 'bounty-income',
@@ -773,7 +1034,16 @@ export const roadmapData: Phase[] = [
             xp: 8000,
             phase: 'advanced',
             category: 'bug-bounty-mastery',
-            order: 70
+            order: 97
+          },
+          {
+            id: 'collaboration-hunting',
+            title: 'Collaborative Bug Hunting',
+            description: 'Team up with other researchers, chain vulnerabilities, share methodologies',
+            xp: 4500,
+            phase: 'advanced',
+            category: 'bug-bounty-mastery',
+            order: 98
           }
         ]
       },
@@ -788,7 +1058,7 @@ export const roadmapData: Phase[] = [
             xp: 5500,
             phase: 'advanced',
             category: 'hardware-iot',
-            order: 71
+            order: 99
           },
           {
             id: 'radio-hacking',
@@ -797,7 +1067,7 @@ export const roadmapData: Phase[] = [
             xp: 6000,
             phase: 'advanced',
             category: 'hardware-iot',
-            order: 72
+            order: 100
           },
           {
             id: 'iot-exploitation',
@@ -806,7 +1076,7 @@ export const roadmapData: Phase[] = [
             xp: 6500,
             phase: 'advanced',
             category: 'hardware-iot',
-            order: 73
+            order: 101
           },
           {
             id: 'badge-rfid',
@@ -815,7 +1085,49 @@ export const roadmapData: Phase[] = [
             xp: 4500,
             phase: 'advanced',
             category: 'hardware-iot',
-            order: 74
+            order: 102
+          }
+        ]
+      },
+      {
+        id: 'blockchain-security',
+        title: 'Blockchain & Web3 Security',
+        tasks: [
+          {
+            id: 'smart-contract-basics',
+            title: 'Smart Contract Security Basics',
+            description: 'Solidity vulnerabilities, reentrancy, integer overflow, access control issues',
+            xp: 6000,
+            phase: 'advanced',
+            category: 'blockchain-security',
+            order: 103
+          },
+          {
+            id: 'defi-security',
+            title: 'DeFi Protocol Security',
+            description: 'Flash loan attacks, price oracle manipulation, MEV exploitation, liquidity pool attacks',
+            xp: 7000,
+            phase: 'advanced',
+            category: 'blockchain-security',
+            order: 104
+          },
+          {
+            id: 'web3-pentesting',
+            title: 'Web3 Application Testing',
+            description: 'Wallet integration bugs, signature verification, frontend attacks, RPC abuse',
+            xp: 5500,
+            phase: 'advanced',
+            category: 'blockchain-security',
+            order: 105
+          },
+          {
+            id: 'blockchain-forensics',
+            title: 'Blockchain Forensics',
+            description: 'Transaction analysis, mixer detection, wallet clustering, on-chain investigation',
+            xp: 5000,
+            phase: 'advanced',
+            category: 'blockchain-security',
+            order: 106
           }
         ]
       }
@@ -832,13 +1144,13 @@ export const roadmapData: Phase[] = [
         title: 'Red Team Foundations',
         tasks: [
           {
-            id: 'mitre-attack',
-            title: 'MITRE ATT&CK Mastery',
-            description: 'Map all techniques, build attack chains, emulate APT groups, purple team exercises',
+            id: 'attack-framework',
+            title: 'Attack Framework Mastery',
+            description: 'Map attack techniques, build attack chains, emulate APT groups, purple team exercises',
             xp: 8000,
             phase: 'redteam',
             category: 'redteam-fundamentals',
-            order: 75
+            order: 107
           },
           {
             id: 'opsec-tradecraft',
@@ -847,16 +1159,16 @@ export const roadmapData: Phase[] = [
             xp: 7500,
             phase: 'redteam',
             category: 'redteam-fundamentals',
-            order: 76
+            order: 108
           },
           {
             id: 'threat-intelligence',
             title: 'Threat Intelligence Integration',
-            description: 'APT analysis, TTP extraction, IOC creation, YARA rules, threat hunting',
+            description: 'APT analysis, TTP extraction, IOC creation, detection rules, threat hunting',
             xp: 6500,
             phase: 'redteam',
             category: 'redteam-fundamentals',
-            order: 77
+            order: 109
           },
           {
             id: 'campaign-planning',
@@ -865,7 +1177,7 @@ export const roadmapData: Phase[] = [
             xp: 7000,
             phase: 'redteam',
             category: 'redteam-fundamentals',
-            order: 78
+            order: 110
           }
         ]
       },
@@ -876,11 +1188,11 @@ export const roadmapData: Phase[] = [
           {
             id: 'c2-frameworks',
             title: 'C2 Framework Mastery',
-            description: 'Cobalt Strike, Empire, Covenant, Merlin - setup, customization, OPSEC',
+            description: 'Popular C2 frameworks - setup, customization, OPSEC, profile development',
             xp: 9000,
             phase: 'redteam',
             category: 'c2-infrastructure',
-            order: 79
+            order: 111
           },
           {
             id: 'redirectors',
@@ -889,7 +1201,7 @@ export const roadmapData: Phase[] = [
             xp: 7000,
             phase: 'redteam',
             category: 'c2-infrastructure',
-            order: 80
+            order: 112
           },
           {
             id: 'custom-c2',
@@ -898,7 +1210,7 @@ export const roadmapData: Phase[] = [
             xp: 12000,
             phase: 'redteam',
             category: 'c2-infrastructure',
-            order: 81
+            order: 113
           },
           {
             id: 'c2-opsec',
@@ -907,7 +1219,7 @@ export const roadmapData: Phase[] = [
             xp: 8000,
             phase: 'redteam',
             category: 'c2-infrastructure',
-            order: 82
+            order: 114
           }
         ]
       },
@@ -922,7 +1234,7 @@ export const roadmapData: Phase[] = [
             xp: 10000,
             phase: 'redteam',
             category: 'implant-development',
-            order: 83
+            order: 115
           },
           {
             id: 'process-injection',
@@ -931,16 +1243,16 @@ export const roadmapData: Phase[] = [
             xp: 9000,
             phase: 'redteam',
             category: 'implant-development',
-            order: 84
+            order: 116
           },
           {
             id: 'edr-evasion',
             title: 'EDR Bypass Techniques',
-            description: 'API unhooking, direct syscalls, ETW patching, AMSI bypass',
+            description: 'API unhooking, direct syscalls, ETW patching, security product bypass',
             xp: 11000,
             phase: 'redteam',
             category: 'implant-development',
-            order: 85
+            order: 117
           },
           {
             id: 'persistence-advanced',
@@ -949,7 +1261,7 @@ export const roadmapData: Phase[] = [
             xp: 9500,
             phase: 'redteam',
             category: 'implant-development',
-            order: 86
+            order: 118
           }
         ]
       },
@@ -960,11 +1272,11 @@ export const roadmapData: Phase[] = [
           {
             id: 'phishing-campaigns',
             title: 'Advanced Phishing',
-            description: 'GoPhish mastery, Evilginx2, pretexting, spear phishing, credential harvesting',
+            description: 'Phishing framework mastery, multi-factor bypass, pretexting, spear phishing, credential harvesting',
             xp: 7000,
             phase: 'redteam',
             category: 'social-engineering',
-            order: 87
+            order: 119
           },
           {
             id: 'vishing-pretexting',
@@ -973,7 +1285,7 @@ export const roadmapData: Phase[] = [
             xp: 6000,
             phase: 'redteam',
             category: 'social-engineering',
-            order: 88
+            order: 120
           },
           {
             id: 'physical-security',
@@ -982,7 +1294,7 @@ export const roadmapData: Phase[] = [
             xp: 7500,
             phase: 'redteam',
             category: 'social-engineering',
-            order: 89
+            order: 121
           },
           {
             id: 'insider-simulation',
@@ -991,7 +1303,7 @@ export const roadmapData: Phase[] = [
             xp: 6500,
             phase: 'redteam',
             category: 'social-engineering',
-            order: 90
+            order: 122
           }
         ]
       },
@@ -1006,7 +1318,7 @@ export const roadmapData: Phase[] = [
             xp: 10000,
             phase: 'redteam',
             category: 'advanced-techniques',
-            order: 91
+            order: 123
           },
           {
             id: 'covert-channels',
@@ -1015,7 +1327,7 @@ export const roadmapData: Phase[] = [
             xp: 8000,
             phase: 'redteam',
             category: 'advanced-techniques',
-            order: 92
+            order: 124
           },
           {
             id: 'data-exfiltration',
@@ -1024,16 +1336,16 @@ export const roadmapData: Phase[] = [
             xp: 7500,
             phase: 'redteam',
             category: 'advanced-techniques',
-            order: 93
+            order: 125
           },
           {
             id: 'lateral-movement',
             title: 'Lateral Movement Mastery',
-            description: 'Living off the land, WMI/PSExec, RDP hijacking, token manipulation',
+            description: 'Living off the land, native tools abuse, RDP hijacking, token manipulation',
             xp: 8500,
             phase: 'redteam',
             category: 'advanced-techniques',
-            order: 94
+            order: 126
           }
         ]
       },
@@ -1048,7 +1360,7 @@ export const roadmapData: Phase[] = [
             xp: 15000,
             phase: 'redteam',
             category: 'redteam-ops',
-            order: 95
+            order: 127
           },
           {
             id: 'purple-team',
@@ -1057,7 +1369,7 @@ export const roadmapData: Phase[] = [
             xp: 8000,
             phase: 'redteam',
             category: 'redteam-ops',
-            order: 96
+            order: 128
           },
           {
             id: 'report-writing',
@@ -1066,16 +1378,16 @@ export const roadmapData: Phase[] = [
             xp: 6000,
             phase: 'redteam',
             category: 'redteam-ops',
-            order: 97
+            order: 129
           },
           {
             id: 'redteam-cert',
             title: 'Red Team Certification',
-            description: 'Obtain CRTO, CRTE, or GXPN certification',
+            description: 'Obtain advanced red team certification, validate skills',
             xp: 12000,
             phase: 'redteam',
             category: 'redteam-ops',
-            order: 98
+            order: 130
           }
         ]
       }
@@ -1098,7 +1410,7 @@ export const roadmapData: Phase[] = [
             xp: 25000,
             phase: 'elite',
             category: 'vulnerability-research',
-            order: 99
+            order: 131
           },
           {
             id: 'browser-bugs',
@@ -1107,7 +1419,7 @@ export const roadmapData: Phase[] = [
             xp: 50000,
             phase: 'elite',
             category: 'vulnerability-research',
-            order: 100
+            order: 132
           },
           {
             id: 'kernel-exploitation',
@@ -1116,7 +1428,7 @@ export const roadmapData: Phase[] = [
             xp: 40000,
             phase: 'elite',
             category: 'vulnerability-research',
-            order: 101
+            order: 133
           },
           {
             id: 'hypervisor-escape',
@@ -1125,7 +1437,7 @@ export const roadmapData: Phase[] = [
             xp: 60000,
             phase: 'elite',
             category: 'vulnerability-research',
-            order: 102
+            order: 134
           }
         ]
       },
@@ -1140,7 +1452,7 @@ export const roadmapData: Phase[] = [
             xp: 30000,
             phase: 'elite',
             category: 'malware-development',
-            order: 103
+            order: 135
           },
           {
             id: 'crypter-packer',
@@ -1149,7 +1461,7 @@ export const roadmapData: Phase[] = [
             xp: 25000,
             phase: 'elite',
             category: 'malware-development',
-            order: 104
+            order: 136
           },
           {
             id: 'advanced-evasion',
@@ -1158,7 +1470,7 @@ export const roadmapData: Phase[] = [
             xp: 35000,
             phase: 'elite',
             category: 'malware-development',
-            order: 105
+            order: 137
           },
           {
             id: 'apt-emulation',
@@ -1167,7 +1479,7 @@ export const roadmapData: Phase[] = [
             xp: 45000,
             phase: 'elite',
             category: 'malware-development',
-            order: 106
+            order: 138
           }
         ]
       },
@@ -1182,25 +1494,25 @@ export const roadmapData: Phase[] = [
             xp: 75000,
             phase: 'elite',
             category: 'research-development',
-            order: 107
+            order: 139
           },
           {
             id: 'security-tools',
             title: 'Industry-Standard Tools',
-            description: 'Create tools adopted by security community, 10k+ stars on GitHub',
+            description: 'Create tools adopted by security community, significant open source contributions',
             xp: 40000,
             phase: 'elite',
             category: 'research-development',
-            order: 108
+            order: 140
           },
           {
             id: 'framework-contributions',
             title: 'Major Framework Contributions',
-            description: 'Core contributions to Metasploit, Burp, other major tools',
+            description: 'Core contributions to major security frameworks and tools',
             xp: 30000,
             phase: 'elite',
             category: 'research-development',
-            order: 109
+            order: 141
           },
           {
             id: 'academic-research',
@@ -1209,7 +1521,7 @@ export const roadmapData: Phase[] = [
             xp: 50000,
             phase: 'elite',
             category: 'research-development',
-            order: 110
+            order: 142
           }
         ]
       },
@@ -1220,11 +1532,11 @@ export const roadmapData: Phase[] = [
           {
             id: 'conference-speaker',
             title: 'Major Conference Speaker',
-            description: 'Speak at Black Hat, DEF CON, OffensiveCon, or similar',
+            description: 'Speak at top security conferences, share groundbreaking research',
             xp: 35000,
             phase: 'elite',
             category: 'industry-impact',
-            order: 111
+            order: 143
           },
           {
             id: 'training-author',
@@ -1233,7 +1545,7 @@ export const roadmapData: Phase[] = [
             xp: 25000,
             phase: 'elite',
             category: 'industry-impact',
-            order: 112
+            order: 144
           },
           {
             id: 'bug-bounty-elite',
@@ -1242,7 +1554,7 @@ export const roadmapData: Phase[] = [
             xp: 80000,
             phase: 'elite',
             category: 'industry-impact',
-            order: 113
+            order: 145
           },
           {
             id: 'security-startup',
@@ -1251,7 +1563,7 @@ export const roadmapData: Phase[] = [
             xp: 100000,
             phase: 'elite',
             category: 'industry-impact',
-            order: 114
+            order: 146
           }
         ]
       },
@@ -1266,7 +1578,7 @@ export const roadmapData: Phase[] = [
             xp: 40000,
             phase: 'elite',
             category: 'specialized-expertise',
-            order: 115
+            order: 147
           },
           {
             id: 'ai-security',
@@ -1275,7 +1587,7 @@ export const roadmapData: Phase[] = [
             xp: 45000,
             phase: 'elite',
             category: 'specialized-expertise',
-            order: 116
+            order: 148
           },
           {
             id: 'ics-scada',
@@ -1284,7 +1596,7 @@ export const roadmapData: Phase[] = [
             xp: 50000,
             phase: 'elite',
             category: 'ics-scada',
-            order: 117
+            order: 149
           },
           {
             id: 'quantum-ready',
@@ -1293,7 +1605,7 @@ export const roadmapData: Phase[] = [
             xp: 60000,
             phase: 'elite',
             category: 'specialized-expertise',
-            order: 118
+            order: 150
           }
         ]
       },
@@ -1302,13 +1614,13 @@ export const roadmapData: Phase[] = [
         title: 'Legendary Status',
         tasks: [
           {
-            id: 'pwn2own',
-            title: 'Pwn2Own Winner',
-            description: 'Win Pwn2Own or similar elite hacking competition',
+            id: 'elite-competition',
+            title: 'Elite Competition Winner',
+            description: 'Win prestigious hacking competition or capture the flag event',
             xp: 150000,
             phase: 'elite',
             category: 'legendary-achievements',
-            order: 119
+            order: 151
           },
           {
             id: 'bug-bounty-million',
@@ -1317,7 +1629,7 @@ export const roadmapData: Phase[] = [
             xp: 200000,
             phase: 'elite',
             category: 'legendary-achievements',
-            order: 120
+            order: 152
           },
           {
             id: 'security-pioneer',
@@ -1326,7 +1638,7 @@ export const roadmapData: Phase[] = [
             xp: 500000,
             phase: 'elite',
             category: 'legendary-achievements',
-            order: 121
+            order: 153
           },
           {
             id: 'hall-of-fame',
@@ -1335,7 +1647,7 @@ export const roadmapData: Phase[] = [
             xp: 1000000,
             phase: 'elite',
             category: 'legendary-achievements',
-            order: 122
+            order: 154
           }
         ]
       }
