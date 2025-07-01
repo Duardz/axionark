@@ -15,32 +15,15 @@ export function sanitizeHtml(input: string): string {
 }
 
 export function sanitizeText(input: string): string {
-  // First pass: remove dangerous protocols and patterns
-  let sanitized = input
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/vbscript:/gi, '') // Remove vbscript: protocol
-    .replace(/data:/gi, '') // Remove data: protocol
-    .replace(/on\w+\s*=/gi, ''); // Remove event handlers
+  // First remove dangerous protocols and event handlers
+  const protocolCleaned = input
+    .replace(/(?:javascript|vbscript|data|about|file|res|ms-its):/gi, '')
+    .replace(/on[a-z]+\s*=/gi, '');
   
-  // Keep replacing until no more changes occur (handles repeated patterns)
-  let previousLength;
-  do {
-    previousLength = sanitized.length;
-    sanitized = sanitized
-      .replace(/javascript:/gi, '')
-      .replace(/vbscript:/gi, '')
-      .replace(/data:/gi, '')
-      .replace(/on\w+\s*=/gi, '');
-  } while (sanitized.length !== previousLength);
-  
-  // Final sanitization
-  return sanitized
-    .replace(/[<>]/g, '') // Remove HTML brackets
-    .replace(/["'`]/g, '') // Remove quotes to prevent attribute injection
-    .replace(/[&]/g, '&amp;') // Escape ampersands
-    .replace(/\s+/g, ' ') // Normalize whitespace
+  // Then use the existing HTML escape function for complete safety
+  return escapeHtml(protocolCleaned)
     .trim()
-    .slice(0, 5000); // Limit length
+    .slice(0, 5000);
 }
 
 export function sanitizeUsername(username: string): string {
