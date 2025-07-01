@@ -285,7 +285,7 @@
   description: mode === 'signup' 
     ? 'Join AXIONARK and start tracking your bug bounty journey. Create a secure account to document your ethical hacking progress.'
     : 'Sign in to AXIONARK to access your encrypted bug bounty journal and track your ethical hacking progress.',
-  noindex: true, // Don't index auth pages
+  noindex: false,
   nofollow: true
 }} />
 
