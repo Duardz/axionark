@@ -1,22 +1,76 @@
-// src/lib/utils/encryption.ts - Complete fixed version
+// src/lib/utils/encryption.ts - Fixed version with proper IndexedDB version handling
 import { browser } from '$app/environment';
 
 // IndexedDB setup for secure key storage
 const DB_NAME = 'axionark_secure';
-const DB_VERSION = 1;
 const STORE_NAME = 'encryption_keys';
 
 // In-memory cache for the encryption key
 let encryptionKeyCache: string | null = null;
 let currentUserId: string | null = null;
 
-// Initialize IndexedDB
-async function initDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+// Get current DB version dynamically
+async function getCurrentDBVersion(): Promise<number> {
+  return new Promise((resolve) => {
+    // First, try to open with no version specified to check current version
+    const checkRequest = indexedDB.open(DB_NAME);
     
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
+    checkRequest.onsuccess = () => {
+      const db = checkRequest.result;
+      const version = db.version;
+      db.close();
+      resolve(version || 1);
+    };
+    
+    checkRequest.onerror = () => {
+      // Database doesn't exist, use version 1
+      resolve(1);
+    };
+    
+    // If upgrade is needed, it means DB doesn't exist
+    checkRequest.onupgradeneeded = () => {
+      resolve(1);
+    };
+  });
+}
+
+// Initialize IndexedDB with dynamic version handling
+async function initDB(): Promise<IDBDatabase> {
+  // Get the current version or use 1 if new
+  const currentVersion = await getCurrentDBVersion();
+  
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, currentVersion);
+    
+    request.onerror = () => {
+      console.error('Failed to open IndexedDB:', request.error);
+      reject(request.error);
+    };
+    
+    request.onsuccess = () => {
+      const db = request.result;
+      
+      // Check if our object store exists
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        // Need to upgrade to add the store
+        db.close();
+        
+        const upgradeRequest = indexedDB.open(DB_NAME, currentVersion + 1);
+        
+        upgradeRequest.onerror = () => reject(upgradeRequest.error);
+        upgradeRequest.onsuccess = () => resolve(upgradeRequest.result);
+        
+        upgradeRequest.onupgradeneeded = (event) => {
+          const upgradedDb = (event.target as IDBOpenDBRequest).result;
+          if (!upgradedDb.objectStoreNames.contains(STORE_NAME)) {
+            const store = upgradedDb.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            store.createIndex('uid', 'uid', { unique: true });
+          }
+        };
+      } else {
+        resolve(db);
+      }
+    };
     
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
