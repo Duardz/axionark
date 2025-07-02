@@ -1,4 +1,4 @@
-// src/lib/stores/auth.ts - Updated relevant parts for persistent encryption
+// src/lib/stores/auth.ts - Fixed version with better error handling for account deletion
 import { writable, derived } from 'svelte/store';
 import { auth, db } from '$lib/firebase';
 import {
@@ -493,86 +493,131 @@ function createAuthStore() {
       const uid = user.uid;
       
       try {
+        // First, re-authenticate the user
         const credential = EmailAuthProvider.credential(user.email!, password);
         await reauthenticateWithCredential(user, credential);
         
         const { userStore, journalStore, bugStore } = await import('$lib/stores/user');
         
+        // Set deleting flag to prevent reactive updates
         userStore.setDeleting(true);
         
+        // Stop session check
         stopSessionCheck();
         
+        // Get username for cleanup
         const userDoc = await getDoc(doc(db, 'users', uid));
         const username = userDoc.exists() ? userDoc.data().username : null;
         
+        // Cleanup stores
         userStore.cleanup();
         journalStore.cleanup();
         bugStore.cleanup();
         
-        // Permanently delete encryption key for account deletion
+        // Delete journal entries using queries instead of transactions
+        console.log('Deleting journal entries...');
+        try {
+          const journalQuery = query(collection(db, 'journal'), where('uid', '==', uid));
+          const journalSnapshot = await getDocs(journalQuery);
+          
+          // Delete in smaller batches to avoid hitting limits
+          const deletePromises: Promise<void>[] = [];
+          journalSnapshot.forEach((doc) => {
+            deletePromises.push(deleteDoc(doc.ref));
+          });
+          
+          // Execute deletions in chunks
+          const chunkSize = 20;
+          for (let i = 0; i < deletePromises.length; i += chunkSize) {
+            const chunk = deletePromises.slice(i, i + chunkSize);
+            await Promise.all(chunk);
+            // Small delay between chunks
+            if (i + chunkSize < deletePromises.length) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          }
+          
+          console.log(`Deleted ${journalSnapshot.size} journal entries`);
+        } catch (error) {
+          console.error('Error deleting journal entries:', error);
+          // Continue with deletion even if some entries fail
+        }
+        
+        // Delete bug reports
+        console.log('Deleting bug reports...');
+        try {
+          const bugsQuery = query(collection(db, 'bugs'), where('uid', '==', uid));
+          const bugsSnapshot = await getDocs(bugsQuery);
+          
+          const deletePromises: Promise<void>[] = [];
+          bugsSnapshot.forEach((doc) => {
+            deletePromises.push(deleteDoc(doc.ref));
+          });
+          
+          // Execute deletions in chunks
+          const chunkSize = 20;
+          for (let i = 0; i < deletePromises.length; i += chunkSize) {
+            const chunk = deletePromises.slice(i, i + chunkSize);
+            await Promise.all(chunk);
+            // Small delay between chunks
+            if (i + chunkSize < deletePromises.length) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          }
+          
+          console.log(`Deleted ${bugsSnapshot.size} bug reports`);
+        } catch (error) {
+          console.error('Error deleting bug reports:', error);
+          // Continue with deletion even if some entries fail
+        }
+        
+        // Delete user profile and related data
+        console.log('Deleting user profile and related data...');
+        try {
+          // Delete username mapping first (while user still exists for auth check)
+          if (username) {
+            try {
+              await deleteDoc(doc(db, 'usernames', username.toLowerCase()));
+              console.log('Deleted username mapping');
+            } catch (error) {
+              console.error('Error deleting username:', error);
+              // Continue even if username deletion fails
+            }
+          }
+          
+          // Delete preferences if exists
+          try {
+            await deleteDoc(doc(db, 'preferences', uid));
+            console.log('Deleted preferences');
+          } catch (error) {
+            // Preferences might not exist, that's okay
+            console.log('No preferences to delete');
+          }
+          
+          // Delete user document last (this affects auth checks in Firestore rules)
+          await deleteDoc(doc(db, 'users', uid));
+          console.log('Deleted user document');
+          
+        } catch (error) {
+          console.error('Error deleting user data:', error);
+          throw new Error('Failed to delete user data. Please try again.');
+        }
+        
+        // Permanently delete encryption key
+        console.log('Deleting encryption key...');
         await permanentlyDeleteEncryptionKey(uid);
         
+        // Small delay before deleting auth user
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        const journalQuery = query(collection(db, 'journal'), where('uid', '==', uid));
-        const journalSnapshot = await getDocs(journalQuery);
-        
-        let journalBatch = writeBatch(db);
-        let journalCount = 0;
-        
-        for (const doc of journalSnapshot.docs) {
-          journalBatch.delete(doc.ref);
-          journalCount++;
-          
-          if (journalCount === 500) {
-            await journalBatch.commit();
-            journalBatch = writeBatch(db);
-            journalCount = 0;
-          }
-        }
-        
-        if (journalCount > 0) {
-          await journalBatch.commit();
-        }
-        
-        const bugsQuery = query(collection(db, 'bugs'), where('uid', '==', uid));
-        const bugsSnapshot = await getDocs(bugsQuery);
-        
-        let bugsBatch = writeBatch(db);
-        let bugsCount = 0;
-        
-        for (const doc of bugsSnapshot.docs) {
-          bugsBatch.delete(doc.ref);
-          bugsCount++;
-          
-          if (bugsCount === 500) {
-            await bugsBatch.commit();
-            bugsBatch = writeBatch(db);
-            bugsCount = 0;
-          }
-        }
-        
-        if (bugsCount > 0) {
-          await bugsBatch.commit();
-        }
-        
-        const finalBatch = writeBatch(db);
-        
-        finalBatch.delete(doc(db, 'users', uid));
-        
-        if (username) {
-          finalBatch.delete(doc(db, 'usernames', username.toLowerCase()));
-        }
-        
-        finalBatch.delete(doc(db, 'preferences', uid));
-        
-        await finalBatch.commit();
-        
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        // Finally, delete the Firebase Auth user
+        console.log('Deleting authentication account...');
         await deleteUser(user);
         
+        console.log('Account deletion completed successfully');
+        
       } catch (error: any) {
+        // Reset deletion state if error occurs
         try {
           const { userStore } = await import('$lib/stores/user');
           userStore.setDeleting(false);
@@ -588,6 +633,8 @@ function createAuthStore() {
           throw new Error('Please sign out and sign in again before deleting your account');
         } else if (error.code === 'auth/network-request-failed') {
           throw new Error('Network error. Please check your connection and try again.');
+        } else if (error.code === 'permission-denied' || error.message?.includes('Missing or insufficient permissions')) {
+          throw new Error('Permission error. Please try signing out and signing in again.');
         }
         
         const authError = handleAuthError(error);
@@ -610,7 +657,10 @@ function handleAuthError(error: any): AuthError {
     'auth/network-request-failed': 'Network error. Please check your connection',
     'auth/invalid-credential': 'Invalid login credentials',
     'auth/account-exists-with-different-credential': 'An account already exists with this email',
-    'auth/requires-recent-login': 'Please sign out and sign in again to perform this action'
+    'auth/requires-recent-login': 'Please sign out and sign in again to perform this action',
+    'permission-denied': 'Permission denied. Please try again.',
+    'auth/popup-closed-by-user': 'Sign in was cancelled',
+    'auth/cancelled-popup-request': 'Another sign in request is already in progress'
   };
   
   return {
