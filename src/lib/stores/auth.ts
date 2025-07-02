@@ -1,4 +1,4 @@
-// src/lib/stores/auth.ts - Complete fixed version
+// src/lib/stores/auth.ts - Updated relevant parts for persistent encryption
 import { writable, derived } from 'svelte/store';
 import { auth, db } from '$lib/firebase';
 import {
@@ -34,9 +34,10 @@ import {
   checkRateLimit
 } from '$lib/utils/security';
 import {
-  generateUserKey,
+  getUserMasterKey,
   storeEncryptionKey,
   clearEncryptionKey,
+  permanentlyDeleteEncryptionKey,
   generateSecurePassword,
   encryptData,
   isEncryptionAvailableAsync,
@@ -62,7 +63,7 @@ interface UserData {
   accountLocked?: boolean;
   updatedAt?: Date | Timestamp | any;
   encryptionEnabled?: boolean;
-  encryptedFields?: string[]; // Track which fields are encrypted
+  encryptedFields?: string[];
 }
 
 interface AuthError {
@@ -76,13 +77,11 @@ function createAuthStore() {
   let isInitializing = false;
   let sessionCheckInterval: NodeJS.Timeout | null = null;
 
-  // Periodically check and restore encryption if needed
   function startSessionCheck(uid: string) {
     if (sessionCheckInterval) {
       clearInterval(sessionCheckInterval);
     }
 
-    // Check every 5 minutes
     sessionCheckInterval = setInterval(async () => {
       const hasKey = await isEncryptionAvailableAsync(uid);
       if (!hasKey) {
@@ -90,10 +89,9 @@ function createAuthStore() {
         const restored = await checkAndRestoreEncryption(uid);
         if (!restored) {
           console.warn('Could not restore encryption key. User may need to re-authenticate.');
-          // You could show a notification here asking user to re-enter password
         }
       }
-    }, 5 * 60 * 1000); // 5 minutes
+    }, 5 * 60 * 1000);
   }
 
   function stopSessionCheck() {
@@ -107,7 +105,6 @@ function createAuthStore() {
     subscribe,
     initialize: () => {
       if (browser && auth) {
-        // Clean up previous subscription
         if (unsubscribe) {
           unsubscribe();
         }
@@ -115,32 +112,25 @@ function createAuthStore() {
         unsubscribe = onAuthStateChanged(auth, async (user) => {
           set(user);
           
-          // Clear session check if no user
           if (!user) {
             stopSessionCheck();
             return;
           }
           
-          // If user is authenticated, ensure we have encryption
           if (user && db && !isInitializing) {
             isInitializing = true;
             
             try {
-              // Start session check for this user
               startSessionCheck(user.uid);
               
-              // Try to restore encryption in order of preference
               let encryptionRestored = false;
               
-              // 1. Try session storage first (fastest)
               encryptionRestored = await restoreEncryptionFromSession(user.uid);
               
-              // 2. Try IndexedDB if session storage failed
               if (!encryptionRestored) {
                 encryptionRestored = await initializeEncryption(user.uid);
               }
               
-              // 3. Check one more time with the full restore function
               if (!encryptionRestored) {
                 encryptionRestored = await checkAndRestoreEncryption(user.uid);
               }
@@ -149,7 +139,6 @@ function createAuthStore() {
                 console.log('No encryption key found. User data may appear encrypted.');
               }
               
-              // Check if user document exists and update last login
               const userDoc = await getDoc(doc(db, 'users', user.uid));
               if (userDoc.exists()) {
                 const userData = userDoc.data();
@@ -157,12 +146,10 @@ function createAuthStore() {
                   lastLogin: serverTimestamp()
                 };
                 
-                // IMPORTANT: Always sync email from auth to user profile
                 if (!userData.email || userData.email !== user.email) {
                   updates.email = user.email;
                 }
                 
-                // Don't update if we can't decrypt - this prevents overwriting with bad data
                 if (encryptionRestored || !userData.encryptionEnabled) {
                   await updateDoc(doc(db, 'users', user.uid), updates);
                 }
@@ -183,18 +170,16 @@ function createAuthStore() {
         unsubscribe = null;
       }
       stopSessionCheck();
-      clearEncryptionKey(); // Clear encryption key on cleanup
+      clearEncryptionKey();
     },
     
     signUp: async (email: string, password: string, username: string) => {
       if (!auth || !db) throw new Error('Firebase not initialized');
 
-      // Rate limiting
       if (!checkRateLimit(`signup_${email}`, 10, 3600000)) {
         throw new Error('Too many signup attempts. Please try again later.');
       }
 
-      // Input validation
       if (!validateEmail(email)) {
         throw new Error('Invalid email address');
       }
@@ -216,38 +201,31 @@ function createAuthStore() {
       let user: User | null = null;
 
       try {
-        // Check if username already exists BEFORE creating the auth user
         const usernameDoc = await getDoc(doc(db, 'usernames', sanitizedUsername.toLowerCase()));
         if (usernameDoc.exists()) {
           throw new Error('Username already taken');
         }
 
-        // Step 1: Create the authentication user
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         user = userCredential.user;
 
-        // Step 2: Generate encryption key for the user
-        const encryptionKey = await generateUserKey(user.uid, password);
-        await storeEncryptionKey(encryptionKey, user.uid, 720); // Store for 30 days
+        // Generate a master encryption key (NOT based on password)
+        const masterKey = await getUserMasterKey(user.uid);
+        await storeEncryptionKey(masterKey, user.uid, 8760); // Store for 1 year
 
-        // Step 3: Force refresh ID token to ensure Firestore has access to request.auth
         await user.getIdToken(true);
-
-        // Step 4: Wait to ensure encryption key is properly stored
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Step 5: Verify encryption is available
         const encryptionAvailable = await isEncryptionAvailable();
         if (!encryptionAvailable) {
           console.warn('Encryption key not immediately available, retrying...');
-          await storeEncryptionKey(encryptionKey, user.uid, 720);
+          await storeEncryptionKey(masterKey, user.uid, 8760);
           await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        // Step 6: Create user document with encryption enabled
         const userData: UserData = {
           uid: user.uid,
-          email: user.email!, // Ensure email is always set
+          email: user.email!,
           username: sanitizedUsername,
           createdAt: serverTimestamp(),
           totalXP: 0,
@@ -260,24 +238,20 @@ function createAuthStore() {
           accountLocked: false,
           updatedAt: serverTimestamp(),
           encryptionEnabled: true,
-          encryptedFields: [] // Will be populated as fields are encrypted
+          encryptedFields: []
         };
 
         try {
-          // Create user profile
           await setDoc(doc(db, 'users', user.uid), userData);
 
-          // Create username mapping
           await setDoc(doc(db, 'usernames', sanitizedUsername.toLowerCase()), {
             uid: user.uid,
             createdAt: serverTimestamp()
           });
 
-          // Start session check
           startSessionCheck(user.uid);
 
         } catch (profileError) {
-          // Rollback if profile creation fails
           if (user) {
             await user.delete();
           }
@@ -290,7 +264,7 @@ function createAuthStore() {
       } catch (error: any) {
         if (user) {
           try {
-            await user.delete(); // Cleanup
+            await user.delete();
           } catch (deleteError) {
             // Silent fail
           }
@@ -305,12 +279,10 @@ function createAuthStore() {
     signIn: async (email: string, password: string) => {
       if (!auth || !db) throw new Error('Firebase not initialized');
       
-      // Rate limiting
       if (!checkRateLimit(`signin_${email}`, 5, 300000)) {
         throw new Error('Too many login attempts. Please try again later.');
       }
       
-      // Input validation
       if (!validateEmail(email)) {
         throw new Error('Invalid email address');
       }
@@ -323,38 +295,32 @@ function createAuthStore() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
-        // Generate and store encryption key BEFORE any data loading
-        const encryptionKey = await generateUserKey(user.uid, password);
-        await storeEncryptionKey(encryptionKey, user.uid, 720); // Store for 30 days
+        // Get or create the master encryption key (NOT based on password)
+        const masterKey = await getUserMasterKey(user.uid);
+        await storeEncryptionKey(masterKey, user.uid, 8760); // Store for 1 year
         
-        // Wait to ensure the key is properly stored
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Verify encryption is available
         const encryptionAvailable = await isEncryptionAvailableAsync(user.uid);
         if (!encryptionAvailable) {
           console.warn('Encryption key not immediately available, retrying...');
-          await storeEncryptionKey(encryptionKey, user.uid, 720);
+          await storeEncryptionKey(masterKey, user.uid, 8760);
           await new Promise(resolve => setTimeout(resolve, 500));
         }
         
-        // Double-check encryption key is available
         const finalCheck = await getEncryptionKeyAsync(user.uid);
         if (!finalCheck) {
           console.error('Failed to store encryption key properly');
         }
         
-        // Start session check
         startSessionCheck(user.uid);
         
-        // Check if user profile exists
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         
         if (!userDoc.exists()) {
-          // Create profile for users who signed up before profile creation was implemented
           const userData: UserData = {
             uid: user.uid,
-            email: user.email!, // Ensure email is always set
+            email: user.email!,
             username: user.email!.split('@')[0] || 'User',
             createdAt: serverTimestamp(),
             totalXP: 0,
@@ -374,18 +340,15 @@ function createAuthStore() {
         } else {
           const userData = userDoc.data();
           
-          // Check if missing required fields and add them
           const updates: any = {
             lastLogin: serverTimestamp(),
             loginAttempts: 0
           };
           
-          // CRITICAL: Always ensure email is synchronized
           if (!userData.email || userData.email !== user.email) {
             updates.email = user.email;
           }
           
-          // Add missing fields if they don't exist
           if (userData.totalBounty === undefined) updates.totalBounty = 0;
           if (userData.bugsFound === undefined) updates.bugsFound = 0;
           if (userData.updatedAt === undefined) updates.updatedAt = serverTimestamp();
@@ -393,7 +356,6 @@ function createAuthStore() {
           if (!Array.isArray(userData.completedTasks)) updates.completedTasks = [];
           if (userData.currentPhase === undefined) updates.currentPhase = 'beginner';
           
-          // Enable encryption for existing users
           if (userData.encryptionEnabled === undefined) {
             updates.encryptionEnabled = true;
             updates.encryptedFields = [];
@@ -405,14 +367,11 @@ function createAuthStore() {
             throw new Error('Account is locked. Please contact support.');
           }
           
-          // Update user document
           await updateDoc(doc(db, 'users', user.uid), updates);
         }
         
-        // Force initialize encryption in stores
         const { userStore, journalStore, bugStore } = await import('$lib/stores/user');
         
-        // Wait a bit more to ensure everything is ready
         await new Promise(resolve => setTimeout(resolve, 500));
         
         return user;
@@ -420,7 +379,6 @@ function createAuthStore() {
         await clearEncryptionKey();
         stopSessionCheck();
         
-        // Generic error message to prevent user enumeration
         if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
           throw new Error('Invalid email or password');
         }
@@ -434,17 +392,14 @@ function createAuthStore() {
       if (!auth) throw new Error('Firebase not initialized');
       
       try {
-        // Get current user ID before signing out
         const currentUser = auth.currentUser;
         const userId = currentUser?.uid;
         
-        // Stop session check
         stopSessionCheck();
         
-        // Clear encryption key before signing out
+        // Don't permanently delete the key on logout, just clear from session
         await clearEncryptionKey(userId);
         
-        // Clean up stores
         const { userStore, journalStore, bugStore } = await import('$lib/stores/user');
         userStore.cleanup();
         journalStore.cleanup();
@@ -459,7 +414,6 @@ function createAuthStore() {
     updateUsername: async (uid: string, newUsername: string) => {
       if (!db) throw new Error('Firebase not initialized');
       
-      // Rate limiting
       if (!checkRateLimit(`update_username_${uid}`, 3, 3600000)) {
         throw new Error('Too many username changes. Please try again later.');
       }
@@ -474,13 +428,11 @@ function createAuthStore() {
       }
       
       try {
-        // Check if new username is available
         const usernameDoc = await getDoc(doc(db, 'usernames', sanitizedUsername.toLowerCase()));
         if (usernameDoc.exists() && usernameDoc.data().uid !== uid) {
           throw new Error('Username already taken');
         }
         
-        // Get old username to delete the reference
         const userDoc = await getDoc(doc(db, 'users', uid));
         if (!userDoc.exists()) {
           throw new Error('User not found');
@@ -488,27 +440,22 @@ function createAuthStore() {
         
         const oldUsername = userDoc.data().username;
         
-        // Update username with transaction-like behavior
         const batch = writeBatch(db);
         
-        // Update user document
         batch.update(doc(db, 'users', uid), {
           username: sanitizedUsername,
           updatedAt: serverTimestamp()
         });
         
-        // Set new username document
         batch.set(doc(db, 'usernames', sanitizedUsername.toLowerCase()), { 
           uid,
           updatedAt: serverTimestamp()
         });
         
-        // Delete old username reference if it exists and is different
         if (oldUsername && oldUsername.toLowerCase() !== sanitizedUsername.toLowerCase()) {
           batch.delete(doc(db, 'usernames', oldUsername.toLowerCase()));
         }
         
-        // Commit the batch
         await batch.commit();
         
       } catch (error: any) {
@@ -519,7 +466,6 @@ function createAuthStore() {
     sendPasswordReset: async (email: string) => {
       if (!auth) throw new Error('Firebase not initialized');
       
-      // Rate limiting
       if (!checkRateLimit(`password_reset_${email}`, 3, 3600000)) {
         throw new Error('Too many password reset attempts. Please try again later.');
       }
@@ -532,31 +478,10 @@ function createAuthStore() {
       }
     },
     
-    // Re-encrypt data with new password (after password change)
+    // No need to re-encrypt data anymore since key is not based on password
     reEncryptData: async (oldPassword: string, newPassword: string) => {
-      if (!auth || !auth.currentUser) throw new Error('Not authenticated');
-      
-      const uid = auth.currentUser.uid;
-      
-      try {
-        // Generate new encryption key
-        const newEncryptionKey = await generateUserKey(uid, newPassword);
-        
-        // Store the new key with extended expiration
-        await storeEncryptionKey(newEncryptionKey, uid, 720); // 30 days
-        
-        // Wait to ensure it's stored
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Note: In a real implementation, you would need to:
-        // 1. Decrypt all encrypted data with the old key
-        // 2. Re-encrypt with the new key
-        // 3. Update all encrypted documents in Firestore
-        
-        return true;
-      } catch (error) {
-        throw new Error('Failed to re-encrypt data');
-      }
+      // This function is now a no-op since encryption key is not based on password
+      return true;
     },
     
     deleteAccount: async (password: string) => {
@@ -568,39 +493,30 @@ function createAuthStore() {
       const uid = user.uid;
       
       try {
-        // Re-authenticate user FIRST before any other operations
         const credential = EmailAuthProvider.credential(user.email!, password);
         await reauthenticateWithCredential(user, credential);
         
-        // Import user store to set deletion flag
         const { userStore, journalStore, bugStore } = await import('$lib/stores/user');
         
-        // Set deletion flag to prevent re-creation
         userStore.setDeleting(true);
         
-        // Stop session check
         stopSessionCheck();
         
-        // Get user data to clean up username reference BEFORE cleaning stores
         const userDoc = await getDoc(doc(db, 'users', uid));
         const username = userDoc.exists() ? userDoc.data().username : null;
         
-        // Clean up store listeners
         userStore.cleanup();
         journalStore.cleanup();
         bugStore.cleanup();
         
-        // Clear encryption key
-        await clearEncryptionKey(uid);
+        // Permanently delete encryption key for account deletion
+        await permanentlyDeleteEncryptionKey(uid);
         
-        // Small delay to ensure all listeners are cleaned up
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Delete all journal entries first
         const journalQuery = query(collection(db, 'journal'), where('uid', '==', uid));
         const journalSnapshot = await getDocs(journalQuery);
         
-        // Delete in batches of 500 (Firestore limit)
         let journalBatch = writeBatch(db);
         let journalCount = 0;
         
@@ -619,7 +535,6 @@ function createAuthStore() {
           await journalBatch.commit();
         }
         
-        // Delete all bugs
         const bugsQuery = query(collection(db, 'bugs'), where('uid', '==', uid));
         const bugsSnapshot = await getDocs(bugsQuery);
         
@@ -641,33 +556,23 @@ function createAuthStore() {
           await bugsBatch.commit();
         }
         
-        // Delete user document and username reference
         const finalBatch = writeBatch(db);
         
-        // Delete user document
         finalBatch.delete(doc(db, 'users', uid));
         
-        // Delete username reference
         if (username) {
           finalBatch.delete(doc(db, 'usernames', username.toLowerCase()));
         }
         
-        // Delete user preferences if exists
         finalBatch.delete(doc(db, 'preferences', uid));
         
-        // Commit final batch
         await finalBatch.commit();
         
-        // Small delay before deleting auth user
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Finally, delete the auth user
         await deleteUser(user);
         
-        // The auth state change listener will handle the redirect
-        
       } catch (error: any) {
-        // Reset deletion flag on error
         try {
           const { userStore } = await import('$lib/stores/user');
           userStore.setDeleting(false);
@@ -692,7 +597,6 @@ function createAuthStore() {
   };
 }
 
-// Handle Firebase Auth errors with user-friendly messages
 function handleAuthError(error: any): AuthError {
   const errorMap: { [key: string]: string } = {
     'auth/email-already-in-use': 'An account with this email already exists',
