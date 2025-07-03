@@ -25,295 +25,313 @@ export interface Category {
 export const roadmapData: Phase[] = [
   {
     id: 'foundation',
-    title: 'Security Foundations',
-    description: 'Master IT Fundamentals, Programming, Networking, and Basic Security',
-    duration: 'Months 1-6',
+    title: 'Bug Bounty Foundations',
+    description: 'Master Web Fundamentals, Basic Vulnerabilities, and Essential Tools',
+    duration: 'Months 1-4',
     categories: [
       {
-        id: 'system-fundamentals',
-        title: 'System Fundamentals',
+        id: 'web-fundamentals',
+        title: 'Web Technology Fundamentals',
         tasks: [
           {
-            id: 'linux-mastery',
-            title: 'Linux Command Line Mastery',
-            description: 'File system navigation, permissions, processes, services, package management, text processing (grep/sed/awk)',
+            id: 'http-protocol-mastery',
+            title: 'HTTP/HTTPS Protocol Deep Dive',
+            description: 'Request/response structure, headers, methods (GET/POST/PUT/DELETE), status codes, cookies, sessions, HTTP/2',
             xp: 1000,
             phase: 'foundation',
-            category: 'system-fundamentals',
+            category: 'web-fundamentals',
             order: 1
           },
           {
-            id: 'linux-administration',
-            title: 'Linux System Administration',
-            description: 'User management, cron jobs, systemd, logs analysis, SSH configuration, firewall basics',
+            id: 'web-architecture',
+            title: 'Modern Web Architecture',
+            description: 'Client-server model, APIs, microservices, load balancers, CDNs, reverse proxies, web servers',
             xp: 800,
             phase: 'foundation',
-            category: 'system-fundamentals',
+            category: 'web-fundamentals',
             order: 2
           },
           {
-            id: 'windows-fundamentals',
-            title: 'Windows Core Concepts',
-            description: 'Registry, services, PowerShell basics, Active Directory intro, Windows security model',
-            xp: 700,
+            id: 'html-css-javascript',
+            title: 'HTML/CSS/JavaScript Essentials',
+            description: 'DOM manipulation, event handling, AJAX, fetch API, local/session storage, same-origin policy',
+            xp: 1200,
             phase: 'foundation',
-            category: 'system-fundamentals',
+            category: 'web-fundamentals',
             order: 3
           },
           {
-            id: 'virtualization-lab',
-            title: 'Home Lab Setup',
-            description: 'Virtualization mastery, snapshot management, isolated networks, resource optimization',
-            xp: 500,
+            id: 'browser-developer-tools',
+            title: 'Browser DevTools Mastery',
+            description: 'Network tab analysis, console usage, debugger, elements inspection, storage examination, performance profiling',
+            xp: 700,
             phase: 'foundation',
-            category: 'system-fundamentals',
+            category: 'web-fundamentals',
             order: 4
+          },
+          {
+            id: 'web-technologies',
+            title: 'Common Web Technologies',
+            description: 'JSON, XML, REST APIs, GraphQL basics, WebSockets, cookies vs tokens, CORS fundamentals',
+            xp: 900,
+            phase: 'foundation',
+            category: 'web-fundamentals',
+            order: 5
           }
         ]
       },
       {
-        id: 'networking-core',
-        title: 'Networking Mastery',
+        id: 'bug-bounty-basics',
+        title: 'Bug Bounty Essentials',
         tasks: [
           {
-            id: 'network-fundamentals',
-            title: 'TCP/IP & OSI Mastery',
-            description: 'Deep understanding of all layers, packet flow, routing, switching, VLANs, NAT',
-            xp: 1200,
+            id: 'bug-bounty-platforms',
+            title: 'Bug Bounty Platform Setup',
+            description: 'HackerOne, Bugcrowd, Intigriti, YesWeHack account setup, profile optimization, program selection',
+            xp: 600,
             phase: 'foundation',
-            category: 'networking-core',
-            order: 5
-          },
-          {
-            id: 'protocol-analysis',
-            title: 'Protocol Deep Dive',
-            description: 'Master HTTP/S, DNS, DHCP, ARP, ICMP, SMB, FTP, SSH, Telnet with packet analysis tools',
-            xp: 1000,
-            phase: 'foundation',
-            category: 'networking-core',
+            category: 'bug-bounty-basics',
             order: 6
           },
           {
-            id: 'network-security',
-            title: 'Network Security Basics',
-            description: 'Firewalls, IDS/IPS concepts, VPNs, network segmentation, security zones',
+            id: 'scope-understanding',
+            title: 'Understanding Scope & Rules',
+            description: 'In-scope vs out-of-scope, VDP vs paid programs, safe harbor, responsible disclosure, duplicate handling',
             xp: 800,
             phase: 'foundation',
-            category: 'networking-core',
+            category: 'bug-bounty-basics',
             order: 7
           },
           {
-            id: 'wireless-basics',
-            title: 'Wireless Fundamentals',
-            description: '802.11 standards, WPA2/3, wireless security basics, spectrum analysis introduction',
-            xp: 600,
+            id: 'report-writing-basics',
+            title: 'Bug Report Writing Fundamentals',
+            description: 'Report structure, proof of concept, impact explanation, CVSS scoring, reproduction steps',
+            xp: 1200,
             phase: 'foundation',
-            category: 'networking-core',
+            category: 'bug-bounty-basics',
             order: 8
-          }
-        ]
-      },
-      {
-        id: 'programming-foundations',
-        title: 'Programming for Hackers',
-        tasks: [
+          },
           {
-            id: 'python-mastery',
-            title: 'Python Security Programming',
-            description: 'Socket programming, HTTP libraries, web scraping, regex, threading, subprocess, network packet crafting',
+            id: 'bug-bounty-methodology',
+            title: 'Basic Bug Hunting Methodology',
+            description: 'Reconnaissance workflow, target mapping, vulnerability identification, validation, reporting pipeline',
             xp: 1500,
             phase: 'foundation',
-            category: 'programming-foundations',
+            category: 'bug-bounty-basics',
             order: 9
           },
           {
-            id: 'bash-scripting',
-            title: 'Bash Automation',
-            description: 'Advanced scripting, one-liners, automation tools, log parsing, system enumeration scripts',
-            xp: 1000,
+            id: 'bounty-expectations',
+            title: 'Setting Realistic Expectations',
+            description: 'Understanding payouts, dealing with duplicates, triage process, communication with programs',
+            xp: 500,
             phase: 'foundation',
-            category: 'programming-foundations',
+            category: 'bug-bounty-basics',
             order: 10
-          },
+          }
+        ]
+      },
+      {
+        id: 'essential-tools',
+        title: 'Essential Bug Hunting Tools',
+        tasks: [
           {
-            id: 'web-languages',
-            title: 'Web Development Basics',
-            description: 'HTML/CSS, JavaScript fundamentals, PHP basics, SQL queries, understanding web stacks',
-            xp: 1200,
+            id: 'burp-suite-basics',
+            title: 'Burp Suite Community Fundamentals',
+            description: 'Proxy setup, intercepting requests, repeater, intruder basics, decoder, target scope configuration',
+            xp: 1500,
             phase: 'foundation',
-            category: 'programming-foundations',
+            category: 'essential-tools',
             order: 11
           },
           {
-            id: 'c-assembly-intro',
-            title: 'Low-Level Introduction',
-            description: 'C programming basics, memory management, assembly reading, debugger fundamentals',
-            xp: 800,
+            id: 'reconnaissance-tools',
+            title: 'Recon Tool Arsenal',
+            description: 'Subfinder, Amass, findomain, httpx, nuclei basics, waybackurls, gau, github dorking',
+            xp: 1200,
             phase: 'foundation',
-            category: 'programming-foundations',
+            category: 'essential-tools',
             order: 12
           },
           {
-            id: 'golang-basics',
-            title: 'Go Programming Basics',
-            description: 'Go syntax, concurrency basics, building simple security tools, HTTP clients/servers',
-            xp: 900,
-            phase: 'foundation',
-            category: 'programming-foundations',
-            order: 13
-          }
-        ]
-      },
-      {
-        id: 'security-basics',
-        title: 'Security Fundamentals',
-        tasks: [
-          {
-            id: 'security-concepts',
-            title: 'Core Security Principles',
-            description: 'CIA triad, authentication vs authorization, cryptography basics, hashing, encoding',
+            id: 'browser-extensions',
+            title: 'Browser Extensions for Bug Hunting',
+            description: 'Wappalyzer, Cookie Editor, User-Agent Switcher, FoxyProxy, Shodan extension, Hunt scanner',
             xp: 600,
             phase: 'foundation',
-            category: 'security-basics',
+            category: 'essential-tools',
+            order: 13
+          },
+          {
+            id: 'terminal-tools',
+            title: 'Command Line Tools Setup',
+            description: 'curl, wget, nmap basics, dig, whois, nc (netcat), grep/sed/awk for parsing',
+            xp: 1000,
+            phase: 'foundation',
+            category: 'essential-tools',
             order: 14
           },
           {
-            id: 'recon-methodology',
-            title: 'Reconnaissance & OSINT',
-            description: 'Search engine dorking, social media OSINT, DNS enumeration, subdomain discovery, information gathering tools',
-            xp: 1200,
+            id: 'note-taking-setup',
+            title: 'Documentation & Note-Taking',
+            description: 'Obsidian/Notion setup, screenshot tools, screen recording, POC organization, findings tracking',
+            xp: 700,
             phase: 'foundation',
-            category: 'security-basics',
+            category: 'essential-tools',
             order: 15
-          },
+          }
+        ]
+      },
+      {
+        id: 'basic-vulnerabilities',
+        title: 'Common Web Vulnerabilities',
+        tasks: [
           {
-            id: 'scanning-enumeration',
-            title: 'Scanning & Enumeration',
-            description: 'Port scanning mastery, service enumeration, banner grabbing, OS fingerprinting, vulnerability scanning',
-            xp: 1500,
+            id: 'xss-basics',
+            title: 'Cross-Site Scripting (XSS) Fundamentals',
+            description: 'Reflected XSS, stored XSS, DOM XSS basics, alert() payloads, filter bypasses, impact demonstration',
+            xp: 1800,
             phase: 'foundation',
-            category: 'security-basics',
+            category: 'basic-vulnerabilities',
             order: 16
           },
           {
-            id: 'exploitation-frameworks',
-            title: 'Exploitation Framework Basics',
-            description: 'Popular framework architecture, basic exploitation, payload usage, post-exploitation modules, pivoting basics',
-            xp: 1000,
+            id: 'sqli-introduction',
+            title: 'SQL Injection Basics',
+            description: 'Error-based SQLi, Union-based extraction, Boolean blind basics, basic sqlmap usage',
+            xp: 2000,
             phase: 'foundation',
-            category: 'security-basics',
+            category: 'basic-vulnerabilities',
             order: 17
           },
           {
-            id: 'vulnerability-databases',
-            title: 'Vulnerability Research Basics',
-            description: 'CVE database navigation, vulnerability database usage, understanding CVSS scores, patch analysis',
-            xp: 700,
+            id: 'idor-basics',
+            title: 'Insecure Direct Object References',
+            description: 'User ID manipulation, sequential ID testing, UUID enumeration, access control testing',
+            xp: 1500,
             phase: 'foundation',
-            category: 'security-basics',
+            category: 'basic-vulnerabilities',
             order: 18
-          }
-        ]
-      },
-      {
-        id: 'web-foundations',
-        title: 'Web Security Basics',
-        tasks: [
+          },
           {
-            id: 'proxy-tools-intro',
-            title: 'Web Proxy Fundamentals',
-            description: 'Proxy setup, intercepting requests, repeater, decoder, comparing responses, basic extensions',
+            id: 'information-disclosure',
+            title: 'Information Disclosure Bugs',
+            description: 'Sensitive data in responses, debug information, backup files, directory listing, version disclosure',
             xp: 1200,
             phase: 'foundation',
-            category: 'web-foundations',
+            category: 'basic-vulnerabilities',
             order: 19
           },
           {
-            id: 'web-vulns-top10',
-            title: 'Common Web Vulnerabilities',
-            description: 'Learn top 10 web vulnerabilities, their impact, and basic exploitation techniques',
-            xp: 1500,
-            phase: 'foundation',
-            category: 'web-foundations',
-            order: 20
-          },
-          {
-            id: 'basic-sqli',
-            title: 'SQL Injection Basics',
-            description: 'Union-based SQLi, error-based, boolean blind basics, automated scanning tools',
-            xp: 1800,
-            phase: 'foundation',
-            category: 'web-foundations',
-            order: 21
-          },
-          {
-            id: 'basic-xss',
-            title: 'XSS Fundamentals',
-            description: 'Reflected, stored, DOM-based XSS basics, alert() payloads, cookie stealing',
+            id: 'authentication-flaws',
+            title: 'Basic Authentication Vulnerabilities',
+            description: 'Weak passwords, username enumeration, password reset flaws, session fixation',
             xp: 1600,
             phase: 'foundation',
-            category: 'web-foundations',
-            order: 22
-          },
-          {
-            id: 'http-basics',
-            title: 'HTTP Deep Dive',
-            description: 'HTTP methods, headers, cookies, sessions, status codes, content types, HTTP/2 basics',
-            xp: 1000,
-            phase: 'foundation',
-            category: 'web-foundations',
-            order: 23
+            category: 'basic-vulnerabilities',
+            order: 20
           }
         ]
       },
       {
-        id: 'practice-foundation',
-        title: 'Foundation Practice',
+        id: 'reconnaissance-basics',
+        title: 'Reconnaissance Fundamentals',
         tasks: [
           {
-            id: 'beginner-learning-path',
-            title: 'Complete Beginner Security Path',
-            description: 'Finish comprehensive beginner learning path on security platforms, document all learnings',
-            xp: 3000,
+            id: 'subdomain-enumeration',
+            title: 'Subdomain Discovery Techniques',
+            description: 'DNS brute-forcing, certificate transparency, search engines, passive DNS, subdomain takeover basics',
+            xp: 1500,
             phase: 'foundation',
-            category: 'practice-foundation',
+            category: 'reconnaissance-basics',
+            order: 21
+          },
+          {
+            id: 'google-dorking',
+            title: 'Google Dorking for Bug Bounty',
+            description: 'Advanced search operators, finding sensitive files, exposed databases, admin panels, API endpoints',
+            xp: 1000,
+            phase: 'foundation',
+            category: 'reconnaissance-basics',
+            order: 22
+          },
+          {
+            id: 'github-recon',
+            title: 'GitHub Reconnaissance',
+            description: 'Finding API keys, credentials, internal endpoints, sensitive configuration files, development notes',
+            xp: 1200,
+            phase: 'foundation',
+            category: 'reconnaissance-basics',
+            order: 23
+          },
+          {
+            id: 'wayback-analysis',
+            title: 'Historical Data Analysis',
+            description: 'Wayback Machine usage, finding old endpoints, parameter discovery, functionality changes',
+            xp: 900,
+            phase: 'foundation',
+            category: 'reconnaissance-basics',
             order: 24
           },
           {
-            id: 'wargames-challenges',
-            title: 'Security Wargames',
-            description: 'Complete beginner and intermediate level wargames focusing on various security concepts',
-            xp: 2500,
+            id: 'technology-fingerprinting',
+            title: 'Technology Stack Identification',
+            description: 'Identifying frameworks, CMS detection, server identification, JavaScript library enumeration',
+            xp: 800,
             phase: 'foundation',
-            category: 'practice-foundation',
+            category: 'reconnaissance-basics',
             order: 25
-          },
+          }
+        ]
+      },
+      {
+        id: 'practice-targets',
+        title: 'Practice & Learning Platforms',
+        tasks: [
           {
-            id: 'guided-pentesting',
-            title: 'Guided Penetration Testing',
-            description: 'Complete guided penetration testing exercises, understand methodology',
-            xp: 2000,
+            id: 'portswigger-labs',
+            title: 'PortSwigger Web Security Academy',
+            description: 'Complete all apprentice-level labs, understand core concepts, practice exploitation techniques',
+            xp: 3000,
             phase: 'foundation',
-            category: 'practice-foundation',
+            category: 'practice-targets',
             order: 26
           },
           {
-            id: 'first-ctf',
-            title: 'First CTF Participation',
-            description: 'Participate in beginner CTF, solve at least 5 challenges across different categories',
-            xp: 1500,
+            id: 'hackerone-ctf',
+            title: 'HackerOne CTF Challenges',
+            description: 'Complete Hacker101 CTF easy and medium challenges, understand vulnerability patterns',
+            xp: 2500,
             phase: 'foundation',
-            category: 'practice-foundation',
+            category: 'practice-targets',
             order: 27
           },
           {
-            id: 'web-security-academy',
-            title: 'Web Security Academy Fundamentals',
-            description: 'Complete apprentice-level labs for SQLi, XSS, and authentication vulnerabilities',
+            id: 'vulnerable-apps',
+            title: 'Vulnerable Application Practice',
+            description: 'DVWA, bWAPP, OWASP Juice Shop, WebGoat - practice basic vulnerability exploitation',
             xp: 2000,
             phase: 'foundation',
-            category: 'practice-foundation',
+            category: 'practice-targets',
             order: 28
+          },
+          {
+            id: 'bug-bounty-writeups',
+            title: 'Study Bug Bounty Writeups',
+            description: 'Read 50+ disclosed reports, understand methodology, learn from top researchers',
+            xp: 1500,
+            phase: 'foundation',
+            category: 'practice-targets',
+            order: 29
+          },
+          {
+            id: 'first-valid-bug',
+            title: 'Find Your First Valid Bug',
+            description: 'Submit first accepted vulnerability report on any platform, even if low severity',
+            xp: 5000,
+            phase: 'foundation',
+            category: 'practice-targets',
+            order: 30
           }
         ]
       }
@@ -321,406 +339,322 @@ export const roadmapData: Phase[] = [
   },
   {
     id: 'pentesting',
-    title: 'Penetration Testing Core',
-    description: 'Web Apps, Network Pentesting, Active Directory, and Exploitation',
-    duration: 'Months 7-18',
+    title: 'Advanced Bug Hunting',
+    description: 'Complex Vulnerabilities, Automation, API Testing, and Mobile Security',
+    duration: 'Months 5-12',
     categories: [
       {
-        id: 'web-pentest',
-        title: 'Web Application Pentesting',
+        id: 'advanced-web-vulns',
+        title: 'Advanced Web Vulnerabilities',
         tasks: [
           {
-            id: 'advanced-sqli',
-            title: 'Advanced SQL Injection',
-            description: 'Time-based blind, out-of-band, second-order SQLi, WAF bypass techniques, stacked queries',
-            xp: 3000,
-            phase: 'pentesting',
-            category: 'web-pentest',
-            order: 29
-          },
-          {
-            id: 'injection-mastery',
-            title: 'All Injection Types',
-            description: 'Command injection, LDAP, XPath, NoSQL, CRLF, Host header, template injection basics',
+            id: 'ssrf-mastery',
+            title: 'Server-Side Request Forgery (SSRF)',
+            description: 'Basic to blind SSRF, cloud metadata exploitation, internal network scanning, filter bypasses',
             xp: 3500,
             phase: 'pentesting',
-            category: 'web-pentest',
-            order: 30
-          },
-          {
-            id: 'authentication-attacks',
-            title: 'Authentication Bypass',
-            description: 'Session attacks, JWT exploitation, OAuth flaws, password reset poisoning, 2FA bypass',
-            xp: 3200,
-            phase: 'pentesting',
-            category: 'web-pentest',
+            category: 'advanced-web-vulns',
             order: 31
           },
           {
-            id: 'xxe-ssrf',
-            title: 'XXE and SSRF Mastery',
-            description: 'XXE to RCE, blind XXE, SSRF chains, cloud metadata access, bypassing filters',
+            id: 'xxe-exploitation',
+            title: 'XML External Entity (XXE) Attacks',
+            description: 'XXE to file read, blind XXE, XXE to SSRF, DTD attacks, SVG/XLSX/DOCX XXE',
             xp: 3800,
             phase: 'pentesting',
-            category: 'web-pentest',
+            category: 'advanced-web-vulns',
             order: 32
           },
           {
-            id: 'file-upload-rce',
-            title: 'File Upload to RCE',
-            description: 'Bypass filters, polyglot files, race conditions, zip traversal, image manipulation exploits',
-            xp: 3000,
+            id: 'deserialization-attacks',
+            title: 'Insecure Deserialization',
+            description: 'Java, PHP, Python deserialization, gadget chains basics, identifying serialized data',
+            xp: 4500,
             phase: 'pentesting',
-            category: 'web-pentest',
+            category: 'advanced-web-vulns',
             order: 33
           },
           {
-            id: 'business-logic',
-            title: 'Business Logic Vulnerabilities',
-            description: 'Price manipulation, race conditions in payments, workflow bypass, insufficient process validation',
-            xp: 3500,
+            id: 'ssti-exploitation',
+            title: 'Server-Side Template Injection',
+            description: 'Template engine identification, SSTI to RCE, sandbox escapes, polyglot payloads',
+            xp: 4000,
             phase: 'pentesting',
-            category: 'web-pentest',
+            category: 'advanced-web-vulns',
             order: 34
           },
           {
-            id: 'cors-attacks',
-            title: 'CORS & Origin-based Attacks',
-            description: 'CORS misconfigurations, origin reflection, null origin, wildcard issues, credentials exposure',
-            xp: 2800,
+            id: 'race-conditions',
+            title: 'Race Condition Vulnerabilities',
+            description: 'TOCTOU bugs, payment races, coupon/voucher abuse, concurrent request exploitation',
+            xp: 3800,
             phase: 'pentesting',
-            category: 'web-pentest',
+            category: 'advanced-web-vulns',
             order: 35
           },
           {
-            id: 'idor-access-control',
-            title: 'IDOR & Access Control',
-            description: 'Horizontal/vertical privilege escalation, UUID prediction, parameter pollution, forced browsing',
-            xp: 3000,
+            id: 'cache-poisoning',
+            title: 'Web Cache Poisoning',
+            description: 'Cache key manipulation, cache deception, response splitting, CDN poisoning',
+            xp: 4200,
             phase: 'pentesting',
-            category: 'web-pentest',
+            category: 'advanced-web-vulns',
             order: 36
           }
         ]
       },
       {
-        id: 'api-security',
-        title: 'API Security Testing',
+        id: 'authentication-advanced',
+        title: 'Advanced Authentication Attacks',
         tasks: [
           {
-            id: 'api-fundamentals',
-            title: 'API Security Fundamentals',
-            description: 'REST/SOAP basics, API authentication methods, common API vulnerabilities, API testing tools mastery',
-            xp: 2500,
+            id: 'jwt-exploitation',
+            title: 'JWT Security Deep Dive',
+            description: 'Algorithm confusion, weak secrets, JKU/JWK injection, kid manipulation, null signature',
+            xp: 3500,
             phase: 'pentesting',
-            category: 'api-security',
+            category: 'authentication-advanced',
             order: 37
           },
           {
-            id: 'graphql-security',
-            title: 'GraphQL Security Testing',
-            description: 'Introspection attacks, query depth attacks, batching attacks, field suggestions abuse',
-            xp: 3200,
+            id: 'oauth-attacks',
+            title: 'OAuth 2.0 Security Testing',
+            description: 'Authorization code flaws, redirect_uri bypasses, state parameter issues, token leakage',
+            xp: 3800,
             phase: 'pentesting',
-            category: 'api-security',
+            category: 'authentication-advanced',
             order: 38
           },
           {
-            id: 'api-auth-attacks',
-            title: 'API Authentication Attacks',
-            description: 'JWT attacks, API key security, OAuth2 flows exploitation, bearer token vulnerabilities',
-            xp: 3000,
+            id: 'saml-vulnerabilities',
+            title: 'SAML Attack Techniques',
+            description: 'XML signature wrapping, assertion manipulation, recipient confusion, replay attacks',
+            xp: 3600,
             phase: 'pentesting',
-            category: 'api-security',
+            category: 'authentication-advanced',
             order: 39
           },
           {
-            id: 'webhook-security',
-            title: 'Webhook Security',
-            description: 'Webhook validation bypass, SSRF via webhooks, webhook flooding, signature verification attacks',
-            xp: 2800,
+            id: '2fa-bypass',
+            title: '2FA/MFA Bypass Techniques',
+            description: 'Response manipulation, backup code abuse, race conditions, session persistence',
+            xp: 3200,
             phase: 'pentesting',
-            category: 'api-security',
+            category: 'authentication-advanced',
             order: 40
           },
           {
-            id: 'api-rate-limiting',
-            title: 'API Rate Limiting & DoS',
-            description: 'Rate limit testing, resource exhaustion, GraphQL complexity attacks, batch API abuse',
-            xp: 2600,
+            id: 'password-reset-advanced',
+            title: 'Advanced Password Reset Attacks',
+            description: 'Token prediction, host header injection, dangling markup, account takeover chains',
+            xp: 3000,
             phase: 'pentesting',
-            category: 'api-security',
+            category: 'authentication-advanced',
             order: 41
           }
         ]
       },
       {
-        id: 'modern-web-security',
-        title: 'Modern Web Security',
+        id: 'api-testing',
+        title: 'API Security Testing',
         tasks: [
           {
-            id: 'oauth-saml',
-            title: 'OAuth2 & SAML Security',
-            description: 'OAuth2 flow vulnerabilities, SAML signature wrapping, XML injection, SSO bypass techniques',
-            xp: 3500,
+            id: 'rest-api-testing',
+            title: 'REST API Security Testing',
+            description: 'Method tampering, parameter pollution, mass assignment, versioning issues',
+            xp: 3000,
             phase: 'pentesting',
-            category: 'modern-web-security',
+            category: 'api-testing',
             order: 42
           },
           {
-            id: 'spa-security',
-            title: 'SPA & Modern JS Security',
-            description: 'React/Vue/Angular specific bugs, client-side storage, postMessage vulnerabilities, prototype pollution',
-            xp: 3200,
+            id: 'graphql-security',
+            title: 'GraphQL Vulnerability Hunting',
+            description: 'Introspection queries, query depth attacks, batching attacks, field suggestions',
+            xp: 3500,
             phase: 'pentesting',
-            category: 'modern-web-security',
+            category: 'api-testing',
             order: 43
           },
           {
-            id: 'websocket-security',
-            title: 'WebSocket Security',
-            description: 'WebSocket hijacking, cross-site WebSocket hijacking, message tampering, origin validation',
-            xp: 2800,
+            id: 'api-authentication',
+            title: 'API Authentication Flaws',
+            description: 'API key security, bearer token issues, HMAC implementation flaws, replay attacks',
+            xp: 3200,
             phase: 'pentesting',
-            category: 'modern-web-security',
+            category: 'api-testing',
             order: 44
           },
           {
-            id: 'csp-bypass',
-            title: 'CSP Bypass Techniques',
-            description: 'CSP header analysis, unsafe-inline/eval, script gadgets, base-uri attacks, CSP reporting abuse',
-            xp: 3000,
+            id: 'api-fuzzing',
+            title: 'API Fuzzing Techniques',
+            description: 'Parameter fuzzing, boundary testing, format string bugs, integer overflows',
+            xp: 2800,
             phase: 'pentesting',
-            category: 'modern-web-security',
+            category: 'api-testing',
             order: 45
           },
           {
-            id: 'dom-vulnerabilities',
-            title: 'Advanced DOM Vulnerabilities',
-            description: 'DOM clobbering, mutation XSS, DOM sanitizer bypasses, trusted types bypass',
-            xp: 3400,
+            id: 'postman-automation',
+            title: 'API Testing Automation',
+            description: 'Postman/Newman automation, collection fuzzing, CI/CD integration for API testing',
+            xp: 2500,
             phase: 'pentesting',
-            category: 'modern-web-security',
+            category: 'api-testing',
             order: 46
           }
         ]
       },
       {
-        id: 'system-exploitation',
-        title: 'System Exploitation',
+        id: 'mobile-app-testing',
+        title: 'Mobile Application Security',
         tasks: [
           {
-            id: 'buffer-overflow',
-            title: 'Stack Buffer Overflows',
-            description: 'EIP control, bad character analysis, shellcode generation, NOP sleds, fuzzing basics',
-            xp: 4000,
+            id: 'android-basics',
+            title: 'Android App Security Basics',
+            description: 'APK analysis, ADB usage, certificate pinning bypass, basic Frida scripts',
+            xp: 3500,
             phase: 'pentesting',
-            category: 'system-exploitation',
+            category: 'mobile-app-testing',
             order: 47
           },
           {
-            id: 'windows-privesc',
-            title: 'Windows Privilege Escalation',
-            description: 'Token impersonation, DLL hijacking, unquoted paths, registry keys, privilege escalation techniques',
+            id: 'ios-basics',
+            title: 'iOS App Security Introduction',
+            description: 'IPA extraction, jailbreak basics, Objection usage, plist file analysis',
             xp: 3500,
             phase: 'pentesting',
-            category: 'system-exploitation',
+            category: 'mobile-app-testing',
             order: 48
           },
           {
-            id: 'linux-privesc',
-            title: 'Linux Privilege Escalation',
-            description: 'SUID abuse, sudo misconfig, kernel exploits, cron jobs, capabilities, container escape',
-            xp: 3500,
+            id: 'mobile-proxy-setup',
+            title: 'Mobile Traffic Interception',
+            description: 'Proxy configuration, SSL pinning bypass techniques, certificate installation',
+            xp: 2500,
             phase: 'pentesting',
-            category: 'system-exploitation',
+            category: 'mobile-app-testing',
             order: 49
           },
           {
-            id: 'post-exploitation',
-            title: 'Post-Exploitation Techniques',
-            description: 'Persistence, lateral movement, credential harvesting, log cleaning, anti-forensics',
-            xp: 3200,
+            id: 'mobile-static-analysis',
+            title: 'Mobile App Static Analysis',
+            description: 'MobSF usage, hardcoded secrets, insecure storage, code obfuscation analysis',
+            xp: 3000,
             phase: 'pentesting',
-            category: 'system-exploitation',
+            category: 'mobile-app-testing',
             order: 50
+          },
+          {
+            id: 'mobile-api-testing',
+            title: 'Mobile API Endpoint Testing',
+            description: 'Hidden endpoints discovery, mobile-specific headers, token handling, session management',
+            xp: 2800,
+            phase: 'pentesting',
+            category: 'mobile-app-testing',
+            order: 51
           }
         ]
       },
       {
-        id: 'active-directory',
-        title: 'Active Directory Attacks',
+        id: 'automation-scaling',
+        title: 'Automation & Scaling',
         tasks: [
           {
-            id: 'ad-enumeration',
-            title: 'AD Enumeration Mastery',
-            description: 'AD enumeration tools, LDAP queries, SPNs discovery, trust mapping, ACL abuse',
-            xp: 4000,
+            id: 'bash-automation',
+            title: 'Bash Scripting for Bug Bounty',
+            description: 'Automated recon scripts, subdomain monitoring, nuclei automation, notification systems',
+            xp: 3000,
             phase: 'pentesting',
-            category: 'active-directory',
-            order: 51
-          },
-          {
-            id: 'kerberos-attacks',
-            title: 'Kerberos Exploitation',
-            description: 'Kerberoasting, ASREPRoasting, golden/silver tickets, pass-the-ticket, overpass-the-hash',
-            xp: 4500,
-            phase: 'pentesting',
-            category: 'active-directory',
+            category: 'automation-scaling',
             order: 52
           },
           {
-            id: 'ad-persistence',
-            title: 'AD Persistence & Lateral Movement',
-            description: 'DCSync, skeleton key, KRBTGT persistence, GPO abuse, SCCM exploitation',
-            xp: 4200,
+            id: 'python-tools',
+            title: 'Python Tool Development',
+            description: 'Custom scanners, API wrappers, fuzzing scripts, report automation tools',
+            xp: 3500,
             phase: 'pentesting',
-            category: 'active-directory',
+            category: 'automation-scaling',
             order: 53
           },
           {
-            id: 'ad-lab',
-            title: 'Build Complex AD Lab',
-            description: 'Multi-forest environment, trusts, ADCS, Exchange, SQL Server, misconfigurations',
-            xp: 3000,
-            phase: 'pentesting',
-            category: 'active-directory',
-            order: 54
-          }
-        ]
-      },
-      {
-        id: 'network-pentesting',
-        title: 'Network Penetration Testing',
-        tasks: [
-          {
-            id: 'network-attacks',
-            title: 'Network Attack Vectors',
-            description: 'MITM attacks, ARP poisoning, VLAN hopping, DNS spoofing, network protocol attacks',
+            id: 'continuous-monitoring',
+            title: 'Continuous Asset Monitoring',
+            description: 'Change detection, new subdomain alerts, GitHub monitoring, certificate transparency monitoring',
             xp: 3200,
             phase: 'pentesting',
-            category: 'network-pentesting',
+            category: 'automation-scaling',
+            order: 54
+          },
+          {
+            id: 'nuclei-templates',
+            title: 'Custom Nuclei Template Creation',
+            description: 'YAML syntax, matcher types, custom detection logic, template optimization',
+            xp: 2800,
+            phase: 'pentesting',
+            category: 'automation-scaling',
             order: 55
           },
           {
-            id: 'wireless-hacking',
-            title: 'Wireless Penetration Testing',
-            description: 'WPA2 cracking, evil twin, karma attacks, WPS exploitation, enterprise wireless',
-            xp: 2800,
+            id: 'cloud-automation',
+            title: 'Cloud-Based Recon Setup',
+            description: 'VPS setup, distributed scanning, axiom framework, cloud storage for results',
+            xp: 3000,
             phase: 'pentesting',
-            category: 'network-pentesting',
+            category: 'automation-scaling',
             order: 56
-          },
+          }
+        ]
+      },
+      {
+        id: 'collaboration-growth',
+        title: 'Collaboration & Growth',
+        tasks: [
           {
-            id: 'vpn-attacks',
-            title: 'VPN & Tunnel Attacks',
-            description: 'IPSec/SSL VPN attacks, tunnel pivoting, GRE exploitation, VPN credential stealing',
+            id: 'collaboration-hunting',
+            title: 'Collaborative Bug Hunting',
+            description: 'Team up with other hunters, share findings responsibly, learn from peers',
             xp: 2500,
             phase: 'pentesting',
-            category: 'network-pentesting',
+            category: 'collaboration-growth',
             order: 57
           },
           {
-            id: 'infrastructure-pentest',
-            title: 'Infrastructure Assessment',
-            description: 'Router/switch exploitation, SNMP attacks, management interface abuse, firmware analysis',
-            xp: 3000,
+            id: 'community-engagement',
+            title: 'Bug Bounty Community Participation',
+            description: 'Discord/Slack communities, Twitter engagement, conference participation, mentoring',
+            xp: 2000,
             phase: 'pentesting',
-            category: 'network-pentesting',
+            category: 'collaboration-growth',
             order: 58
-          }
-        ]
-      },
-      {
-        id: 'tool-development',
-        title: 'Custom Tool Development',
-        tasks: [
+          },
           {
-            id: 'exploit-development',
-            title: 'Basic Exploit Writing',
-            description: 'Modify public exploits, write exploitation modules, understand exploit structure',
+            id: 'live-hacking-events',
+            title: 'Live Hacking Event Participation',
+            description: 'Apply and participate in live hacking events, network with researchers',
             xp: 4000,
             phase: 'pentesting',
-            category: 'tool-development',
+            category: 'collaboration-growth',
             order: 59
           },
           {
-            id: 'scanner-development',
-            title: 'Custom Scanner Creation',
-            description: 'Build multi-threaded port scanner, service detector, vulnerability scanner in Python',
-            xp: 3500,
+            id: 'bug-bounty-tips',
+            title: 'Earn First $10,000 in Bounties',
+            description: 'Consistent hunting, program selection, time management, duplicate avoidance',
+            xp: 8000,
             phase: 'pentesting',
-            category: 'tool-development',
+            category: 'collaboration-growth',
             order: 60
           },
           {
-            id: 'automation-framework',
-            title: 'Pentesting Automation',
-            description: 'Create recon automation, reporting tools, vulnerability correlation scripts',
-            xp: 3800,
+            id: 'specialization-choice',
+            title: 'Choose Your Specialization',
+            description: 'Identify your strengths: web, mobile, API, cloud, or specific vulnerability classes',
+            xp: 3000,
             phase: 'pentesting',
-            category: 'tool-development',
+            category: 'collaboration-growth',
             order: 61
-          },
-          {
-            id: 'payload-generation',
-            title: 'Payload & Backdoor Dev',
-            description: 'Custom reverse shells, encoded payloads, polymorphic code, anti-forensics',
-            xp: 4200,
-            phase: 'pentesting',
-            category: 'tool-development',
-            order: 62
-          },
-          {
-            id: 'proxy-extensions',
-            title: 'Web Proxy Extension Development',
-            description: 'Create custom proxy extensions in Python/Java, passive/active scanners, custom checks',
-            xp: 3600,
-            phase: 'pentesting',
-            category: 'tool-development',
-            order: 63
-          }
-        ]
-      },
-      {
-        id: 'certifications-practice',
-        title: 'Certification & Practice',
-        tasks: [
-          {
-            id: 'offensive-cert-prep',
-            title: 'Offensive Security Certification Prep',
-            description: 'Complete practice labs, buffer overflows, AD attacks, report writing preparation',
-            xp: 8000,
-            phase: 'pentesting',
-            category: 'certifications-practice',
-            order: 64
-          },
-          {
-            id: 'advanced-lab-environments',
-            title: 'Advanced Lab Environments',
-            description: 'Complete enterprise-grade lab environments simulating real corporate networks',
-            xp: 6000,
-            phase: 'pentesting',
-            category: 'certifications-practice',
-            order: 65
-          },
-          {
-            id: 'practice-vulnerable-machines',
-            title: 'Practice Vulnerable Machines',
-            description: 'Complete 20 intermediate to hard vulnerable machines, time yourself, practice methodology',
-            xp: 4000,
-            phase: 'pentesting',
-            category: 'certifications-practice',
-            order: 66
-          },
-          {
-            id: 'bug-bounty-start',
-            title: 'First Bug Bounty Finds',
-            description: 'Find and report first 5 valid vulnerabilities on bug bounty platforms',
-            xp: 5000,
-            phase: 'pentesting',
-            category: 'certifications-practice',
-            order: 67
           }
         ]
       }
@@ -728,406 +662,313 @@ export const roadmapData: Phase[] = [
   },
   {
     id: 'advanced',
-    title: 'Advanced Security & Specialization',
-    description: 'Cloud Security, Mobile Testing, Advanced Exploitation, Bug Bounty Mastery',
-    duration: 'Months 19-30',
+    title: 'Expert Bug Hunter',
+    description: 'Complex Chains, Cloud Security, Advanced Techniques, and High-Impact Bugs',
+    duration: 'Months 13-24',
     categories: [
       {
-        id: 'advanced-web',
-        title: 'Advanced Web Exploitation',
+        id: 'vulnerability-chains',
+        title: 'Vulnerability Chaining',
         tasks: [
           {
-            id: 'deserialization',
-            title: 'Deserialization Attacks',
-            description: 'Java, PHP, Python, .NET deserialization, gadget chains, serialization vulnerabilities',
+            id: 'chaining-basics',
+            title: 'Introduction to Bug Chaining',
+            description: 'Combining low-impact bugs, escalation techniques, multi-step exploitation',
+            xp: 5000,
+            phase: 'advanced',
+            category: 'vulnerability-chains',
+            order: 62
+          },
+          {
+            id: 'account-takeover-chains',
+            title: 'Account Takeover Chain Development',
+            description: 'IDOR + XSS, OAuth + open redirect, password reset + race condition combinations',
             xp: 6000,
             phase: 'advanced',
-            category: 'advanced-web',
+            category: 'vulnerability-chains',
+            order: 63
+          },
+          {
+            id: 'rce-chains',
+            title: 'Remote Code Execution Chains',
+            description: 'File upload + LFI, SSRF + internal services, deserialization + gadget hunting',
+            xp: 7000,
+            phase: 'advanced',
+            category: 'vulnerability-chains',
+            order: 64
+          },
+          {
+            id: 'data-exfiltration',
+            title: 'Data Exfiltration Techniques',
+            description: 'Blind exploitation, out-of-band techniques, timing attacks, DNS exfiltration',
+            xp: 5500,
+            phase: 'advanced',
+            category: 'vulnerability-chains',
+            order: 65
+          },
+          {
+            id: 'privilege-escalation-web',
+            title: 'Web-Based Privilege Escalation',
+            description: 'User to admin escalation, role manipulation, JWT privilege escalation',
+            xp: 5800,
+            phase: 'advanced',
+            category: 'vulnerability-chains',
+            order: 66
+          }
+        ]
+      },
+      {
+        id: 'cloud-security-testing',
+        title: 'Cloud Platform Security',
+        tasks: [
+          {
+            id: 'aws-security',
+            title: 'AWS Security Testing',
+            description: 'S3 bucket misconfigurations, IAM vulnerabilities, Lambda functions, EC2 metadata',
+            xp: 6500,
+            phase: 'advanced',
+            category: 'cloud-security-testing',
+            order: 67
+          },
+          {
+            id: 'azure-testing',
+            title: 'Azure Security Assessment',
+            description: 'Storage account issues, Azure AD misconfigs, Function Apps, Key Vault access',
+            xp: 6500,
+            phase: 'advanced',
+            category: 'cloud-security-testing',
             order: 68
           },
           {
-            id: 'race-conditions',
-            title: 'Race Condition Exploitation',
-            description: 'TOCTOU bugs, payment races, async vulnerabilities, advanced request timing attacks',
-            xp: 5500,
+            id: 'gcp-security',
+            title: 'Google Cloud Platform Testing',
+            description: 'GCS bucket issues, IAM misconfigurations, Cloud Functions, metadata endpoints',
+            xp: 6500,
             phase: 'advanced',
-            category: 'advanced-web',
+            category: 'cloud-security-testing',
             order: 69
           },
           {
-            id: 'cache-poisoning',
-            title: 'Cache Attacks',
-            description: 'Web cache poisoning, deception, key injection, CPDoS, cache-based XSS',
-            xp: 5000,
+            id: 'container-security',
+            title: 'Container & Kubernetes Security',
+            description: 'Docker API exposure, Kubernetes dashboard, container escape, secrets management',
+            xp: 7000,
             phase: 'advanced',
-            category: 'advanced-web',
+            category: 'cloud-security-testing',
             order: 70
           },
           {
-            id: 'request-smuggling',
-            title: 'HTTP Request Smuggling',
-            description: 'CL.TE, TE.CL, TE.TE attacks, chaining with other vulnerabilities',
-            xp: 6500,
+            id: 'serverless-testing',
+            title: 'Serverless Application Testing',
+            description: 'Function injection, event manipulation, cold start attacks, serverless SSRF',
+            xp: 5500,
             phase: 'advanced',
-            category: 'advanced-web',
+            category: 'cloud-security-testing',
             order: 71
-          },
+          }
+        ]
+      },
+      {
+        id: 'advanced-techniques',
+        title: 'Advanced Exploitation Techniques',
+        tasks: [
           {
-            id: 'api-advanced',
-            title: 'Advanced API Exploitation',
-            description: 'GraphQL injection, REST API mass assignment, webhook attacks, API key hunting',
-            xp: 5200,
+            id: 'browser-exploitation',
+            title: 'Client-Side Advanced Attacks',
+            description: 'Prototype pollution to XSS, DOM clobbering, mutation XSS, script gadgets',
+            xp: 6000,
             phase: 'advanced',
-            category: 'advanced-web',
+            category: 'advanced-techniques',
             order: 72
           },
           {
-            id: 'prototype-pollution',
-            title: 'Prototype Pollution',
-            description: 'Client-side prototype pollution, gadget hunting, pollution to XSS/RCE, server-side pollution',
-            xp: 5800,
+            id: 'cryptographic-flaws',
+            title: 'Cryptographic Vulnerabilities',
+            description: 'Padding oracle attacks, ECB mode issues, weak random generation, timing attacks',
+            xp: 6500,
             phase: 'advanced',
-            category: 'advanced-web',
+            category: 'advanced-techniques',
             order: 73
           },
           {
-            id: 'postmessage-attacks',
-            title: 'PostMessage & DOM Security',
-            description: 'PostMessage exploitation, origin validation bypass, DOM-based race conditions, frame hijacking',
-            xp: 5300,
+            id: 'websocket-testing',
+            title: 'WebSocket Security Testing',
+            description: 'Origin validation, message tampering, authentication bypass, XSS via WebSocket',
+            xp: 5000,
             phase: 'advanced',
-            category: 'advanced-web',
+            category: 'advanced-techniques',
             order: 74
-          }
-        ]
-      },
-      {
-        id: 'source-code-review',
-        title: 'Source Code Analysis',
-        tasks: [
+          },
           {
-            id: 'sast-fundamentals',
-            title: 'Static Analysis Fundamentals',
-            description: 'Manual code review techniques, data flow analysis, taint tracking, sink identification',
+            id: 'http2-3-security',
+            title: 'HTTP/2 and HTTP/3 Security',
+            description: 'Request smuggling variants, multiplexing issues, HPACK bombing, 0-RTT attacks',
             xp: 5500,
             phase: 'advanced',
-            category: 'source-code-review',
+            category: 'advanced-techniques',
             order: 75
           },
           {
-            id: 'sast-tools',
-            title: 'SAST Tools Mastery',
-            description: 'Advanced static analysis tools, custom rule writing, security pattern detection, CI/CD integration',
-            xp: 5000,
+            id: 'supply-chain-attacks',
+            title: 'Supply Chain Security',
+            description: 'Dependency confusion, typosquatting, malicious packages, CI/CD poisoning',
+            xp: 6000,
             phase: 'advanced',
-            category: 'source-code-review',
+            category: 'advanced-techniques',
             order: 76
-          },
+          }
+        ]
+      },
+      {
+        id: 'specialized-targets',
+        title: 'Specialized Target Types',
+        tasks: [
           {
-            id: 'js-code-review',
-            title: 'JavaScript Security Review',
-            description: 'Node.js vulnerabilities, npm package analysis, webpack misconfigs, source map exploitation',
-            xp: 5200,
+            id: 'iot-devices',
+            title: 'IoT Device Security Testing',
+            description: 'Firmware analysis, MQTT testing, CoAP vulnerabilities, embedded web interfaces',
+            xp: 5500,
             phase: 'advanced',
-            category: 'source-code-review',
+            category: 'specialized-targets',
             order: 77
           },
           {
-            id: 'java-code-review',
-            title: 'Java Security Review',
-            description: 'Spring vulnerabilities, JNDI injection, expression language injection, unsafe reflection',
-            xp: 5400,
+            id: 'blockchain-apps',
+            title: 'Blockchain & Web3 Applications',
+            description: 'Smart contract interaction bugs, wallet integration, signature verification flaws',
+            xp: 6000,
             phase: 'advanced',
-            category: 'source-code-review',
+            category: 'specialized-targets',
             order: 78
-          }
-        ]
-      },
-      {
-        id: 'cloud-security',
-        title: 'Cloud & Container Security',
-        tasks: [
+          },
           {
-            id: 'aws-pentesting',
-            title: 'AWS Penetration Testing',
-            description: 'IAM exploitation, S3 misconfig, Lambda attacks, EC2 SSRF, CloudFormation abuse',
+            id: 'payment-systems',
+            title: 'Payment System Vulnerabilities',
+            description: 'Price manipulation, currency confusion, payment bypass, checkout flaws',
             xp: 7000,
             phase: 'advanced',
-            category: 'cloud-security',
+            category: 'specialized-targets',
             order: 79
           },
           {
-            id: 'azure-security',
-            title: 'Azure Security Testing',
-            description: 'Azure AD attacks, blob storage, Key Vault abuse, ARM template injection',
-            xp: 6500,
+            id: 'saas-platforms',
+            title: 'SaaS Multi-Tenancy Issues',
+            description: 'Tenant isolation, data leakage, subdomain takeover, SSO vulnerabilities',
+            xp: 5800,
             phase: 'advanced',
-            category: 'cloud-security',
+            category: 'specialized-targets',
             order: 80
           },
           {
-            id: 'kubernetes-exploitation',
-            title: 'Kubernetes Attacks',
-            description: 'API abuse, RBAC bypass, pod escape, service mesh exploitation, secrets extraction',
-            xp: 7500,
+            id: 'enterprise-software',
+            title: 'Enterprise Software Testing',
+            description: 'Complex authentication flows, integration points, legacy system interfaces',
+            xp: 6200,
             phase: 'advanced',
-            category: 'cloud-security',
+            category: 'specialized-targets',
             order: 81
-          },
+          }
+        ]
+      },
+      {
+        id: 'research-development',
+        title: 'Research & Tool Development',
+        tasks: [
           {
-            id: 'container-breakout',
-            title: 'Container Escape Techniques',
-            description: 'Container breakout techniques, privileged containers, namespace abuse, cgroups exploitation',
-            xp: 6000,
+            id: 'vulnerability-research',
+            title: 'Original Vulnerability Research',
+            description: 'Discovering new bug classes, CVE submissions, responsible disclosure',
+            xp: 8000,
             phase: 'advanced',
-            category: 'cloud-security',
+            category: 'research-development',
             order: 82
           },
           {
-            id: 'serverless-security',
-            title: 'Serverless Security',
-            description: 'Lambda/Functions exploitation, event injection, cold start attacks, function URL abuse',
-            xp: 5500,
+            id: 'tool-creation',
+            title: 'Public Tool Development',
+            description: 'Create and release bug hunting tools, contribute to existing projects',
+            xp: 7000,
             phase: 'advanced',
-            category: 'cloud-security',
+            category: 'research-development',
             order: 83
           },
           {
-            id: 'cicd-security',
-            title: 'CI/CD Pipeline Security',
-            description: 'Pipeline exploitation, secrets extraction, supply chain attacks, artifact poisoning',
-            xp: 6200,
+            id: 'exploit-development',
+            title: 'Exploit Development Skills',
+            description: 'Reliable exploit creation, bypass techniques, weaponization for bug bounty',
+            xp: 7500,
             phase: 'advanced',
-            category: 'cloud-security',
+            category: 'exploit-development',
             order: 84
-          }
-        ]
-      },
-      {
-        id: 'mobile-security',
-        title: 'Mobile Application Security',
-        tasks: [
+          },
           {
-            id: 'android-pentesting',
-            title: 'Android Security Testing',
-            description: 'APK reversing, dynamic instrumentation, SSL pinning bypass, intent exploitation, root detection bypass',
-            xp: 6000,
+            id: 'machine-learning-security',
+            title: 'ML/AI Security Testing',
+            description: 'Model manipulation, adversarial inputs, training data poisoning, prompt injection',
+            xp: 6500,
             phase: 'advanced',
-            category: 'mobile-security',
+            category: 'research-development',
             order: 85
           },
           {
-            id: 'ios-security',
-            title: 'iOS Security Basics',
-            description: 'IPA analysis, jailbreak detection bypass, Objective-C runtime manipulation, keychain dumping',
-            xp: 5500,
+            id: 'bug-bounty-automation-platform',
+            title: 'Build Automation Platform',
+            description: 'Complete recon automation, vulnerability scanning, report generation system',
+            xp: 8000,
             phase: 'advanced',
-            category: 'mobile-security',
+            category: 'research-development',
             order: 86
-          },
+          }
+        ]
+      },
+      {
+        id: 'business-impact',
+        title: 'Business Impact & Recognition',
+        tasks: [
           {
-            id: 'mobile-api',
-            title: 'Mobile API Security',
-            description: 'Certificate pinning bypass, API endpoint discovery, mobile-specific vulnerabilities',
-            xp: 4500,
+            id: 'critical-submissions',
+            title: 'Submit 10+ Critical Vulnerabilities',
+            description: 'Find and report critical business impact bugs across multiple programs',
+            xp: 10000,
             phase: 'advanced',
-            category: 'mobile-security',
+            category: 'business-impact',
             order: 87
           },
           {
-            id: 'mobile-malware',
-            title: 'Mobile Malware Analysis',
-            description: 'Static and dynamic analysis, behavior monitoring, C2 identification',
-            xp: 5000,
+            id: 'hall-of-fame',
+            title: 'Multiple Hall of Fame Entries',
+            description: 'Get recognized by at least 20 different companies for security contributions',
+            xp: 8000,
             phase: 'advanced',
-            category: 'mobile-security',
+            category: 'business-impact',
             order: 88
           },
           {
-            id: 'react-native-security',
-            title: 'React Native Security',
-            description: 'JavaScript bridge exploitation, native module vulnerabilities, bytecode reversing',
-            xp: 4800,
+            id: 'six-figure-earnings',
+            title: 'Earn $100,000+ in Bug Bounties',
+            description: 'Reach six-figure earnings through consistent high-quality submissions',
+            xp: 15000,
             phase: 'advanced',
-            category: 'mobile-security',
+            category: 'business-impact',
             order: 89
-          }
-        ]
-      },
-      {
-        id: 'exploit-dev-advanced',
-        title: 'Advanced Exploit Development',
-        tasks: [
+          },
           {
-            id: 'heap-exploitation',
-            title: 'Heap Exploitation',
-            description: 'Heap overflow, use-after-free, heap spraying, tcache attacks, advanced heap techniques',
-            xp: 8000,
+            id: 'program-collaboration',
+            title: 'Private Program Invitations',
+            description: 'Get invited to 10+ private programs based on reputation and quality',
+            xp: 7000,
             phase: 'advanced',
-            category: 'exploit-dev-advanced',
+            category: 'business-impact',
             order: 90
           },
           {
-            id: 'rop-chains',
-            title: 'Return-Oriented Programming',
-            description: 'ROP chain construction, ASLR bypass, gadget finding, JOP/COP techniques',
-            xp: 7500,
-            phase: 'advanced',
-            category: 'exploit-dev-advanced',
-            order: 91
-          },
-          {
-            id: 'kernel-intro',
-            title: 'Kernel Exploitation Basics',
-            description: 'Kernel debugging, privilege escalation, race conditions, null pointer dereference',
+            id: 'speaking-engagement',
+            title: 'Conference Speaking',
+            description: 'Present bug hunting research at security conferences, share knowledge',
             xp: 9000,
             phase: 'advanced',
-            category: 'exploit-dev-advanced',
-            order: 92
-          },
-          {
-            id: 'fuzzing-advanced',
-            title: 'Advanced Fuzzing',
-            description: 'Coverage-guided fuzzing, custom harnesses, crash analysis, fuzzer development',
-            xp: 6500,
-            phase: 'advanced',
-            category: 'exploit-dev-advanced',
-            order: 93
-          }
-        ]
-      },
-      {
-        id: 'bug-bounty-mastery',
-        title: 'Bug Bounty Excellence',
-        tasks: [
-          {
-            id: 'recon-automation',
-            title: 'Automated Recon Pipeline',
-            description: 'Build complete automation: subdomain enum, port scan, vulnerability scanning, custom checks',
-            xp: 5000,
-            phase: 'advanced',
-            category: 'bug-bounty-mastery',
-            order: 94
-          },
-          {
-            id: 'bounty-methodology',
-            title: 'Personal Methodology',
-            description: 'Develop unique approach, specialize in specific bug classes, efficient testing',
-            xp: 4000,
-            phase: 'advanced',
-            category: 'bug-bounty-mastery',
-            order: 95
-          },
-          {
-            id: 'high-impact-bugs',
-            title: 'Critical Vulnerability Hunting',
-            description: 'Find 10+ high/critical bugs, focus on RCE, authentication bypass, data leaks',
-            xp: 10000,
-            phase: 'advanced',
-            category: 'bug-bounty-mastery',
-            order: 96
-          },
-          {
-            id: 'bounty-income',
-            title: 'Consistent Bounty Income',
-            description: 'Earn $10,000+ from bug bounties, establish reputation',
-            xp: 8000,
-            phase: 'advanced',
-            category: 'bug-bounty-mastery',
-            order: 97
-          },
-          {
-            id: 'collaboration-hunting',
-            title: 'Collaborative Bug Hunting',
-            description: 'Team up with other researchers, chain vulnerabilities, share methodologies',
-            xp: 4500,
-            phase: 'advanced',
-            category: 'bug-bounty-mastery',
-            order: 98
-          }
-        ]
-      },
-      {
-        id: 'hardware-iot',
-        title: 'Hardware & IoT Security',
-        tasks: [
-          {
-            id: 'hardware-basics',
-            title: 'Hardware Hacking Fundamentals',
-            description: 'UART, JTAG, SPI interfaces, logic analyzers, firmware extraction',
-            xp: 5500,
-            phase: 'advanced',
-            category: 'hardware-iot',
-            order: 99
-          },
-          {
-            id: 'radio-hacking',
-            title: 'Radio Frequency Attacks',
-            description: 'SDR basics, replay attacks, protocol reverse engineering, car key fobs',
-            xp: 6000,
-            phase: 'advanced',
-            category: 'hardware-iot',
-            order: 100
-          },
-          {
-            id: 'iot-exploitation',
-            title: 'IoT Device Hacking',
-            description: 'Router exploitation, smart device attacks, firmware analysis, backdoor discovery',
-            xp: 6500,
-            phase: 'advanced',
-            category: 'hardware-iot',
-            order: 101
-          },
-          {
-            id: 'badge-rfid',
-            title: 'Physical Access Attacks',
-            description: 'RFID cloning, badge attacks, lock picking basics, physical security assessment',
-            xp: 4500,
-            phase: 'advanced',
-            category: 'hardware-iot',
-            order: 102
-          }
-        ]
-      },
-      {
-        id: 'blockchain-security',
-        title: 'Blockchain & Web3 Security',
-        tasks: [
-          {
-            id: 'smart-contract-basics',
-            title: 'Smart Contract Security Basics',
-            description: 'Solidity vulnerabilities, reentrancy, integer overflow, access control issues',
-            xp: 6000,
-            phase: 'advanced',
-            category: 'blockchain-security',
-            order: 103
-          },
-          {
-            id: 'defi-security',
-            title: 'DeFi Protocol Security',
-            description: 'Flash loan attacks, price oracle manipulation, MEV exploitation, liquidity pool attacks',
-            xp: 7000,
-            phase: 'advanced',
-            category: 'blockchain-security',
-            order: 104
-          },
-          {
-            id: 'web3-pentesting',
-            title: 'Web3 Application Testing',
-            description: 'Wallet integration bugs, signature verification, frontend attacks, RPC abuse',
-            xp: 5500,
-            phase: 'advanced',
-            category: 'blockchain-security',
-            order: 105
-          },
-          {
-            id: 'blockchain-forensics',
-            title: 'Blockchain Forensics',
-            description: 'Transaction analysis, mixer detection, wallet clustering, on-chain investigation',
-            xp: 5000,
-            phase: 'advanced',
-            category: 'blockchain-security',
-            order: 106
+            category: 'business-impact',
+            order: 91
           }
         ]
       }
@@ -1135,259 +976,304 @@ export const roadmapData: Phase[] = [
   },
   {
     id: 'redteam',
-    title: 'Red Team Operations',
-    description: 'Adversary Emulation, Custom Implants, Social Engineering, Advanced Persistence',
-    duration: 'Months 31-36',
+    title: 'Elite Researcher',
+    description: 'Zero-Days, Advanced Research, Industry Leadership, and Mentorship',
+    duration: 'Year 3+',
     categories: [
       {
-        id: 'redteam-fundamentals',
-        title: 'Red Team Foundations',
+        id: 'zero-day-research',
+        title: 'Zero-Day Discovery',
         tasks: [
           {
-            id: 'attack-framework',
-            title: 'Attack Framework Mastery',
-            description: 'Map attack techniques, build attack chains, emulate APT groups, purple team exercises',
-            xp: 8000,
+            id: 'cve-research',
+            title: 'CVE Discovery & Submission',
+            description: 'Find vulnerabilities in popular software, coordinate disclosure, CVE assignment',
+            xp: 15000,
             phase: 'redteam',
-            category: 'redteam-fundamentals',
+            category: 'zero-day-research',
+            order: 92
+          },
+          {
+            id: 'browser-zero-days',
+            title: 'Browser Security Research',
+            description: 'Chrome, Firefox, Safari vulnerability research, sandbox escapes, renderer bugs',
+            xp: 25000,
+            phase: 'redteam',
+            category: 'zero-day-research',
+            order: 93
+          },
+          {
+            id: 'framework-vulnerabilities',
+            title: 'Popular Framework Vulnerabilities',
+            description: 'Django, Rails, Spring, Express.js core vulnerabilities, widespread impact',
+            xp: 20000,
+            phase: 'redteam',
+            category: 'zero-day-research',
+            order: 94
+          },
+          {
+            id: 'protocol-flaws',
+            title: 'Protocol-Level Vulnerabilities',
+            description: 'OAuth, SAML, JWT specification flaws, TLS vulnerabilities, DNS security',
+            xp: 22000,
+            phase: 'redteam',
+            category: 'zero-day-research',
+            order: 95
+          },
+          {
+            id: 'hardware-vulnerabilities',
+            title: 'Hardware Security Research',
+            description: 'CPU vulnerabilities, TPM flaws, hardware wallet attacks, side-channel attacks',
+            xp: 30000,
+            phase: 'redteam',
+            category: 'zero-day-research',
+            order: 96
+          }
+        ]
+      },
+      {
+        id: 'advanced-research',
+        title: 'Cutting-Edge Research',
+        tasks: [
+          {
+            id: 'new-attack-classes',
+            title: 'Discover New Attack Classes',
+            description: 'Pioneer new vulnerability categories, publish groundbreaking research',
+            xp: 35000,
+            phase: 'redteam',
+            category: 'advanced-research',
+            order: 97
+          },
+          {
+            id: 'academic-publications',
+            title: 'Academic Security Papers',
+            description: 'Publish in peer-reviewed journals, present at academic conferences',
+            xp: 20000,
+            phase: 'redteam',
+            category: 'advanced-research',
+            order: 98
+          },
+          {
+            id: 'security-tool-innovation',
+            title: 'Revolutionary Tool Development',
+            description: 'Create industry-changing security tools, thousands of users, major impact',
+            xp: 25000,
+            phase: 'redteam',
+            category: 'advanced-research',
+            order: 99
+          },
+          {
+            id: 'novel-bug-hunting-methodology',
+            title: 'Novel Bug Hunting Methodologies',
+            description: 'Develop new approaches to finding bugs, share with community, proven results',
+            xp: 18000,
+            phase: 'redteam',
+            category: 'advanced-research',
+            order: 100
+          },
+          {
+            id: 'ai-security-pioneer',
+            title: 'AI/LLM Security Pioneer',
+            description: 'Leading research in AI security, prompt injection, model vulnerabilities',
+            xp: 28000,
+            phase: 'redteam',
+            category: 'advanced-research',
+            order: 101
+          }
+        ]
+      },
+      {
+        id: 'industry-leadership',
+        title: 'Industry Leadership',
+        tasks: [
+          {
+            id: 'keynote-speaker',
+            title: 'Keynote Conference Speaker',
+            description: 'Deliver keynotes at major security conferences (Black Hat, DEF CON, etc.)',
+            xp: 20000,
+            phase: 'redteam',
+            category: 'industry-leadership',
+            order: 102
+          },
+          {
+            id: 'security-advisory',
+            title: 'Security Advisory Board Member',
+            description: 'Advise major companies on security strategy, shape industry practices',
+            xp: 25000,
+            phase: 'redteam',
+            category: 'industry-leadership',
+            order: 103
+          },
+          {
+            id: 'bug-bounty-platform-advisor',
+            title: 'Platform Advisory Role',
+            description: 'Help shape bug bounty platforms, program policies, industry standards',
+            xp: 18000,
+            phase: 'redteam',
+            category: 'industry-leadership',
+            order: 104
+          },
+          {
+            id: 'media-recognition',
+            title: 'Media & Industry Recognition',
+            description: 'Featured in major publications, documentaries, recognized as industry expert',
+            xp: 15000,
+            phase: 'redteam',
+            category: 'industry-leadership',
+            order: 105
+          },
+          {
+            id: 'security-company-founder',
+            title: 'Security Company Founder',
+            description: 'Start successful security consultancy or product company',
+            xp: 50000,
+            phase: 'redteam',
+            category: 'industry-leadership',
+            order: 106
+          }
+        ]
+      },
+      {
+        id: 'mentorship-education',
+        title: 'Mentorship & Education',
+        tasks: [
+          {
+            id: 'mentor-researchers',
+            title: 'Mentor 50+ Security Researchers',
+            description: 'Guide new researchers, help them find first bugs, career development',
+            xp: 15000,
+            phase: 'redteam',
+            category: 'mentorship-education',
             order: 107
           },
           {
-            id: 'opsec-tradecraft',
-            title: 'OPSEC & Tradecraft',
-            description: 'Attribution prevention, operational security, covert channels, anti-forensics',
-            xp: 7500,
+            id: 'training-creation',
+            title: 'Create Comprehensive Training',
+            description: 'Develop professional bug bounty courses, workshops, bootcamps',
+            xp: 20000,
             phase: 'redteam',
-            category: 'redteam-fundamentals',
+            category: 'mentorship-education',
             order: 108
           },
           {
-            id: 'threat-intelligence',
-            title: 'Threat Intelligence Integration',
-            description: 'APT analysis, TTP extraction, IOC creation, detection rules, threat hunting',
-            xp: 6500,
+            id: 'youtube-education',
+            title: 'Educational Content Creator',
+            description: 'YouTube channel with 100k+ subscribers, regular educational content',
+            xp: 18000,
             phase: 'redteam',
-            category: 'redteam-fundamentals',
+            category: 'mentorship-education',
             order: 109
           },
           {
-            id: 'campaign-planning',
-            title: 'Red Team Campaign Planning',
-            description: 'Objective-based operations, scenario development, ROE creation, risk assessment',
-            xp: 7000,
+            id: 'book-author',
+            title: 'Security Book Author',
+            description: 'Write comprehensive bug bounty or web security book, published',
+            xp: 25000,
             phase: 'redteam',
-            category: 'redteam-fundamentals',
+            category: 'mentorship-education',
             order: 110
+          },
+          {
+            id: 'university-collaboration',
+            title: 'Academic Collaboration',
+            description: 'Guest lectures, curriculum development, research collaboration',
+            xp: 16000,
+            phase: 'redteam',
+            category: 'mentorship-education',
+            order: 111
           }
         ]
       },
       {
-        id: 'c2-infrastructure',
-        title: 'Command & Control',
+        id: 'specialized-expertise',
+        title: 'Ultra-Specialized Skills',
         tasks: [
           {
-            id: 'c2-frameworks',
-            title: 'C2 Framework Mastery',
-            description: 'Popular C2 frameworks - setup, customization, OPSEC, profile development',
-            xp: 9000,
+            id: 'kernel-exploitation',
+            title: 'OS Kernel Exploitation',
+            description: 'Windows/Linux/macOS kernel bugs, privilege escalation, rootkit development',
+            xp: 30000,
             phase: 'redteam',
-            category: 'c2-infrastructure',
-            order: 111
-          },
-          {
-            id: 'redirectors',
-            title: 'Redirector Infrastructure',
-            description: 'Apache/nginx redirectors, domain fronting, CDN abuse, traffic masking',
-            xp: 7000,
-            phase: 'redteam',
-            category: 'c2-infrastructure',
+            category: 'specialized-expertise',
             order: 112
           },
           {
-            id: 'custom-c2',
-            title: 'Custom C2 Development',
-            description: 'Build basic C2 server, implement encryption, modular architecture',
-            xp: 12000,
+            id: 'virtualization-escapes',
+            title: 'Virtualization Security',
+            description: 'VMware, Hyper-V, QEMU escapes, cloud provider isolation breaks',
+            xp: 35000,
             phase: 'redteam',
-            category: 'c2-infrastructure',
+            category: 'specialized-expertise',
             order: 113
           },
           {
-            id: 'c2-opsec',
-            title: 'C2 OPSEC & Evasion',
-            description: 'Traffic encryption, jitter, sleep techniques, killswitch implementation',
-            xp: 8000,
+            id: 'mobile-baseband',
+            title: 'Mobile Baseband Security',
+            description: 'Cellular modem vulnerabilities, baseband exploitation, radio protocols',
+            xp: 40000,
             phase: 'redteam',
-            category: 'c2-infrastructure',
+            category: 'specialized-expertise',
             order: 114
-          }
-        ]
-      },
-      {
-        id: 'implant-development',
-        title: 'Implant & Payload Development',
-        tasks: [
+          },
           {
-            id: 'implant-basics',
-            title: 'Basic Implant Creation',
-            description: 'C/C++ beacon development, communication protocols, staged vs stageless',
-            xp: 10000,
+            id: 'automotive-security',
+            title: 'Automotive Security Research',
+            description: 'Connected car vulnerabilities, CAN bus attacks, infotainment systems',
+            xp: 28000,
             phase: 'redteam',
-            category: 'implant-development',
+            category: 'specialized-expertise',
             order: 115
           },
           {
-            id: 'process-injection',
-            title: 'Advanced Process Injection',
-            description: 'Classic injection, APC injection, thread hijacking, process hollowing',
-            xp: 9000,
+            id: 'satellite-security',
+            title: 'Satellite & Space Security',
+            description: 'Satellite communication security, ground station attacks, GPS security',
+            xp: 45000,
             phase: 'redteam',
-            category: 'implant-development',
+            category: 'specialized-expertise',
             order: 116
-          },
+          }
+        ]
+      },
+      {
+        id: 'financial-success',
+        title: 'Financial Milestones',
+        tasks: [
           {
-            id: 'edr-evasion',
-            title: 'EDR Bypass Techniques',
-            description: 'API unhooking, direct syscalls, ETW patching, security product bypass',
-            xp: 11000,
+            id: 'million-dollar-researcher',
+            title: 'Earn $1,000,000+ in Bug Bounties',
+            description: 'Reach seven-figure earnings through bug bounty programs',
+            xp: 100000,
             phase: 'redteam',
-            category: 'implant-development',
+            category: 'financial-success',
             order: 117
           },
           {
-            id: 'persistence-advanced',
-            title: 'Advanced Persistence',
-            description: 'COM hijacking, WMI events, bootkit concepts, fileless persistence',
-            xp: 9500,
+            id: 'single-bug-100k',
+            title: 'Single Bug Worth $100,000+',
+            description: 'Find a vulnerability with six-figure payout, exceptional impact',
+            xp: 50000,
             phase: 'redteam',
-            category: 'implant-development',
+            category: 'financial-success',
             order: 118
-          }
-        ]
-      },
-      {
-        id: 'social-engineering',
-        title: 'Social Engineering & Physical',
-        tasks: [
+          },
           {
-            id: 'phishing-campaigns',
-            title: 'Advanced Phishing',
-            description: 'Phishing framework mastery, multi-factor bypass, pretexting, spear phishing, credential harvesting',
-            xp: 7000,
+            id: 'passive-income',
+            title: 'Security Passive Income',
+            description: 'Generate $10k+/month from courses, tools, consulting, content',
+            xp: 35000,
             phase: 'redteam',
-            category: 'social-engineering',
+            category: 'financial-success',
             order: 119
           },
           {
-            id: 'vishing-pretexting',
-            title: 'Voice & Pretexting',
-            description: 'Vishing techniques, pretext development, information gathering, social OSINT',
-            xp: 6000,
+            id: 'bug-bounty-team',
+            title: 'Build Bug Bounty Team',
+            description: 'Lead team of researchers, scale operations, shared success',
+            xp: 40000,
             phase: 'redteam',
-            category: 'social-engineering',
+            category: 'financial-success',
             order: 120
-          },
-          {
-            id: 'physical-security',
-            title: 'Physical Penetration',
-            description: 'Lock picking, badge cloning, tailgating, USB drops, covert entry',
-            xp: 7500,
-            phase: 'redteam',
-            category: 'social-engineering',
-            order: 121
-          },
-          {
-            id: 'insider-simulation',
-            title: 'Insider Threat Simulation',
-            description: 'Malicious insider scenarios, data exfiltration, privilege abuse',
-            xp: 6500,
-            phase: 'redteam',
-            category: 'social-engineering',
-            order: 122
-          }
-        ]
-      },
-      {
-        id: 'advanced-techniques',
-        title: 'Advanced Red Team Techniques',
-        tasks: [
-          {
-            id: 'supply-chain',
-            title: 'Supply Chain Attacks',
-            description: 'Dependency confusion, typosquatting, package manager abuse, CI/CD poisoning',
-            xp: 10000,
-            phase: 'redteam',
-            category: 'advanced-techniques',
-            order: 123
-          },
-          {
-            id: 'covert-channels',
-            title: 'Covert Communication',
-            description: 'DNS tunneling, ICMP tunneling, steganography, social media C2',
-            xp: 8000,
-            phase: 'redteam',
-            category: 'advanced-techniques',
-            order: 124
-          },
-          {
-            id: 'data-exfiltration',
-            title: 'Advanced Exfiltration',
-            description: 'DLP bypass, encrypted channels, slow exfil, cloud storage abuse',
-            xp: 7500,
-            phase: 'redteam',
-            category: 'advanced-techniques',
-            order: 125
-          },
-          {
-            id: 'lateral-movement',
-            title: 'Lateral Movement Mastery',
-            description: 'Living off the land, native tools abuse, RDP hijacking, token manipulation',
-            xp: 8500,
-            phase: 'redteam',
-            category: 'advanced-techniques',
-            order: 126
-          }
-        ]
-      },
-      {
-        id: 'redteam-ops',
-        title: 'Red Team Operations',
-        tasks: [
-          {
-            id: 'first-engagement',
-            title: 'First Red Team Engagement',
-            description: 'Plan and execute complete red team operation, achieve objectives',
-            xp: 15000,
-            phase: 'redteam',
-            category: 'redteam-ops',
-            order: 127
-          },
-          {
-            id: 'purple-team',
-            title: 'Purple Team Exercises',
-            description: 'Collaborate with blue team, improve detections, knowledge transfer',
-            xp: 8000,
-            phase: 'redteam',
-            category: 'redteam-ops',
-            order: 128
-          },
-          {
-            id: 'report-writing',
-            title: 'Executive Reporting',
-            description: 'Risk-based reporting, business impact, remediation guidance',
-            xp: 6000,
-            phase: 'redteam',
-            category: 'redteam-ops',
-            order: 129
-          },
-          {
-            id: 'redteam-cert',
-            title: 'Red Team Certification',
-            description: 'Obtain advanced red team certification, validate skills',
-            xp: 12000,
-            phase: 'redteam',
-            category: 'redteam-ops',
-            order: 130
           }
         ]
       }
@@ -1395,259 +1281,166 @@ export const roadmapData: Phase[] = [
   },
   {
     id: 'elite',
-    title: 'Elite Security Researcher',
-    description: 'Zero-Day Research, Advanced Malware, Industry Leadership',
-    duration: 'Year 3+',
+    title: 'Legendary Status',
+    description: 'Industry Pioneer, Global Recognition, and Lasting Legacy',
+    duration: 'Lifetime Achievement',
     categories: [
       {
-        id: 'vulnerability-research',
-        title: 'Vulnerability Research',
+        id: 'global-impact',
+        title: 'Global Security Impact',
         tasks: [
           {
-            id: 'cve-hunting',
-            title: 'CVE Discovery',
-            description: 'Find and report 10+ CVEs in popular software, coordinated disclosure',
-            xp: 25000,
+            id: 'internet-scale-discovery',
+            title: 'Internet-Scale Vulnerability',
+            description: 'Discover vulnerability affecting millions of users globally',
+            xp: 100000,
             phase: 'elite',
-            category: 'vulnerability-research',
+            category: 'global-impact',
+            order: 121
+          },
+          {
+            id: 'security-standard',
+            title: 'Create Security Standard',
+            description: 'Develop widely-adopted security standard or protocol',
+            xp: 80000,
+            phase: 'elite',
+            category: 'global-impact',
+            order: 122
+          },
+          {
+            id: 'government-advisor',
+            title: 'Government Security Advisor',
+            description: 'Advise national governments on cybersecurity policy',
+            xp: 70000,
+            phase: 'elite',
+            category: 'global-impact',
+            order: 123
+          },
+          {
+            id: 'bug-bounty-revolution',
+            title: 'Revolutionize Bug Bounty Industry',
+            description: 'Create paradigm shift in how bug bounties operate',
+            xp: 90000,
+            phase: 'elite',
+            category: 'global-impact',
+            order: 124
+          }
+        ]
+      },
+      {
+        id: 'lifetime-achievements',
+        title: 'Lifetime Achievements',
+        tasks: [
+          {
+            id: 'pwnie-award',
+            title: 'Pwnie Award Winner',
+            description: 'Win prestigious Pwnie Award for security research',
+            xp: 75000,
+            phase: 'elite',
+            category: 'lifetime-achievements',
+            order: 125
+          },
+          {
+            id: 'bug-bounty-hall-fame',
+            title: 'Bug Bounty Hall of Fame',
+            description: 'Recognized as top 10 bug bounty hunter globally',
+            xp: 100000,
+            phase: 'elite',
+            category: 'lifetime-achievements',
+            order: 126
+          },
+          {
+            id: 'forbes-recognition',
+            title: 'Forbes 30 Under 30',
+            description: 'Featured in Forbes or similar for security achievements',
+            xp: 60000,
+            phase: 'elite',
+            category: 'lifetime-achievements',
+            order: 127
+          },
+          {
+            id: 'documentary-feature',
+            title: 'Documentary Subject',
+            description: 'Featured in major cybersecurity documentary',
+            xp: 50000,
+            phase: 'elite',
+            category: 'lifetime-achievements',
+            order: 128
+          }
+        ]
+      },
+      {
+        id: 'legacy-building',
+        title: 'Building Your Legacy',
+        tasks: [
+          {
+            id: 'security-foundation',
+            title: 'Security Foundation/Nonprofit',
+            description: 'Establish foundation for security education/research',
+            xp: 120000,
+            phase: 'elite',
+            category: 'legacy-building',
+            order: 129
+          },
+          {
+            id: 'mentorship-program',
+            title: 'Global Mentorship Program',
+            description: 'Create program helping 1000+ new researchers',
+            xp: 80000,
+            phase: 'elite',
+            category: 'legacy-building',
+            order: 130
+          },
+          {
+            id: 'bug-bounty-platform',
+            title: 'Launch Bug Bounty Platform',
+            description: 'Create successful bug bounty platform/company',
+            xp: 150000,
+            phase: 'elite',
+            category: 'legacy-building',
             order: 131
           },
           {
-            id: 'browser-bugs',
-            title: 'Browser Exploitation',
-            description: 'Find bugs in Chrome/Firefox, sandbox escape, renderer exploitation',
-            xp: 50000,
+            id: 'lifetime-impact',
+            title: 'Lifetime Security Impact',
+            description: 'Directly improve security for 1 billion+ users',
+            xp: 200000,
             phase: 'elite',
-            category: 'vulnerability-research',
+            category: 'legacy-building',
             order: 132
-          },
+          }
+        ]
+      },
+      {
+        id: 'ultimate-mastery',
+        title: 'Ultimate Mastery',
+        tasks: [
           {
-            id: 'kernel-exploitation',
-            title: 'Kernel Vulnerability Research',
-            description: 'Windows/Linux kernel bugs, privilege escalation, race conditions',
-            xp: 40000,
+            id: 'polyglot-researcher',
+            title: 'Master of All Domains',
+            description: 'Expert in web, mobile, cloud, IoT, blockchain, and AI security',
+            xp: 150000,
             phase: 'elite',
-            category: 'vulnerability-research',
+            category: 'ultimate-mastery',
             order: 133
           },
           {
-            id: 'hypervisor-escape',
-            title: 'Virtualization Escapes',
-            description: 'VM escape research, hypervisor bugs, cloud provider vulnerabilities',
-            xp: 60000,
-            phase: 'elite',
-            category: 'vulnerability-research',
-            order: 134
-          }
-        ]
-      },
-      {
-        id: 'malware-development',
-        title: 'Advanced Malware Creation',
-        tasks: [
-          {
-            id: 'rootkit-development',
-            title: 'Rootkit Development',
-            description: 'Kernel rootkits, DKOM, hypervisor rootkits, anti-forensics',
-            xp: 30000,
-            phase: 'elite',
-            category: 'malware-development',
-            order: 135
-          },
-          {
-            id: 'crypter-packer',
-            title: 'Crypter & Packer Development',
-            description: 'Polymorphic engines, metamorphic code, custom packers',
-            xp: 25000,
-            phase: 'elite',
-            category: 'malware-development',
-            order: 136
-          },
-          {
-            id: 'advanced-evasion',
-            title: 'Next-Gen Evasion',
-            description: 'ML evasion, behavioral analysis bypass, sandbox detection',
-            xp: 35000,
-            phase: 'elite',
-            category: 'malware-development',
-            order: 137
-          },
-          {
-            id: 'apt-emulation',
-            title: 'APT-Level Capabilities',
-            description: 'Nation-state techniques, advanced persistence, covert operations',
-            xp: 45000,
-            phase: 'elite',
-            category: 'malware-development',
-            order: 138
-          }
-        ]
-      },
-      {
-        id: 'research-development',
-        title: 'Security Research & Innovation',
-        tasks: [
-          {
-            id: 'new-bug-class',
-            title: 'Discover New Bug Class',
-            description: 'Identify previously unknown vulnerability type, publish research',
-            xp: 75000,
-            phase: 'elite',
-            category: 'research-development',
-            order: 139
-          },
-          {
-            id: 'security-tools',
-            title: 'Industry-Standard Tools',
-            description: 'Create tools adopted by security community, significant open source contributions',
-            xp: 40000,
-            phase: 'elite',
-            category: 'research-development',
-            order: 140
-          },
-          {
-            id: 'framework-contributions',
-            title: 'Major Framework Contributions',
-            description: 'Core contributions to major security frameworks and tools',
-            xp: 30000,
-            phase: 'elite',
-            category: 'research-development',
-            order: 141
-          },
-          {
-            id: 'academic-research',
-            title: 'Academic Publications',
-            description: 'Publish papers at top security conferences, PhD-level research',
-            xp: 50000,
-            phase: 'elite',
-            category: 'research-development',
-            order: 142
-          }
-        ]
-      },
-      {
-        id: 'industry-impact',
-        title: 'Industry Leadership',
-        tasks: [
-          {
-            id: 'conference-speaker',
-            title: 'Major Conference Speaker',
-            description: 'Speak at top security conferences, share groundbreaking research',
-            xp: 35000,
-            phase: 'elite',
-            category: 'industry-impact',
-            order: 143
-          },
-          {
-            id: 'training-author',
-            title: 'Create Training Course',
-            description: 'Develop and deliver professional security training',
-            xp: 25000,
-            phase: 'elite',
-            category: 'industry-impact',
-            order: 144
-          },
-          {
-            id: 'bug-bounty-elite',
-            title: 'Bug Bounty Legend',
-            description: 'Earn $500k+ lifetime, top 10 on major platforms',
-            xp: 80000,
-            phase: 'elite',
-            category: 'industry-impact',
-            order: 145
-          },
-          {
-            id: 'security-startup',
-            title: 'Security Company Founder',
-            description: 'Start successful security company or consultancy',
-            xp: 100000,
-            phase: 'elite',
-            category: 'industry-impact',
-            order: 146
-          }
-        ]
-      },
-      {
-        id: 'specialized-expertise',
-        title: 'Specialized Expertise',
-        tasks: [
-          {
-            id: 'blockchain-security',
-            title: 'Blockchain Security Expert',
-            description: 'Smart contract auditing, consensus attacks, DeFi exploitation',
-            xp: 40000,
-            phase: 'elite',
-            category: 'specialized-expertise',
-            order: 147
-          },
-          {
-            id: 'ai-security',
-            title: 'AI/ML Security Research',
-            description: 'Adversarial ML, model extraction, AI system vulnerabilities',
-            xp: 45000,
-            phase: 'elite',
-            category: 'specialized-expertise',
-            order: 148
-          },
-          {
-            id: 'ics-scada',
-            title: 'ICS/SCADA Security',
-            description: 'Critical infrastructure, industrial protocols, safety systems',
-            xp: 50000,
-            phase: 'elite',
-            category: 'ics-scada',
-            order: 149
-          },
-          {
-            id: 'quantum-ready',
-            title: 'Post-Quantum Security',
-            description: 'Quantum-resistant cryptography, future-proof security',
-            xp: 60000,
-            phase: 'elite',
-            category: 'specialized-expertise',
-            order: 150
-          }
-        ]
-      },
-      {
-        id: 'legendary-achievements',
-        title: 'Legendary Status',
-        tasks: [
-          {
-            id: 'elite-competition',
-            title: 'Elite Competition Winner',
-            description: 'Win prestigious hacking competition or capture the flag event',
-            xp: 150000,
-            phase: 'elite',
-            category: 'legendary-achievements',
-            order: 151
-          },
-          {
-            id: 'bug-bounty-million',
-            title: 'Million Dollar Hacker',
-            description: 'Earn over $1,000,000 from bug bounties',
-            xp: 200000,
-            phase: 'elite',
-            category: 'legendary-achievements',
-            order: 152
-          },
-          {
-            id: 'security-pioneer',
-            title: 'Security Pioneer',
-            description: 'Make breakthrough discovery that changes security industry',
+            id: 'bug-bounty-billionaire',
+            title: 'Bug Bounty Unicorn',
+            description: 'Build billion-dollar security company from bug bounty roots',
             xp: 500000,
             phase: 'elite',
-            category: 'legendary-achievements',
-            order: 153
+            category: 'ultimate-mastery',
+            order: 134
           },
           {
-            id: 'hall-of-fame',
-            title: 'Security Hall of Fame',
-            description: 'Recognized as one of the top security researchers globally',
+            id: 'security-nobel',
+            title: 'Turing Award Consideration',
+            description: 'Considered for Turing Award or similar for security contributions',
             xp: 1000000,
             phase: 'elite',
-            category: 'legendary-achievements',
-            order: 154
+            category: 'ultimate-mastery',
+            order: 135
           }
         ]
       }

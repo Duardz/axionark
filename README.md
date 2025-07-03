@@ -1,102 +1,115 @@
-# AXIONARK - Personal Hacking Journey Tracker 🎯
+# AXIONARK - Bug Bounty Journey Tracker 🎯
 
-A gamified personal progress tracker designed for bug bounty hunters and security researchers. AXIONARK helps you document your cybersecurity journey, track rewards, manage learning progress, and maintain an encrypted journal of your experiences.
+A gamified progress tracker designed specifically for bug bounty hunters. AXIONARK helps you master bug hunting skills, track your findings, monitor earnings, and document your journey with military-grade encryption.
 
 ## 🚀 Overview
 
-AXIONARK is your personal companion for tracking your bug bounty and security research journey. Unlike platforms that provide challenges or learning content, AXIONARK focuses on helping you document and track YOUR real-world hacking experiences and achievements.
+AXIONARK is your personal companion for bug bounty hunting. Track your progress from beginner to legendary status with a structured roadmap focused on real bug bounty skills and achievements.
 
 ### Key Features
 
-- **📚 Personal Learning Roadmap** - Track your cybersecurity journey with 154 suggested tasks across 5 phases
-- **📝 XP-Based Progress System** - Earn experience points as you complete learning objectives
-- **📔 Encrypted Journal** - Document daily experiences with client-side encryption
-- **🐛 Bug Bounty Tracker** - Log vulnerabilities and track earnings
-- **💰 Rewards Dashboard** - Monitor bug bounty income and statistics
-- **🎮 Achievement System** - Unlock badges as you reach milestones
-- **🌓 Modern UI** - Dark/light mode with cyberpunk-inspired design
+- **🎯 Bug Bounty Roadmap** - 135+ tasks across 5 phases specifically for bug hunters
+- **📈 XP & Level System** - Earn experience points and level up as you complete objectives
+- **📔 Encrypted Journal** - Document findings with AES-256-GCM client-side encryption
+- **🐛 Bug Tracker** - Log vulnerabilities, track bounties, and monitor success rates
+- **💰 Earnings Dashboard** - Track your bug bounty income and milestones
+- **🏆 Achievement System** - Unlock badges for major accomplishments
+- **🎨 Modern UI** - Cyberpunk-inspired design with dark/light themes
+- **🔐 Zero-Knowledge Architecture** - Your data is encrypted before leaving your device
 
-## 🛡️ Security Features
+## 🛡️ Security & Privacy
 
-- Client-side AES-256-GCM encryption for sensitive data
-- Firebase Authentication with secure session management
-- Rate limiting and CSRF protection
-- Input sanitization to prevent XSS attacks
-- Strict Content Security Policy (CSP)
-- Secure password validation
+- **Client-side AES-256-GCM encryption** - Your sensitive data is encrypted in your browser
+- **Zero-knowledge architecture** - We can't read your journal entries or bug details
+- **Firebase Authentication** with secure session management
+- **Rate limiting** and input sanitization
+- **Strict CSP** headers for XSS protection
+- **No tracking** - Your journey is yours alone
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: SvelteKit, TypeScript
-- **Styling**: Tailwind CSS
+- **Frontend**: SvelteKit 2.0, TypeScript
+- **Styling**: Tailwind CSS 3.0
 - **Backend**: Firebase (Auth & Firestore)
-- **Security**: DOMPurify, client-side encryption
-- **Icons**: Heroicons
+- **Security**: Web Crypto API, DOMPurify
+- **Analytics**: Privacy-respecting Vercel Analytics
+- **Icons**: Heroicons & Custom SVGs
 
 ## 📋 Prerequisites
 
 - Node.js 18+ 
-- Firebase account
-- npm or yarn package manager
+- Firebase account (free tier works)
+- npm or yarn
 
 ## 🚦 Quick Start
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/axionark.git
+git clone https://github.com/Duardz/axionark.git
 cd axionark
 npm install
 ```
 
 ### 2. Firebase Setup
 
-1. Create a new project in [Firebase Console](https://console.firebase.google.com)
-2. Enable Authentication (Email/Password)
-3. Create a Firestore Database (production mode)
-4. Copy your configuration from Project Settings
+1. Create a project at [Firebase Console](https://console.firebase.google.com)
+2. Enable **Authentication** (Email/Password provider)
+3. Create **Firestore Database** in production mode
+4. Get your config from Project Settings > General
 
 ### 3. Environment Configuration
 
-Create a `.env` file from the template:
+Create `.env` file:
 
 ```bash
 cp .env.example .env
 ```
 
-Add your Firebase configuration:
+Add your Firebase config:
 
 ```env
 VITE_FIREBASE_API_KEY=your_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
 VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 ```
 
-### 4. Configure Security Rules
+### 4. Firestore Security Rules
 
-Add the following rules to your Firestore database:
+Replace default rules with these:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
+    // Users can only read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+    match /journal/{entryId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.uid;
     }
     
-    function isValidUsername(username) {
-      return username.matches('^[a-zA-Z0-9_-]{3,50}$');
+    match /bugs/{bugId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.uid;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.uid;
     }
     
-    // Add your security rules here
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+        request.auth.uid == resource.data.uid;
+    }
   }
 }
 ```
@@ -107,96 +120,186 @@ service cloud.firestore {
 npm run dev
 ```
 
-Access the application at `http://localhost:5173`
+Visit `http://localhost:5173`
+
+## 🎯 Bug Bounty Learning Path
+
+AXIONARK features a comprehensive bug bounty roadmap:
+
+### 🌱 **Phase 1: Foundations** (Months 1-4)
+- Web technology fundamentals
+- Essential tools setup (Burp Suite, recon tools)
+- Basic vulnerabilities (XSS, SQLi, IDOR)
+- First bug submission
+
+### 🚀 **Phase 2: Advanced Hunting** (Months 5-12)
+- Complex vulnerabilities (SSRF, XXE, Deserialization)
+- API and mobile testing
+- Automation and scaling
+- First $10,000 milestone
+
+### 💎 **Phase 3: Expert Hunter** (Months 13-24)
+- Vulnerability chaining techniques
+- Cloud platform security
+- Specialized targets
+- $100,000+ earnings goal
+
+### 🔥 **Phase 4: Elite Researcher** (Year 3+)
+- Zero-day research
+- Industry leadership
+- Mentorship and education
+- $1M+ lifetime earnings
+
+### 👑 **Phase 5: Legendary Status** (Lifetime)
+- Global security impact
+- Legacy building
+- Ultimate mastery
+
+## 🎮 How It Works
+
+1. **Create Account** - Sign up with email and choose your hacker alias
+2. **Track Progress** - Complete tasks from the roadmap to earn XP
+3. **Log Bugs** - Record your findings with severity, bounty, and details
+4. **Journal Journey** - Write encrypted notes about your experiences
+5. **Monitor Stats** - Watch your level, earnings, and achievements grow
+6. **Share Success** - Export non-sensitive stats to share your progress
+
+## 📊 Features in Detail
+
+### Task Management
+- 135+ bug bounty specific tasks
+- XP rewards for completion
+- Progress tracking per category
+- Suggested learning order
+
+### Bug Tracking
+- Log vulnerability details
+- Track bounty amounts
+- Monitor acceptance rates
+- Categorize by severity
+- Platform statistics
+
+### Encrypted Journal
+- Client-side encryption
+- Mood tracking
+- Tag system
+- Search functionality
+- Export capabilities
+
+### Progress Dashboard
+- Real-time XP tracking
+- Level progression
+- Earnings overview
+- Activity timeline
+- Achievement showcase
 
 ## 🚀 Deployment
 
-### Vercel
+### Vercel (Recommended)
 
-1. Push code to GitHub
-2. Import repository on [Vercel](https://vercel.com)
+1. Fork this repository
+2. Import to [Vercel](https://vercel.com)
 3. Add environment variables
-4. Deploy
+4. Deploy!
 
-### Netlify
+### Self-Hosting
 
-1. Build: `npm run build`
-2. Deploy `build` folder to Netlify
-3. Configure environment variables
+```bash
+npm run build
+npm run preview
+```
+
+Deploy the `build` folder to any static host.
 
 ## 📁 Project Structure
 
 ```
 src/
-├── routes/                   # Page components
-│   ├── +page.svelte         # Landing/Auth
-│   ├── dashboard/           # Main dashboard
-│   ├── roadmap/             # Learning roadmap
-│   ├── tasks/               # Task management
-│   ├── journal/             # Encrypted journal
-│   ├── bugs/                # Bug tracker
-│   └── profile/             # User settings
+├── routes/              # SvelteKit pages
+│   ├── +page.svelte    # Landing/Auth
+│   ├── dashboard/      # Main dashboard
+│   ├── roadmap/        # Bug bounty roadmap
+│   ├── tasks/          # Task tracker
+│   ├── journal/        # Encrypted journal
+│   ├── bugs/           # Bug reports
+│   └── profile/        # User settings
 ├── lib/
-│   ├── components/          # Reusable components
-│   ├── stores/              # Svelte stores
-│   ├── data/                # Static data
-│   ├── utils/               # Utilities
-│   │   ├── security.ts      # Security helpers
-│   │   ├── encryption.ts    # Encryption logic
-│   │   └── validation.ts    # Input validation
-│   └── firebase.ts          # Firebase config
-├── hooks.server.ts          # Server middleware
-└── app.css                  # Global styles
+│   ├── components/     # Reusable UI
+│   ├── stores/         # State management
+│   ├── data/           # Roadmap data
+│   ├── utils/          # Helpers
+│   │   ├── encryption.ts
+│   │   └── security.ts
+│   └── firebase.ts
+└── app.css            # Global styles
 ```
-
-## 🎯 Learning Path Overview
-
-AXIONARK includes a structured 36-month roadmap:
-
-1. **Foundation (Months 1-6)**: System fundamentals, networking, programming basics
-2. **Penetration Testing (Months 7-18)**: Web security, network pentesting, AD attacks
-3. **Advanced Security (Months 19-30)**: Cloud security, mobile testing, exploitation
-4. **Red Team Ops (Months 31-36)**: Adversary emulation, custom tools
-5. **Elite Research (Ongoing)**: Zero-day research, specialization
-
-## 🎮 How to Use AXIONARK
-
-1. **Sign Up** - Create account with secure credentials
-2. **Set Profile** - Choose your hacker username
-3. **Follow Roadmap** - Use suggested path or customize
-4. **Complete Tasks** - Mark completed and earn XP
-5. **Log Bugs** - Record findings with details
-6. **Journal Progress** - Write encrypted entries
-7. **Track Stats** - Monitor earnings and achievements
 
 ## 🤝 Contributing
 
-We welcome contributions! Please follow these steps:
+We love contributions! Here's how:
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/YourFeature`)
-3. Commit changes (`git commit -m 'Add YourFeature'`)
-4. Push to branch (`git push origin feature/YourFeature`)
-5. Open a Pull Request
+2. Create feature branch (`git checkout -b feature/awesome-feature`)
+3. Commit changes (`git commit -m 'Add awesome feature'`)
+4. Push branch (`git push origin feature/awesome-feature`)
+5. Open Pull Request
+
+### Development Guidelines
+
+- Follow existing code style
+- Add tests for new features
+- Update documentation
+- Keep accessibility in mind
+- Respect user privacy
+
+## 🐛 Bug Reports
+
+Found a bug? Please open an issue with:
+- Clear description
+- Steps to reproduce
+- Expected behavior
+- Screenshots (if applicable)
 
 ## 📄 License
 
-This project is licensed under the GNU Affero General Public License v3 (AGPLv3).  
-See the [LICENSE](LICENSE) file for full license details.
+This project is licensed under the **GNU Affero General Public License v3 (AGPLv3)**.
+
+This means:
+- ✅ Use for any purpose
+- ✅ Modify and distribute
+- ✅ Patent protection
+- ⚠️ Must open-source modifications
+- ⚠️ Must disclose source
+- ⚠️ Must use same license
+
+See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- [SvelteKit](https://kit.svelte.dev/) - Web framework
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
-- [Firebase](https://firebase.google.com/) - Backend services
-- [Heroicons](https://heroicons.com/) - Icon library
-- [Claude AI](https://claude.ai/) - Development assistance
+- Bug bounty community for inspiration
+- [SvelteKit](https://kit.svelte.dev/) team
+- [Firebase](https://firebase.google.com/) for backend
+- [Tailwind CSS](https://tailwindcss.com/) for styling
+- All contributors and testers
 
 ## 📞 Support
 
-- Email: support@axionark.com
-- Issues: [GitHub Issues](https://github.com/Duardz/axionark/issues)
+- **Issues**: [GitHub Issues](https://github.com/Duardz/axionark/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Duardz/axionark/discussions)
+- **Email**: support@axionark.com
+
+## 🔮 Roadmap
+
+- [ ] Mobile app (PWA)
+- [ ] Team collaboration features
+- [ ] API for integrations
+- [ ] Browser extension
+- [ ] More achievement types
+- [ ] Export to PDF reports
+- [ ] Backup/restore functionality
 
 ---
 
-**Note**: AXIONARK is a progress tracker, not a learning platform. It helps you document your real-world security research journey rather than providing challenges or educational content.
+**⚡ AXIONARK** - Track your journey from script kiddie to legendary bug hunter.
+
+*Not affiliated with any bug bounty platform. This is a personal progress tracker.*
