@@ -1,45 +1,46 @@
-# AXIONARK - Bug Bounty Journey Tracker 🎯
+# AXIONARK - Real Hacker Skills Tracker 🏴‍☠️
 
-A gamified progress tracker designed specifically for bug bounty hunters. AXIONARK helps you master bug hunting skills, track your findings, monitor earnings, and document your journey with military-grade encryption.
+A gamified progress tracker designed for aspiring hackers who want to master the complete arsenal of offensive security skills. AXIONARK helps you develop real-world hacking abilities from web applications to network pivoting, from USB attacks to zero-day research.
 
 ## 🚀 Overview
 
-AXIONARK is your personal companion for bug bounty hunting. Track your progress from beginner to legendary status with a structured roadmap focused on real bug bounty skills and achievements.
+AXIONARK is your personal companion for becoming a complete hacker. Track your progress from script kiddie to legendary status with a structured roadmap focused on practical hacking skills that work in CTFs, penetration tests, bug bounties, and real-world scenarios.
 
 ### Key Features
 
-- **🎯 Bug Bounty Roadmap** - 135+ tasks across 5 phases specifically for bug hunters
-- **📈 XP & Level System** - Earn experience points and level up as you complete objectives
-- **📔 Encrypted Journal** - Document findings with AES-256-GCM client-side encryption
-- **🐛 Bug Tracker** - Log vulnerabilities, track bounties, and monitor success rates
-- **💰 Earnings Dashboard** - Track your bug bounty income and milestones
-- **🏆 Achievement System** - Unlock badges for major accomplishments
-- **🎨 Modern UI** - Cyberpunk-inspired design with dark/light themes
-- **🔐 Zero-Knowledge Architecture** - Your data is encrypted before leaving your device
+- **🎯 Complete Hacker Roadmap** - 135+ tasks across 5 phases covering all attack vectors
+- **📈 XP & Level System** - Earn experience points and level up as you master skills
+- **📔 Encrypted Journal** - Document your hacking journey with AES-256-GCM encryption
+- **🐛 Exploit Tracker** - Log vulnerabilities, document techniques, track success
+- **💰 Earnings Dashboard** - Monitor bug bounty income and achievements
+- **🏆 Achievement System** - Unlock badges for mastering different hacking domains
+- **🎨 Cyberpunk UI** - Dark hacker aesthetic with modern design
+- **🔐 Zero-Knowledge Architecture** - Your hacking notes are encrypted client-side
 
 ## 🛡️ Security & Privacy
 
 - **Client-side AES-256-GCM encryption** - Your sensitive data is encrypted in your browser
-- **Zero-knowledge architecture** - We can't read your journal entries or bug details
+- **Zero-knowledge architecture** - We can't read your exploit notes or target details
 - **Firebase Authentication** with secure session management
 - **Rate limiting** and input sanitization
 - **Strict CSP** headers for XSS protection
-- **No tracking** - Your journey is yours alone
+- **No tracking** - Your hacking journey is yours alone
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: SvelteKit 2.0, TypeScript
-- **Styling**: Tailwind CSS 3.0
+- **Styling**: Tailwind CSS 3.0 with cyberpunk theme
 - **Backend**: Firebase (Auth & Firestore)
 - **Security**: Web Crypto API, DOMPurify
 - **Analytics**: Privacy-respecting Vercel Analytics
-- **Icons**: Heroicons & Custom SVGs
+- **Icons**: Heroicons & Custom hacker-themed SVGs
 
 ## 📋 Prerequisites
 
 - Node.js 18+ 
 - Firebase account (free tier works)
 - npm or yarn
+- A desire to become a real hacker 🔥
 
 ## 🚦 Quick Start
 
@@ -97,7 +98,7 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.uid;
     }
     
-    match /bugs/{bugId} {
+    match /exploits/{exploitId} {
       allow read, write: if request.auth != null && 
         request.auth.uid == resource.data.uid;
       allow create: if request.auth != null && 
@@ -120,78 +121,119 @@ service cloud.firestore {
 npm run dev
 ```
 
-Visit `http://localhost:5173`
+Visit `http://localhost:5173` and start your hacking journey!
 
-## 🎯 Bug Bounty Learning Path
+## 🎯 Real Hacker Skills Learning Path
 
-AXIONARK features a comprehensive bug bounty roadmap:
+AXIONARK features a comprehensive hacking roadmap covering ALL attack vectors:
 
-### 🌱 **Phase 1: Foundations** (Months 1-4)
-- Web technology fundamentals
-- Essential tools setup (Burp Suite, recon tools)
-- Basic vulnerabilities (XSS, SQLi, IDOR)
-- First bug submission
+### 🌱 **Phase 1: Hacker Foundations** (Months 1-6)
+- **System Fundamentals**: Linux/Windows mastery, networking, scripting
+- **Web Application Hacking**: HTTP, Burp Suite, XSS, SQL injection, web shells
+- **Network Hacking**: Nmap, Metasploit, service exploitation, wireless attacks
+- **System Exploitation**: Linux/Windows privilege escalation, reverse shells
+- **Essential Tools**: Reconnaissance, exploitation frameworks, password cracking
+- **Practice & Mastery**: Vulnerable machines, CTFs, first penetration test
 
-### 🚀 **Phase 2: Advanced Hunting** (Months 5-12)
-- Complex vulnerabilities (SSRF, XXE, Deserialization)
-- API and mobile testing
-- Automation and scaling
-- First $10,000 milestone
+### 🚀 **Phase 2: Real Hacker Skills** (Months 7-12)
+- **Advanced Web Attacks**: SSRF, XXE, SSTI, deserialization, business logic
+- **Network Pivoting**: SSH tunneling, Chisel, multi-hop attacks, lateral movement
+- **Active Directory**: BloodHound, Kerberos attacks, domain domination, Mimikatz
+- **Physical Attacks**: USB attacks, lock picking, RFID cloning, social engineering
+- **Evasion Techniques**: AV evasion, OPSEC, living off the land, steganography
+- **Automation**: Python exploits, C2 frameworks, custom tool development
 
-### 💎 **Phase 3: Expert Hunter** (Months 13-24)
-- Vulnerability chaining techniques
-- Cloud platform security
-- Specialized targets
-- $100,000+ earnings goal
+### 💎 **Phase 3: Advanced Hacker** (Months 13-24)
+- **Complex Attack Chains**: Web-to-system, phishing-to-domain, multi-stage attacks
+- **Cloud Security**: AWS/Azure/GCP exploitation, Kubernetes, serverless attacks
+- **Mobile Hacking**: Android/iOS exploitation, mobile network attacks, malware
+- **Advanced Techniques**: Binary exploitation, cryptographic attacks, reverse engineering
+- **Specialized Targets**: IoT, industrial systems, automotive, blockchain, AI/ML
+- **Professional Skills**: Red team operations, penetration testing, vulnerability research
 
-### 🔥 **Phase 4: Elite Researcher** (Year 3+)
-- Zero-day research
-- Industry leadership
-- Mentorship and education
-- $1M+ lifetime earnings
+### 🔥 **Phase 4: Elite Hacker** (Years 2-5)
+- **Zero-Day Research**: Browser, OS, hardware vulnerabilities, exploit development
+- **APT Simulation**: Nation-state TTPs, supply chain attacks, advanced persistence
+- **Cutting-Edge Research**: AI security, quantum cryptography, satellite security
+- **Industry Leadership**: Conference speaking, tool creation, academic collaboration
+- **Mentorship**: Training development, community building, knowledge sharing
+- **Financial Success**: Six-figure exploits, million-dollar achievements
 
-### 👑 **Phase 5: Legendary Status** (Lifetime)
-- Global security impact
-- Legacy building
-- Ultimate mastery
+### 👑 **Phase 5: Legendary Hacker** (Lifetime Achievement)
+- **Global Impact**: Internet-scale vulnerabilities, security protocol design
+- **Historical Significance**: Paradigm shifts, legendary hacks, cybersecurity revolution
+- **Immortal Legacy**: Hall of fame, educational institutions, billion-user impact
+- **Ultimate Mastery**: Omniscient hacker, cyber defense revolution, god-tier status
 
 ## 🎮 How It Works
 
 1. **Create Account** - Sign up with email and choose your hacker alias
-2. **Track Progress** - Complete tasks from the roadmap to earn XP
-3. **Log Bugs** - Record your findings with severity, bounty, and details
-4. **Journal Journey** - Write encrypted notes about your experiences
-5. **Monitor Stats** - Watch your level, earnings, and achievements grow
-6. **Share Success** - Export non-sensitive stats to share your progress
+2. **Track Progress** - Complete tasks from the roadmap to earn XP and level up
+3. **Log Exploits** - Record your findings, techniques, and target details
+4. **Journal Journey** - Write encrypted notes about your hacking experiences
+5. **Monitor Stats** - Watch your level, skills, and achievements grow
+6. **Share Success** - Export non-sensitive stats to showcase your skills
 
 ## 📊 Features in Detail
 
-### Task Management
-- 135+ bug bounty specific tasks
-- XP rewards for completion
-- Progress tracking per category
-- Suggested learning order
+### Complete Hacker Roadmap
+- 135+ hacking-specific tasks across all domains
+- XP rewards based on skill difficulty and impact
+- Progression from script kiddie to legendary hacker
+- Covers web, network, system, physical, wireless, and advanced techniques
 
-### Bug Tracking
-- Log vulnerability details
-- Track bounty amounts
-- Monitor acceptance rates
-- Categorize by severity
-- Platform statistics
+### Exploit Tracking
+- Log vulnerability details and exploitation techniques
+- Track success rates across different attack vectors
+- Monitor earnings from bug bounties and penetration tests
+- Categorize by severity, target type, and technique used
+- Document payloads, tools, and methodologies
 
-### Encrypted Journal
-- Client-side encryption
-- Mood tracking
-- Tag system
-- Search functionality
-- Export capabilities
+### Encrypted Hacking Journal
+- Client-side encryption for sensitive notes
+- Document targets, techniques, and lessons learned
+- Tag system for organizing different attack types
+- Search functionality across all entries
+- Export capabilities for sharing knowledge
 
-### Progress Dashboard
-- Real-time XP tracking
-- Level progression
-- Earnings overview
-- Activity timeline
-- Achievement showcase
+### Skills Dashboard
+- Real-time XP tracking across all hacking domains
+- Level progression with hacker-themed titles
+- Achievement showcase for mastered techniques
+- Activity timeline showing your hacking evolution
+- Statistics on favorite attack vectors and success rates
+
+## 🏴‍☠️ Hacking Domains Covered
+
+### Web Application Security
+- HTTP protocol mastery, Burp Suite, XSS exploitation
+- SQL injection, web shells, SSRF, XXE attacks
+- Business logic flaws, API security, authentication bypass
+
+### Network Penetration
+- Network scanning, service exploitation, Metasploit
+- Wireless attacks, packet analysis, protocol abuse
+- Network pivoting, SSH tunneling, lateral movement
+
+### System Exploitation
+- Linux/Windows privilege escalation techniques
+- Reverse shells, persistence methods, file transfers
+- Binary exploitation, kernel attacks, rootkit development
+
+### Active Directory Attacks
+- Domain enumeration, Kerberos attacks, BloodHound
+- Credential dumping, lateral movement, domain domination
+- Golden tickets, DCSync, advanced persistence
+
+### Physical Security
+- USB attacks, lock picking, RFID cloning
+- Social engineering, hardware hacking, firmware analysis
+- Badge cloning, physical penetration, surveillance evasion
+
+### Advanced Techniques
+- Zero-day research, exploit development, reverse engineering
+- Cryptographic attacks, steganography, covert channels
+- Mobile hacking, cloud security, IoT exploitation
 
 ## 🚀 Deployment
 
@@ -200,7 +242,7 @@ AXIONARK features a comprehensive bug bounty roadmap:
 1. Fork this repository
 2. Import to [Vercel](https://vercel.com)
 3. Add environment variables
-4. Deploy!
+4. Deploy and start hacking!
 
 ### Self-Hosting
 
@@ -217,89 +259,144 @@ Deploy the `build` folder to any static host.
 src/
 ├── routes/              # SvelteKit pages
 │   ├── +page.svelte    # Landing/Auth
-│   ├── dashboard/      # Main dashboard
-│   ├── roadmap/        # Bug bounty roadmap
-│   ├── tasks/          # Task tracker
-│   ├── journal/        # Encrypted journal
-│   ├── bugs/           # Bug reports
-│   └── profile/        # User settings
+│   ├── dashboard/      # Main hacker dashboard
+│   ├── roadmap/        # Complete hacking roadmap
+│   ├── tasks/          # Skill tracker
+│   ├── journal/        # Encrypted hacking journal
+│   ├── exploits/       # Exploit documentation
+│   └── profile/        # Hacker profile settings
 ├── lib/
-│   ├── components/     # Reusable UI
+│   ├── components/     # Reusable UI components
 │   ├── stores/         # State management
-│   ├── data/           # Roadmap data
-│   ├── utils/          # Helpers
+│   ├── data/           # Hacking roadmap data
+│   ├── utils/          # Security utilities
 │   │   ├── encryption.ts
 │   │   └── security.ts
-│   └── firebase.ts
-└── app.css            # Global styles
+│   └── firebase.ts     # Firebase configuration
+└── app.css            # Cyberpunk styling
 ```
 
 ## 🤝 Contributing
 
-We love contributions! Here's how:
+We welcome contributions from the hacking community! Here's how:
 
 1. Fork the repository
-2. Create feature branch (`git checkout -b feature/awesome-feature`)
-3. Commit changes (`git commit -m 'Add awesome feature'`)
-4. Push branch (`git push origin feature/awesome-feature`)
+2. Create feature branch (`git checkout -b feature/awesome-hacking-feature`)
+3. Commit changes (`git commit -m 'Add awesome hacking feature'`)
+4. Push branch (`git push origin feature/awesome-hacking-feature`)
 5. Open Pull Request
 
 ### Development Guidelines
 
-- Follow existing code style
+- Follow existing code style and hacker aesthetic
 - Add tests for new features
-- Update documentation
-- Keep accessibility in mind
-- Respect user privacy
+- Update documentation with new techniques
+- Respect ethical hacking principles
+- Keep user privacy and security paramount
 
-## 🐛 Bug Reports
+## 🐛 Bug Reports & Feature Requests
 
-Found a bug? Please open an issue with:
-- Clear description
-- Steps to reproduce
+Found a bug or want a new hacking feature? Please open an issue with:
+- Clear description of the problem or feature
+- Steps to reproduce (for bugs)
 - Expected behavior
-- Screenshots (if applicable)
+- Screenshots or code examples
+- Your current hacking level (helps with context)
 
 ## 📄 License
 
 This project is licensed under the **GNU Affero General Public License v3 (AGPLv3)**.
 
 This means:
-- ✅ Use for any purpose
-- ✅ Modify and distribute
-- ✅ Patent protection
-- ⚠️ Must open-source modifications
-- ⚠️ Must disclose source
-- ⚠️ Must use same license
+- ✅ Use for any purpose (including commercial)
+- ✅ Modify and distribute freely
+- ✅ Patent protection included
+- ⚠️ Must open-source any modifications
+- ⚠️ Must disclose source code
+- ⚠️ Must use same license for derivatives
 
-See [LICENSE](LICENSE) for details.
+Perfect for the hacking community's open-source philosophy!
 
 ## 🙏 Acknowledgments
 
-- Bug bounty community for inspiration
-- [SvelteKit](https://kit.svelte.dev/) team
-- [Firebase](https://firebase.google.com/) for backend
-- [Tailwind CSS](https://tailwindcss.com/) for styling
-- All contributors and testers
+- **Hacking community** for inspiration and knowledge sharing
+- **CTF organizers** for creating practical challenges
+- **Bug bounty platforms** for making ethical hacking profitable
+- **Red team operators** for real-world techniques
+- **Security researchers** for pushing boundaries
+- **Open source contributors** for making tools accessible
+- [SvelteKit](https://kit.svelte.dev/) team for the amazing framework
+- [Firebase](https://firebase.google.com/) for backend infrastructure
+- [Tailwind CSS](https://tailwindcss.com/) for styling system
 
-## 📞 Support
+## 📞 Support & Community
 
 - **Issues**: [GitHub Issues](https://github.com/Duardz/axionark/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/Duardz/axionark/discussions)
+- **Discord**: Join our hacker community (link in issues)
 - **Email**: support@axionark.com
+- **Twitter**: @AxionarkHQ
 
 ## 🔮 Roadmap
 
-- [ ] Mobile app (PWA)
-- [ ] Team collaboration features
-- [ ] API for integrations
-- [ ] Browser extension
-- [ ] More achievement types
+### Short Term
+- [ ] Mobile app (PWA) for hacking on the go
+- [ ] Team collaboration features for group hacking
+- [ ] Browser extension for in-browser note-taking
+- [ ] Integration with popular hacking tools
+
+### Medium Term
+- [ ] API for custom integrations
+- [ ] Advanced analytics and insights
+- [ ] Achievement sharing and leaderboards
 - [ ] Export to PDF reports
-- [ ] Backup/restore functionality
+
+### Long Term
+- [ ] AI-powered technique suggestions
+- [ ] Automated vulnerability correlation
+- [ ] Community marketplace for tools/techniques
+- [ ] Virtual hacking lab integration
+
+## 🎯 Philosophy
+
+**"Real hackers don't just run tools - they understand systems, chain attacks, and create their own techniques."**
+
+AXIONARK is built on the philosophy that true hacking mastery comes from:
+- **Understanding fundamentals** - not just running scripts
+- **Practical application** - skills that work in real scenarios
+- **Continuous learning** - staying ahead of defenses
+- **Ethical responsibility** - using skills for good
+- **Community sharing** - elevating the entire field
+
+## ⚡ Get Started
+
+Ready to begin your journey from script kiddie to legendary hacker?
+
+1. **Clone the repo** and set up your environment
+2. **Create your hacker alias** and start tracking progress
+3. **Complete your first foundation tasks**
+4. **Document your journey** in the encrypted journal
+5. **Join the community** and share your achievements
 
 ---
 
-**⚡ AXIONARK** - Track your journey from script kiddie to legendary bug hunter.
+**⚡ AXIONARK** - Your complete journey to hacking mastery.
 
-*Not affiliated with any bug bounty platform. This is a personal progress tracker.*
+*"The best hackers are made, not born. Start your transformation today."*
+
+---
+
+## ⚠️ Legal Disclaimer
+
+AXIONARK is designed for **educational purposes and ethical hacking only**. Users must:
+- Only test systems you own or have explicit permission to test
+- Follow responsible disclosure practices
+- Comply with local laws and regulations
+- Use skills for defensive and educational purposes
+- Respect others' privacy and digital property
+
+The creators of AXIONARK are not responsible for misuse of the information or tools referenced in this platform. Always hack ethically and legally.
+
+---
+
+**Happy Hacking! 🏴‍☠️**
